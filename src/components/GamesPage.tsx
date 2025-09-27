@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Trophy, Star, Sparkles, Puzzle, Lightbulb } from 'lucide-react';
 import { GeminiService } from '../lib/gemini-service';
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 interface Game {
   title: string;
@@ -21,9 +23,26 @@ const GamesPage: React.FC = () => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [attempts, setAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
-    fetchGame();
+    const checkCompletion = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const userDocRef = doc(db, 'profiles', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const profileData = userDocSnap.data();
+          if (profileData.tasks_progress?.games >= 100) {
+            setIsLocked(true);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+      fetchGame();
+    };
+    checkCompletion();
   }, []);
 
   const fetchGame = async () => {
@@ -36,10 +55,7 @@ const GamesPage: React.FC = () => {
       4. The correct answer
       5. An optional hint
       Format as JSON: {"title": "string", "instructions": "string", "riddle": "string", "answer": "string", "hint": "string"}`;
-
       const response = await GeminiService.generateText(prompt);
-
-      // Parse JSON response
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const generatedGame = JSON.parse(jsonMatch[0]);
@@ -49,7 +65,6 @@ const GamesPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching game:', error);
-      // Fallback game
       const fallbackGame: Game = {
         title: 'Riddle Game',
         instructions: 'Solve the riddle.',
@@ -63,27 +78,34 @@ const GamesPage: React.FC = () => {
     }
   };
 
+  const updateProgress = async (progress: number) => {
+    const user = auth.currentUser;
+    if (user) {
+      const userDocRef = doc(db, 'profiles', user.uid);
+      await updateDoc(userDocRef, {
+        'tasks_progress.games': progress,
+      });
+    }
+  };
+
   const submitAnswer = async () => {
-    if (!game) return;
-
+    if (!game || isLocked) return;
     setAttempts(prev => prev + 1);
-
     try {
       const userAns = userAnswer.trim().toLowerCase();
       const correctAns = game.answer.toLowerCase();
       const correct = userAns === correctAns;
-
       setIsCorrect(correct);
-
       if (correct) {
         setValidationMessage('🎉 Correct! You solved the riddle! 🧩');
         setShowCelebration(true);
+        updateProgress(100);
         setTimeout(() => setShowCelebration(false), 4000);
+        setIsLocked(true);
       } else {
-        const feedback = attempts >= 2
-          ? 'Not quite right. Try using the hint! 💡'
-          : 'Keep trying! You can do it! 🤔';
+        const feedback = attempts >= 2 ? 'Not quite right. Try using the hint! 💡' : 'Keep trying! You can do it! 🤔';
         setValidationMessage(feedback);
+        updateProgress(50); // Set to 50% for incorrect attempt
       }
     } catch (error) {
       console.error('Error validating game:', error);
@@ -109,9 +131,27 @@ const GamesPage: React.FC = () => {
     );
   }
 
+  if (isLocked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex flex-col items-center justify-center p-8">
+        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-lg">
+          <h2 className="text-3xl font-bold text-white mb-4">Challenge Locked</h2>
+          <p className="text-white mb-6">
+            You have already completed today's mini game. Please come back tomorrow for a new one.
+          </p>
+          <button
+            onClick={() => navigate('/tasks')}
+            className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:from-purple-600 hover:to-indigo-600 transition"
+          >
+            Back to Tasks
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-8 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white flex flex-col items-center relative overflow-hidden">
-      {/* Celebration Animation */}
       {showCelebration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="text-center animate-bounce">
@@ -126,8 +166,6 @@ const GamesPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Floating sparkles for celebration */}
       {showCelebration && (
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(15)].map((_, i) => (
@@ -144,23 +182,17 @@ const GamesPage: React.FC = () => {
           ))}
         </div>
       )}
-
       <h1 className="text-5xl font-bold mb-8 text-center">Mini Game Challenge</h1>
-
       <div className="w-full max-w-4xl">
-        {/* Game Card */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-8 shadow-2xl">
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold mb-4 text-yellow-400">{game.title}</h2>
             <Puzzle className="w-16 h-16 mx-auto text-blue-400 mb-4" />
           </div>
-
           <div className="bg-white/5 rounded-xl p-6 mb-6">
             <p className="text-xl text-center font-medium">{game.instructions}</p>
             <p className="text-xl text-center font-semibold mt-4">{game.riddle}</p>
           </div>
-
-          {/* Answer Input */}
           <div className="mb-6">
             <label className="block text-lg font-semibold mb-3 text-center">Your Answer:</label>
             <input
@@ -172,8 +204,6 @@ const GamesPage: React.FC = () => {
               disabled={isCorrect}
             />
           </div>
-
-          {/* Hint Section */}
           {game.hint && (
             <div className="mb-6">
               <button
@@ -190,8 +220,6 @@ const GamesPage: React.FC = () => {
               )}
             </div>
           )}
-
-          {/* Submit Button */}
           <div className="text-center">
             <button
               onClick={submitAnswer}
@@ -202,8 +230,6 @@ const GamesPage: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {/* Validation Message */}
         {validationMessage && (
           <div className={`mb-8 p-6 rounded-xl text-center text-lg font-semibold ${
             isCorrect
@@ -216,15 +242,11 @@ const GamesPage: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Attempts Counter */}
         {attempts > 0 && !isCorrect && (
           <div className="text-center mb-6">
             <p className="text-yellow-300">Attempts: {attempts}</p>
           </div>
         )}
-
-        {/* Navigation */}
         <div className="flex justify-center">
           <button
             onClick={handleBack}

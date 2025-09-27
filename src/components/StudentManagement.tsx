@@ -5,9 +5,10 @@ import PerformanceModal from './PerformanceModal';
 
 interface StudentManagementProps {
     onBack: () => void;
+    onPerformanceUpdate?: () => void;
 }
 
-const StudentManagement: React.FC<StudentManagementProps> = ({ onBack }) => {
+const StudentManagement: React.FC<StudentManagementProps> = ({ onBack, onPerformanceUpdate }) => {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -237,7 +238,12 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ onBack }) => {
         onClose={onModalClose}
         studentId={performanceState.studentId}
         performanceLevel={performanceState.level}
-        onSave={() => fetchStudents(selectedClass)}
+        onSave={() => {
+          fetchStudents(selectedClass);
+          if (onPerformanceUpdate) {
+            onPerformanceUpdate();
+          }
+        }}
       />
     </motion.div>
   );

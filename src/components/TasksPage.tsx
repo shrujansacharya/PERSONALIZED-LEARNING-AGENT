@@ -41,34 +41,30 @@ const TasksPage: React.FC = () => {
       icon: BookOpen,
       path: '/reading',
       content: '',
-      id: 'reading-task',
+      id: 'reading',
       progress: 0,
     },
   ]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch user progress and unique daily content for each task
     const fetchTasksData = async () => {
+      setLoading(true);
       try {
-        // Fetch user progress from Firebase
         const user = auth.currentUser;
         let userProgress: Record<string, number> = {};
-
         if (user) {
           const userDocRef = doc(db, 'profiles', user.uid);
           const userDocSnap = await getDoc(userDocRef);
-
           if (userDocSnap.exists()) {
             const profileData = userDocSnap.data();
             userProgress = profileData.tasks_progress || {};
           }
         }
-
-        // Fetch unique daily content for each task from Gemini API
         const updatedTasks = await Promise.all(
           tasks.map(async (task) => {
             try {
-              const prompt = `Generate a unique daily task for: ${task.title}. Provide a brief description or content.`;
+              const prompt = `Generate a brief, unique daily task description for: ${task.title}. Max 20 words.`;
               const content = await GeminiService.generateText(prompt);
               return {
                 ...task,
@@ -87,6 +83,8 @@ const TasksPage: React.FC = () => {
         setTasks(updatedTasks);
       } catch (error) {
         console.error('Error fetching tasks data:', error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchTasksData();
@@ -99,6 +97,15 @@ const TasksPage: React.FC = () => {
   const handleGoToMenu = () => {
     navigate('/explore-menu');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen p-8 bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-400"></div>
+        <p className="mt-4 text-xl">Loading daily tasks...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-8 bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white flex flex-col items-center">

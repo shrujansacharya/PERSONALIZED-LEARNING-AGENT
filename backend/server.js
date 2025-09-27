@@ -8,21 +8,75 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const { Server } = require("socket.io");
-const { PeerServer } = require('peer');
+const { ExpressPeerServer } = require('peer');
 const { PythonShell } = require('python-shell');
 const fetch = require('node-fetch');
+const axios = require('axios');
 const pdf = require('pdf-parse');
 const Tesseract = require('tesseract.js');
-const googlePlacesProxy = require('./google-places-proxy');
+// const googlePlacesProxy = require('./google-places-proxy');
 
 require('dotenv').config();
 
 const app = express();
 
+// Add Content Security Policy headers to mitigate CSP warnings
+app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' http://localhost:5000 http://localhost:5001 http://localhost:5002; font-src 'self';");
+  next();
+});
+
 app.use(cors({
-  origin: '*',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174',
+      'http://127.0.0.1:3000'
+    ];
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: 'GET,POST,PUT,DELETE,OPTIONS',
-  allowedHeaders: 'Content-Type,Authorization'
+  allowedHeaders: 'Content-Type,Authorization',
+  credentials: false,
+  optionsSuccessStatus: 200
+}));
+
+// Handle preflight OPTIONS requests for all routes
+app.options('*', cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174',
+      'http://127.0.0.1:3000'
+    ];
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: 'GET,POST,PUT,DELETE,OPTIONS',
+  allowedHeaders: 'Content-Type,Authorization',
+  credentials: false,
+  optionsSuccessStatus: 200
 }));
 
 app.use(express.json());
@@ -99,10 +153,7 @@ const userSchema = new mongoose.Schema({
   interests: { type: String, default: null },
   role: { type: String, enum: ['student', 'teacher'], default: 'student' },
   profileImage: { type: String, default: null },
-  performance: [{
-    level: { type: String, enum: ['weak', 'average', 'good'] },
-    subjects: [String]
-  }],
+  performanceLevels: { type: Object, default: {} },
   generatedThemeImages: { type: [String], default: [] }
 });
 const User = mongoose.model('User', userSchema);
@@ -139,7 +190,7 @@ app.use('/uploads/materials', express.static('uploads/materials'));
 app.use('/uploads/theme_images', express.static('uploads/theme_images'));
 
 // Google Places API proxy
-app.use('/api/google-places', googlePlacesProxy);
+// app.use('/api/google-places', googlePlacesProxy);
 
 // Create HTTP server and attach the express app
 const server = http.createServer(app);
@@ -173,12 +224,11 @@ io.use(async (socket, next) => {
 });
 
 // Initialize PeerJS Server and attach it to the same http server
-const peerServer = PeerServer({
-  port: parseInt(process.env.REACT_APP_PEER_PORT || '5000'),
+const peerServer = ExpressPeerServer(server, {
   path: '/peerjs',
-  allow_discovery: true,
-  debug: 1,
+  debug: false
 });
+app.use('/peerjs', peerServer);
 
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
@@ -311,16 +361,15 @@ app.put('/api/teachers/students/:id/performance', async (req, res) => {
       return res.status(400).json({ error: 'Level and subjects are required.' });
     }
 
+    // Build update object to set performanceLevels for each subject
+    const updateObj = {};
+    subjects.forEach(subject => {
+      updateObj[`performanceLevels.${subject}`] = level;
+    });
+
     const updatedUser = await User.findByIdAndUpdate(
       id,
-      {
-        $push: {
-          performance: {
-            level,
-            subjects
-          }
-        }
-      },
+      { $set: updateObj },
       { new: true }
     );
 
@@ -623,6 +672,189 @@ app.post('/api/generate-topic-image', async (req, res) => {
   } catch (error) {
     console.error('Error generating topic image:', error);
     res.status(500).json({ error: 'Failed to generate image.' });
+  }
+});
+
+// AI Study Planner API Endpoints
+app.post('/api/generate-plan', async (req, res) => {
+  try {
+    const { syllabus, days, learningStyle, classStandard, subject } = req.body;
+
+    if (!syllabus || !days || !learningStyle || !classStandard || !subject) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const prompt = `Generate a detailed ${days}-day study plan for ${classStandard} students studying ${subject}. The learning style is ${learningStyle}. Use this content as reference: ${syllabus}
+
+Please structure the response as a JSON object with a "plan" field containing the study plan in markdown format. Make it comprehensive and educational.`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2000 },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown API error' }));
+      throw new Error(`Gemini API failed with status ${response.status}: ${JSON.stringify(errorData)}`);
+    }
+
+    const result = await response.json();
+    const plan = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Unable to generate study plan';
+
+    res.status(200).json({ plan });
+  } catch (error) {
+    console.error('Error generating study plan:', error);
+    res.status(500).json({ error: `Failed to generate study plan: ${error.message}` });
+  }
+});
+
+app.post('/api/generate-answers', async (req, res) => {
+  try {
+    const { questionPaperText, textbookText, subject } = req.body;
+
+    if (!questionPaperText) {
+      return res.status(400).json({ error: 'Question paper text is required' });
+    }
+
+    const prompt = `Generate detailed answers for the following question paper on ${subject}. Use the textbook content as reference if provided.
+
+Question Paper:
+${questionPaperText}
+
+${textbookText ? `Textbook Reference:\n${textbookText}` : ''}
+
+Please provide comprehensive, accurate answers in a clear, educational format.`;
+
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY, // Added this line for explicit key
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2000 },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown API error' }));
+      throw new Error(`Gemini API failed with status ${response.status}: ${JSON.stringify(errorData)}`);
+    }
+
+    const result = await response.json();
+    const answers = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Unable to generate answers';
+
+    res.status(200).json({ answers });
+  } catch (error) {
+    console.error('Error generating answers:', error);
+    res.status(500).json({ error: 'Failed to generate answers' });
+  }
+});
+
+app.post('/api/youtube-videos', async (req, res) => {
+  try {
+    const { subject } = req.body;
+
+    if (!subject) {
+      return res.status(400).json({ error: 'Subject is required' });
+    }
+
+    // Mock YouTube videos data since we don't have YouTube API key
+    // In production, you would use YouTube Data API v3
+    const mockVideos = [
+      {
+        title: `${subject} - Introduction and Basics`,
+        video_id: 'dQw4w9WgXcQ',
+        thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+      },
+      {
+        title: `Advanced ${subject} Concepts`,
+        video_id: 'dQw4w9WgXcQ',
+        thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+      },
+      {
+        title: `${subject} Practice Problems`,
+        video_id: 'dQw4w9WgXcQ',
+        thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+      }
+    ];
+
+    res.status(200).json({ videos: mockVideos });
+  } catch (error) {
+    console.error('Error fetching YouTube videos:', error);
+    res.status(500).json({ error: 'Failed to fetch YouTube videos' });
+  }
+});
+
+app.post('/api/adapt-plan', async (req, res) => {
+  try {
+    const { score, previousPlan } = req.body;
+
+    if (!score || !previousPlan) {
+      return res.status(400).json({ error: 'Score and previous plan are required' });
+    }
+
+    const scorePercentage = parseInt(score);
+    let adaptationStrategy = '';
+
+    if (scorePercentage >= 80) {
+      adaptationStrategy = 'advanced topics and challenging exercises';
+    } else if (scorePercentage >= 60) {
+      adaptationStrategy = 'moderate pace with additional practice';
+    } else {
+      adaptationStrategy = 'basic concepts with more repetition and simpler examples';
+    }
+
+    const prompt = `Adapt the following study plan based on a quiz score of ${scorePercentage}%. The student scored ${scorePercentage}%, so focus on ${adaptationStrategy}.
+
+Original Plan:
+${previousPlan}
+
+Please provide an adapted study plan that adjusts the difficulty and pace according to the student's performance.`;
+
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY, // Added this line for explicit key
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2000 },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown API error' }));
+      throw new Error(`Gemini API failed with status ${response.status}: ${JSON.stringify(errorData)}`);
+    }
+
+    const result = await response.json();
+    const adaptedPlan = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Unable to adapt study plan';
+
+    res.status(200).json({ adaptedPlan });
+  } catch (error) {
+    console.error('Error adapting study plan:', error);
+    res.status(500).json({ error: 'Failed to adapt study plan' });
   }
 });
 

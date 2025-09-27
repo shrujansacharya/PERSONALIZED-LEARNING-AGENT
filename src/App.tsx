@@ -18,6 +18,7 @@ import { ParentDashboard } from './components/ParentDashboard';
 import { ExplorationMode } from './components/ExplorationMode';
 import { WhatIfPage } from './components/WhatIfPage';
 import StudyGroups from './components/StudyGroups';
+//import AIStudyPlanner from './components/AIStudyPlanner';
 import { ProgressMap } from './components/ProgressMap';
 import CareerHub from './components/CareerHub';
 import ProjectBuilder, { projectTemplates } from './components/ProjectBuilder';
@@ -81,7 +82,7 @@ const App: React.FC = () => {
           <Route path="/explore-menu" element={<ExploreMenu />} />
           <Route path="/explore" element={<ExplorationMode />} />
           <Route path="/what-if" element={<WhatIfPage />} />
-          <Route path="/groups" element={<StudyGroups />} />
+          <Route path="/study-groups" element={<StudyGroups />} />
           <Route path="/progress" element={<ProgressMap />} />
           <Route path="/careers" element={<CareerHub />} />
           <Route path="/project-builder" element={<ProjectBuilder />} />
@@ -97,9 +98,9 @@ const App: React.FC = () => {
           <Route path="/reading-challenge" element={<ReadingChallenge />} />
 
           {/* New routes for challenge components */}
-    
+
           <Route path="/grammar" element={<GrammarChallenge />} />
-        
+
           <Route path="/pronunciation" element={<PronunciationChallenge />} />
           <Route path="/writing" element={<WritingChallenge />} />
           <Route path="/daily-quiz" element={<DailyQuiz />} />
@@ -110,7 +111,7 @@ const App: React.FC = () => {
           <Route path="/casual" element={<CasualConversationPage />} />
           <Route path="/guided-practice" element={<GuidedPracticePage />} />
         </Route>
-        
+
         {/* Teacher and Parent dashboards are still public routes with their own password protection */}
         <Route path="/teacher" element={<TeacherDashboard />} />
         <Route path="/parent" element={<ParentDashboard />} />

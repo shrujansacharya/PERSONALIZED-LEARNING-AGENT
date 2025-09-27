@@ -98,8 +98,8 @@ const QuizPage: React.FC = () => {
 
       const percentage = Math.round((correctCount / questions.length) * 100);
       const validation = `Score: ${correctCount}/${questions.length} (${percentage}%). ${
-        percentage >= 80 ? 'Excellent work! 🌟' :
-        percentage >= 60 ? 'Good job! Keep practicing! 📚' :
+        percentage >= 80 ? 'Excellent work! 🎉' :
+        percentage >= 60 ? 'Good job! Keep practicing! 👍' :
         'Keep learning! You\'ll get better! 💪'
       }`;
 
@@ -141,7 +141,7 @@ const QuizPage: React.FC = () => {
           <div className="text-center animate-bounce">
             <Trophy className="w-24 h-24 text-yellow-400 mx-auto mb-4" />
             <h2 className="text-4xl font-bold text-yellow-400 mb-2">Congratulations! 🎉</h2>
-            <p className="text-xl text-white">Amazing work! You're a star! ⭐</p>
+            <p className="text-xl text-white">Amazing work! You're a star! ✨</p>
             <div className="flex justify-center mt-4 space-x-2">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="w-8 h-8 text-yellow-400 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
@@ -171,8 +171,8 @@ const QuizPage: React.FC = () => {
 
       <h1 className="text-5xl font-bold mb-8 text-center">Daily Quiz Challenge</h1>
 
+      {/* Progress Bar */}
       <div className="w-full max-w-4xl">
-        {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex justify-between text-sm mb-2">
             <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
@@ -241,7 +241,7 @@ const QuizPage: React.FC = () => {
               </button>
             )}
 
-            {allAnswered && (
+            {allAnswered && score === null && (
               <button
                 onClick={submitQuiz}
                 className="px-8 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-xl font-bold shadow-lg hover:shadow-xl transition-all"

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import confetti from 'canvas-confetti';
 import { useNavigate } from 'react-router-dom';
+import { useThemeStore } from '../store/theme';
+// Assuming supabase is a correctly configured library
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'AIzaSyDLXMuqZCaMYhf4pWbIoo9_YlRF7zOfHKo');
@@ -11,6 +13,7 @@ const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 export const WritingChallenge = () => {
   const navigate = useNavigate();
+  const theme = useThemeStore((state) => state.getThemeStyles());
   const [writingPrompt, setWritingPrompt] = useState('');
   const [writingInput, setWritingInput] = useState('');
   const [writingFeedback, setWritingFeedback] = useState('');
@@ -25,6 +28,7 @@ export const WritingChallenge = () => {
   const [canReattempt, setCanReattempt] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'info' | 'success' | 'error' } | null>(null);
+  const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
 
   // Fallback profile data
   const fallbackProfile = {
@@ -42,6 +46,16 @@ export const WritingChallenge = () => {
     checkAttempts();
     generateWritingPrompt();
   }, [selectedGrade]);
+  
+  useEffect(() => {
+    const backgrounds = theme.backgrounds;
+    if (backgrounds && backgrounds.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [theme.backgrounds]);
 
   const fetchProfile = async () => {
     try {
@@ -289,14 +303,23 @@ export const WritingChallenge = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-teal-800 to-green-700 flex items-center justify-center">
+      <div
+        className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
+        style={{
+          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transition: 'background-image 1s ease-in-out',
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center"
+          className="bg-black/75 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
           <Rotate3D className="text-teal-400 mx-auto mb-4" size={48} />
-          <p className="text-white text-xl">Generating Writing Challenge...</p>
+          <p className="text-white text-xl">Generating Writing Practice...</p>
         </motion.div>
       </div>
     );
@@ -304,9 +327,18 @@ export const WritingChallenge = () => {
 
   if (isLocked) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-teal-800 to-green-700 flex flex-col items-center justify-center p-8">
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-lg">
-          <h2 className="text-3xl font-bold text-white mb-4">Challenge Locked</h2>
+      <div
+        className="min-h-screen p-8 relative overflow-hidden flex flex-col items-center justify-center"
+        style={{
+          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transition: 'background-image 1s ease-in-out',
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+        <div className="bg-black/75 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-lg">
+          <h2 className="text-3xl font-bold text-white mb-4">Activity Locked</h2>
           <p className="text-white mb-6">
             You have reached the maximum of 2 attempts for today. Please come back tomorrow to try again.
           </p>
@@ -323,11 +355,20 @@ export const WritingChallenge = () => {
 
   if (showCompletion) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-teal-800 to-green-700 p-8 flex flex-col items-center justify-center">
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 max-w-4xl w-full text-white">
+      <div
+        className="min-h-screen p-8 relative overflow-hidden flex flex-col items-center justify-center"
+        style={{
+          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transition: 'background-image 1s ease-in-out',
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+        <div className="bg-black/75 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 max-w-4xl w-full text-white">
           <h2 className="text-4xl font-extrabold mb-6 flex items-center gap-4">
             <Trophy className="text-yellow-400" size={48} />
-            Congratulations! Writing Challenge Completed!
+            Congratulations! Writing Activity Completed!
           </h2>
           <div className="whitespace-pre-line mb-6">{writingFeedback}</div>
           <div className="flex justify-center gap-6">
@@ -336,7 +377,7 @@ export const WritingChallenge = () => {
                 onClick={handleReattempt}
                 className="bg-gradient-to-r from-blue-500 to-teal-500 px-6 py-3 rounded-lg font-semibold shadow-lg hover:from-blue-600 hover:to-teal-600 transition"
               >
-                Reattempt Challenge
+                Reattempt Acivity
               </button>
             )}
             <button
@@ -352,11 +393,20 @@ export const WritingChallenge = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-teal-800 to-green-700 p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div
+      className="min-h-screen p-8 relative overflow-hidden"
+      style={{
+        backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        transition: 'background-image 1s ease-in-out',
+      }}
+    >
+      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+      <div className="max-w-4xl mx-auto space-y-8 relative z-10">
         {/* Header */}
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+          className="bg-black/75 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -364,7 +414,7 @@ export const WritingChallenge = () => {
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => navigate('/what-if')}
-              className="flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition"
+              className="flex items-center gap-2 bg-black/75 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition"
             >
               <ArrowLeft size={20} />
               Back to Challenges
@@ -374,7 +424,7 @@ export const WritingChallenge = () => {
               <select
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value)}
-                className="px-4 py-2 rounded-xl bg-white/10 text-white border border-white/20"
+                className="px-4 py-2 rounded-xl bg-black/75 text-white border border-white/20"
               >
                 <option value="4-6">4-6 (Beginner)</option>
                 <option value="7-9">7-9 (Intermediate)</option>
@@ -385,7 +435,7 @@ export const WritingChallenge = () => {
 
           <h1 className="text-4xl font-extrabold text-white mb-4 flex items-center gap-4">
             <PenTool className="text-teal-400" size={48} />
-            Writing Challenge
+            Writing Practice
           </h1>
           <p className="text-lg text-white/80 mb-6">Express yourself through creative writing!</p>
 
@@ -409,7 +459,7 @@ export const WritingChallenge = () => {
         {/* Writing Content */}
         <AnimatePresence mode="wait">
           <motion.div
-            className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+            className="bg-black/75 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
             style={{ perspective: '1000px' }}
             initial={{ opacity: 0, rotateX: -20 }}
             animate={{ opacity: 1, rotateX: 0 }}
@@ -418,7 +468,7 @@ export const WritingChallenge = () => {
             <div className="space-y-8">
               {/* Writing Prompt */}
               <motion.div
-                className="bg-white/5 p-6 rounded-2xl"
+                className="bg-black/75 p-6 rounded-2xl"
                 whileHover={{ rotateY: 2, rotateX: 1 }}
               >
                 <h2 className="text-2xl font-bold text-white mb-4">Writing Prompt</h2>
@@ -427,7 +477,7 @@ export const WritingChallenge = () => {
 
               {/* Writing Input */}
               <motion.div
-                className="bg-white/5 p-6 rounded-2xl"
+                className="bg-black/75 p-6 rounded-2xl"
                 whileHover={{ rotateY: 2, rotateX: 1 }}
               >
                 <h2 className="text-xl font-semibold text-white mb-4">Your Response</h2>
@@ -435,7 +485,7 @@ export const WritingChallenge = () => {
                   value={writingInput}
                   onChange={(e) => setWritingInput(e.target.value)}
                   placeholder="Start writing your response here..."
-                  className="w-full h-64 p-4 rounded-xl bg-white/5 text-white border border-white/20 resize-none focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="w-full h-64 p-4 rounded-xl bg-black/75 text-white border border-white/20 resize-none focus:outline-none focus:ring-2 focus:ring-teal-400"
                   disabled={submitted}
                 />
                 <div className="flex justify-between items-center mt-4">
@@ -458,7 +508,7 @@ export const WritingChallenge = () => {
               {/* Feedback */}
               {submitted && writingFeedback && (
                 <motion.div
-                  className="bg-white/5 p-6 rounded-2xl"
+                  className="bg-black/75 p-6 rounded-2xl"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >

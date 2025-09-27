@@ -1,0 +1,30 @@
+# TODO
+
+- [x] Move AI Study Planner React frontend:
+    - [x] Move the contents of `AI STUDY PLANNER/tsx-app/src` to `src/components/AIStudyPlanner` within Project Major 2.
+    - [x] Update all import paths within the moved code to reflect the new location.
+    - [x] Adapt the code to work with Vite.
+- [x] Update ExploreMenu:
+    - [x] Add a new menu item in `ExploreMenu.tsx` that navigates to `/ai-study-planner`.
+    - [x] Create a new route in `App.tsx` that renders the main component of the AI Study Planner.
+- [ ] Move AI Study Planner Python backend:
+    - [ ] Create a new directory `backend/ai_study_planner`.
+    - [ ] Move `AI STUDY PLANNER/api.py`, `AI STUDY PLANNER/controller.py`, and `AI STUDY PLANNER/model.py` to `backend/ai_study_planner`.
+    - [ ] In Project Major 2's `backend/api.py`, import the AI Study Planner routes and register them with the prefix `/ai-study-planner`.
+    - [ ] Update imports within the moved Python files.
+- [ ] Merge dependencies:
+    - [ ] NPM Dependencies:
+        - [ ] Inspect `AI STUDY PLANNER/tsx-app/package.json` and `package.json` and merge the dependencies.
+        - [ ] Install any missing dependencies using `npm install`.
+    - [ ] Python Dependencies:
+        - [ ] Create a `requirements.txt` file if one doesn't exist.
+        - [ ] Identify the Python dependencies required by the AI Study Planner backend.
+        - [ ] Add these dependencies to `requirements.txt`.
+        - [ ] Install the dependencies using `pip install -r requirements.txt`.
+- [ ] Final Steps:
+    - [ ] Update the `vite.config.ts` file.
+    - [ ] Test the merged project.
+- [x] Allow any file type for upload:
+    - [x] Remove file type restrictions from frontend file inputs
+    - [x] Update labels to reflect that any file type is allowed
+    - [x] Verify backend can handle any file type

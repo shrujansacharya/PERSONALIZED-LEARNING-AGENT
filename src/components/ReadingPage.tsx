@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Trophy, Star, Sparkles, BookOpen, Lightbulb, Award, Zap, Heart } from 'lucide-react';
 import { GeminiService } from '../lib/gemini-service';
 import confetti from 'canvas-confetti';
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 interface ReadingChallenge {
   title: string;
@@ -24,7 +26,6 @@ const ReadingPage: React.FC = () => {
   const [attempts, setAttempts] = useState(0);
   const [selectedGrade, setSelectedGrade] = useState('6-10');
   const [isLocked, setIsLocked] = useState(false);
-  const [canReattempt, setCanReattempt] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
 
@@ -32,12 +33,10 @@ const ReadingPage: React.FC = () => {
     checkAttempts();
   }, [selectedGrade]);
 
-  // Load saved state after initial setup
   useEffect(() => {
     loadSavedChallengeState();
   }, [selectedGrade]);
 
-  // Save challenge state when component unmounts or key state changes
   useEffect(() => {
     const saveChallengeState = () => {
       if (challenge && !showCompletion && !isLocked) {
@@ -55,8 +54,6 @@ const ReadingPage: React.FC = () => {
         localStorage.setItem('reading-challenge-state', JSON.stringify(challengeState));
       }
     };
-
-    // Save state on unmount
     return () => {
       saveChallengeState();
     };
@@ -64,13 +61,12 @@ const ReadingPage: React.FC = () => {
 
   const loadSavedChallengeState = async () => {
     const savedState = localStorage.getItem('reading-challenge-state');
+    const today = new Date().toDateString();
     if (savedState) {
       try {
         const state = JSON.parse(savedState);
-        // Check if the saved state is from today (within 24 hours)
-        const isRecent = Date.now() - state.timestamp < 24 * 60 * 60 * 1000;
-
-        if (isRecent && state.selectedGrade === selectedGrade) {
+        const savedDate = new Date(state.timestamp).toDateString();
+        if (savedDate === today && state.selectedGrade === selectedGrade) {
           setChallenge(state.challenge);
           setUserAnswer(state.userAnswer || '');
           setValidationMessage(state.validationMessage || '');
@@ -79,9 +75,8 @@ const ReadingPage: React.FC = () => {
           setShowHint(state.showHint || false);
           setAttempts(state.attempts || 0);
           setLoading(false);
-          return; // Don't generate new challenges if we have saved state
+          return;
         } else {
-          // Clear old state
           localStorage.removeItem('reading-challenge-state');
         }
       } catch (error) {
@@ -89,31 +84,35 @@ const ReadingPage: React.FC = () => {
         localStorage.removeItem('reading-challenge-state');
       }
     }
-
-    // Generate new challenges if no valid saved state
     fetchChallenge();
   };
 
-  const checkAttempts = () => {
+  const checkAttempts = async () => {
     const today = new Date().toDateString();
     const attemptKey = `reading-attempts-${today}`;
     const stored = localStorage.getItem(attemptKey);
     const completionKey = `reading-completed-${today}`;
     const storedCompletion = localStorage.getItem(completionKey);
 
+    const user = auth.currentUser;
+    if (user) {
+      const userDocRef = doc(db, 'profiles', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      if (userDocSnap.exists()) {
+        const profileData = userDocSnap.data();
+        const progress = profileData.tasks_progress?.reading || 0;
+        if (progress >= 100) {
+          setIsLocked(true);
+        }
+      }
+    }
+
     if (stored) {
       const attemptData = JSON.parse(stored);
       setAttempts(attemptData.attempts || 0);
     } else {
-      // Reset attempts for new day
       localStorage.removeItem('reading-attempts-' + new Date(Date.now() - 86400000).toDateString());
       setAttempts(0);
-    }
-
-    if (storedCompletion || (stored && JSON.parse(stored).attempts >= 2)) {
-      setIsLocked(true);
-    } else {
-      setIsLocked(false);
     }
   };
 
@@ -122,15 +121,17 @@ const ReadingPage: React.FC = () => {
     const attemptKey = `reading-attempts-${today}`;
     const newAttempts = attempts + 1;
     setAttempts(newAttempts);
-
-    const attemptData = {
-      attempts: newAttempts,
-      date: today
-    };
+    const attemptData = { attempts: newAttempts, date: today };
     localStorage.setItem(attemptKey, JSON.stringify(attemptData));
+  };
 
-    if (newAttempts >= 2) {
-      setIsLocked(true);
+  const updateProgress = async (progress: number) => {
+    const user = auth.currentUser;
+    if (user) {
+      const userDocRef = doc(db, 'profiles', user.uid);
+      await updateDoc(userDocRef, {
+        'tasks_progress.reading': progress,
+      });
     }
   };
 
@@ -139,7 +140,7 @@ const ReadingPage: React.FC = () => {
     const completionKey = `reading-completed-${today}`;
     localStorage.setItem(completionKey, 'true');
     setIsLocked(true);
-    // Clear saved challenge state when completed
+    updateProgress(100);
     localStorage.removeItem('reading-challenge-state');
   };
 
@@ -151,8 +152,6 @@ const ReadingPage: React.FC = () => {
     setShowHint(false);
     setSubmitted(false);
     setShowCompletion(false);
-    setCanReattempt(false);
-    // Clear saved challenge state when resetting
     localStorage.removeItem('reading-challenge-state');
     fetchChallenge();
   };
@@ -174,10 +173,7 @@ const ReadingPage: React.FC = () => {
       4. The correct answer
       5. An optional helpful hint
       Format as JSON: {"title": "string", "text": "string", "question": "string", "answer": "string", "hint": "string"}`;
-
       const response = await GeminiService.generateText(prompt);
-
-      // Parse JSON response
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const generatedChallenge = JSON.parse(jsonMatch[0]);
@@ -187,7 +183,6 @@ const ReadingPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching challenge:', error);
-      // Fallback challenge
       const fallbackChallenge: ReadingChallenge = {
         title: 'Reading Comprehension',
         text: 'The quick brown fox jumps over the lazy dog. This is a pangram. A pangram is a sentence that contains every letter of the alphabet at least once.',
@@ -203,40 +198,26 @@ const ReadingPage: React.FC = () => {
 
   const submitAnswer = async () => {
     if (!challenge || isLocked) return;
-
     setSubmitted(true);
     saveAttempt();
-
     try {
-      // Use Gemini API to validate answer
       const validationPrompt = `You are evaluating a student's reading comprehension answer for grades ${selectedGrade}.
-
 Passage: "${challenge.text}"
-
 Question: "${challenge.question}"
-
 Correct Answer: "${challenge.answer}"
-
 Student's Answer: "${userAnswer}"
-
 Please evaluate if the student's answer is correct. Consider:
 1. Does it match the correct answer in meaning?
 2. Are there synonyms or equivalent expressions?
 3. Does it demonstrate understanding of the passage?
 4. Is it close enough to be considered correct?
-
-Respond with JSON format: {"isCorrect": boolean, "feedback": "brief explanation of why it's correct/incorrect and encouragement"}
-
-Be appropriate for the grade level but maintain accuracy.`;
-
+Respond with JSON format: {"isCorrect": boolean, "feedback": "brief explanation of why it's correct/incorrect and encouragement"}`;
       const validationResponse = await GeminiService.generateText(validationPrompt);
       const jsonMatch = validationResponse.match(/\{[\s\S]*\}/);
       let validation;
-
       if (jsonMatch) {
         validation = JSON.parse(jsonMatch[0]);
       } else {
-        // Fallback to simple matching
         const userAns = userAnswer.trim().toLowerCase();
         const correctAns = challenge.answer.toLowerCase();
         const isCorrectFallback = userAns.includes(correctAns) || correctAns.includes(userAns);
@@ -245,16 +226,12 @@ Be appropriate for the grade level but maintain accuracy.`;
           feedback: isCorrectFallback ? 'Great job! You understood the passage correctly.' : 'Keep trying! Read the passage again carefully.'
         };
       }
-
       setIsCorrect(validation.isCorrect);
       setValidationMessage(validation.feedback);
-
       if (validation.isCorrect) {
         setShowCelebration(true);
         saveCompletion();
         setShowCompletion(true);
-
-        // Enhanced multi-burst confetti celebration
         confetti({
           particleCount: 400,
           spread: 180,
@@ -265,49 +242,14 @@ Be appropriate for the grade level but maintain accuracy.`;
           gravity: 0.3,
           drift: 0.1
         });
-
-        // Side bursts
-        setTimeout(() => {
-          confetti({
-            particleCount: 200,
-            spread: 120,
-            origin: { x: 0.1, y: 0.4 },
-            colors: ['#FFD700', '#FF69B4', '#FFFF00'],
-            shapes: ['star', 'circle'],
-            scalar: 1.5
-          });
-        }, 600);
-
-        setTimeout(() => {
-          confetti({
-            particleCount: 200,
-            spread: 120,
-            origin: { x: 0.9, y: 0.4 },
-            colors: ['#00BFFF', '#32CD32', '#FF1493'],
-            shapes: ['star', 'circle'],
-            scalar: 1.5
-          });
-        }, 900);
-
-        // Top burst
-        setTimeout(() => {
-          confetti({
-            particleCount: 150,
-            spread: 200,
-            origin: { y: 0.1 },
-            colors: ['#FFD700', '#FF69B4', '#00BFFF'],
-            shapes: ['star'],
-            scalar: 1.2,
-            gravity: 0.5
-          });
-        }, 1200);
-
+        setTimeout(() => { confetti({ particleCount: 200, spread: 120, origin: { x: 0.1, y: 0.4 }, colors: ['#FFD700', '#FF69B4', '#FFFF00'], shapes: ['star', 'circle'], scalar: 1.5 }); }, 600);
+        setTimeout(() => { confetti({ particleCount: 200, spread: 120, origin: { x: 0.9, y: 0.4 }, colors: ['#00BFFF', '#32CD32', '#FF1493'], shapes: ['star', 'circle'], scalar: 1.5 }); }, 900);
+        setTimeout(() => { confetti({ particleCount: 150, spread: 200, origin: { y: 0.1 }, colors: ['#FFD700', '#FF69B4', '#00BFFF'], shapes: ['star'], scalar: 1.2, gravity: 0.5 }); }, 1200);
         setTimeout(() => setShowCelebration(false), 6000);
       } else {
-        const feedback = attempts >= 1
-          ? 'Not quite right. Try using the hint! 💡'
-          : 'Keep reading! You\'re getting there! 📚';
+        const feedback = attempts >= 1 ? 'Not quite right. Try using the hint! 💡' : 'Keep reading! You\'re getting there! 📚';
         setValidationMessage(feedback);
+        updateProgress(50); // Set to 50% for incorrect attempt
       }
     } catch (error) {
       console.error('Error validating reading:', error);
@@ -362,19 +304,11 @@ Be appropriate for the grade level but maintain accuracy.`;
           </h2>
           <div className="whitespace-pre-line mb-6">{validationMessage}</div>
           <div className="flex justify-center gap-6">
-            {attempts < 2 && (
-              <button
-                onClick={handleReattempt}
-                className="bg-gradient-to-r from-purple-500 to-indigo-500 px-6 py-3 rounded-lg font-semibold shadow-lg hover:from-purple-600 hover:to-indigo-600 transition"
-              >
-                Reattempt Challenge
-              </button>
-            )}
             <button
-              onClick={() => navigate('/what-if')}
+              onClick={() => navigate('/tasks')}
               className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold shadow-lg hover:bg-gray-100 transition"
             >
-              Back to Challenges
+              Back to Tasks
             </button>
           </div>
         </div>
@@ -384,18 +318,14 @@ Be appropriate for the grade level but maintain accuracy.`;
 
   return (
     <div className="min-h-screen p-8 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white flex flex-col items-center relative overflow-hidden">
-      {/* Enhanced Celebration Animation */}
       {showCelebration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-black/80 via-purple-900/80 to-blue-900/80 backdrop-blur-md">
           <div className="text-center animate-bounce">
-            {/* Glowing trophy with multiple effects */}
             <div className="relative mb-8">
               <div className="absolute inset-0 bg-yellow-400 rounded-full blur-2xl opacity-60 animate-pulse scale-150"></div>
               <div className="absolute inset-0 bg-pink-400 rounded-full blur-xl opacity-40 animate-ping scale-125"></div>
               <Trophy className="w-40 h-40 text-yellow-400 mx-auto relative z-10 animate-bounce drop-shadow-2xl" />
             </div>
-
-            {/* Celebration title with emojis */}
             <div className="mb-6">
               <h2 className="text-6xl font-bold text-transparent bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text animate-pulse mb-2">
                 🎉 INCREDIBLE! 🎉
@@ -403,8 +333,6 @@ Be appropriate for the grade level but maintain accuracy.`;
               <h3 className="text-4xl font-bold text-white mb-2 animate-bounce">Reading Champion! 📖</h3>
               <p className="text-2xl text-yellow-200 mb-4 animate-pulse">You mastered the comprehension! Brilliant work! ⭐</p>
             </div>
-
-            {/* Animated achievement elements */}
             <div className="flex justify-center items-center mb-6 space-x-6">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="relative">
@@ -419,8 +347,6 @@ Be appropriate for the grade level but maintain accuracy.`;
                 </div>
               ))}
             </div>
-
-            {/* Motivational message with heart */}
             <div className="bg-gradient-to-r from-yellow-400/30 via-pink-400/30 to-purple-400/30 rounded-3xl p-6 mb-6 border-2 border-yellow-400/50">
               <div className="flex items-center justify-center mb-3">
                 <Heart className="w-8 h-8 text-red-400 animate-pulse mr-2" />
@@ -431,8 +357,6 @@ Be appropriate for the grade level but maintain accuracy.`;
                 🌟 You're a reading superstar! Keep up the excellent work! 🌟
               </p>
             </div>
-
-            {/* Achievement badge with lightning effect */}
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-pink-400 rounded-full blur-lg opacity-70 animate-pulse"></div>
               <div className="bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 rounded-full px-8 py-4 relative z-10 border-2 border-white/30">
@@ -446,11 +370,8 @@ Be appropriate for the grade level but maintain accuracy.`;
           </div>
         </div>
       )}
-
-      {/* Enhanced Floating celebration elements */}
       {showCelebration && (
         <div className="absolute inset-0 pointer-events-none">
-          {/* Sparkles */}
           {[...Array(30)].map((_, i) => (
             <Sparkles
               key={`sparkle-${i}`}
@@ -463,8 +384,6 @@ Be appropriate for the grade level but maintain accuracy.`;
               }}
             />
           ))}
-
-          {/* Floating hearts */}
           {[...Array(15)].map((_, i) => (
             <Heart
               key={`heart-${i}`}
@@ -477,8 +396,6 @@ Be appropriate for the grade level but maintain accuracy.`;
               }}
             />
           ))}
-
-          {/* Colorful celebration orbs */}
           {[...Array(20)].map((_, i) => (
             <div
               key={`orb-${i}`}
@@ -491,8 +408,6 @@ Be appropriate for the grade level but maintain accuracy.`;
               }}
             />
           ))}
-
-          {/* Trophy miniatures */}
           {[...Array(8)].map((_, i) => (
             <Trophy
               key={`mini-trophy-${i}`}
@@ -507,30 +422,21 @@ Be appropriate for the grade level but maintain accuracy.`;
           ))}
         </div>
       )}
-
       <h1 className="text-5xl font-bold mb-8 text-center">Reading Challenge</h1>
-
       <div className="w-full max-w-4xl">
-        {/* Challenge Card */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-8 shadow-2xl">
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold mb-4 text-yellow-400">{challenge.title}</h2>
             <BookOpen className="w-16 h-16 mx-auto text-blue-400 mb-4" />
           </div>
-
-          {/* Reading Text */}
           <div className="bg-white/5 rounded-xl p-6 mb-6">
             <h3 className="text-xl font-semibold mb-4 text-center">Reading Passage:</h3>
             <p className="text-lg leading-relaxed">{challenge.text}</p>
           </div>
-
-          {/* Question */}
           <div className="bg-blue-900/30 rounded-xl p-6 mb-6">
             <h3 className="text-xl font-semibold mb-4 text-center">Comprehension Question:</h3>
             <p className="text-lg text-center font-medium">{challenge.question}</p>
           </div>
-
-          {/* Answer Input */}
           <div className="mb-6">
             <label className="block text-lg font-semibold mb-3 text-center">Your Answer:</label>
             <textarea
@@ -542,8 +448,6 @@ Be appropriate for the grade level but maintain accuracy.`;
               disabled={isCorrect}
             />
           </div>
-
-          {/* Hint Section */}
           {challenge.hint && (
             <div className="mb-6">
               <button
@@ -560,8 +464,6 @@ Be appropriate for the grade level but maintain accuracy.`;
               )}
             </div>
           )}
-
-          {/* Submit Button */}
           <div className="text-center">
             <button
               onClick={submitAnswer}
@@ -572,8 +474,6 @@ Be appropriate for the grade level but maintain accuracy.`;
             </button>
           </div>
         </div>
-
-        {/* Validation Message */}
         {validationMessage && (
           <div className={`mb-8 p-6 rounded-xl text-center text-lg font-semibold ${
             isCorrect
@@ -586,18 +486,14 @@ Be appropriate for the grade level but maintain accuracy.`;
             </div>
           </div>
         )}
-
-        {/* Attempts Counter */}
         {attempts > 0 && !isCorrect && (
           <div className="text-center mb-6">
             <p className="text-yellow-300">Attempts: {attempts}</p>
           </div>
         )}
-
-        {/* Navigation */}
         <div className="flex justify-center">
           <button
-            onClick={() => navigate('/what-if')}
+            onClick={() => navigate('/tasks')}
             className="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-xl font-semibold transition-colors"
           >
             Back to Tasks

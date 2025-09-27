@@ -2,13 +2,14 @@
 import sys
 import os
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from diffusers import StableDiffusionPipeline
 import torch
 from datetime import datetime
 
 # --- Load the model ONCE at startup ---
-MODEL_PATH = "./stable-diffusion-v1-4"
-OUTPUT_DIR = "./uploads/theme_images"
+MODEL_PATH = "stable-diffusion-v1-4"
+OUTPUT_DIR = "uploads/theme_images"
 
 try:
     # Use float16 for better performance on GPU
@@ -27,6 +28,13 @@ except Exception as e:
 
 # --- Create the Flask App ---
 app = Flask(__name__)
+
+# Enable CORS for all routes
+CORS(app)
+
+# Import and register AI Study Planner blueprint
+from ai_study_planner.api import ai_study_planner_bp
+app.register_blueprint(ai_study_planner_bp, url_prefix='/ai-study-planner')
 
 @app.route('/generate', methods=['POST'])
 def generate():
@@ -54,9 +62,13 @@ def generate():
         return jsonify({'path': relative_path})
 
     except Exception as e:
-        print(f"Error generating image: {e}", file=sys.stderr)
+        print(f"Error generating image: {e}", file=sys.stderr)  
         return jsonify({'error': 'Failed to generate image.'}), 500
 
 if __name__ == '__main__':
-    # Run the Flask app on a different port than your Node.js server
-    app.run(host='0.0.0.0', port=5002)
+    # Run the Flask app on port 5001 to match frontend configuration
+    app.run(host='0.0.0.0', port=5001)
+
+
+
+#api.py

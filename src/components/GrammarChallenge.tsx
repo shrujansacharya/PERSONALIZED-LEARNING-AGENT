@@ -356,7 +356,7 @@ Example:
           animate={{ opacity: 1, scale: 1 }}
         >
           <Rotate3D className="text-purple-400 mx-auto mb-4" size={48} />
-          <p className="text-white text-xl">Generating Grammar Challenge...</p>
+          <p className="text-white text-xl">Generating Grammar Activity...</p>
         </motion.div>
       </div>
     );
@@ -452,7 +452,7 @@ Example:
 
           <h1 className="text-4xl font-extrabold text-white mb-4 flex items-center gap-4">
             <BookOpen className="text-purple-400" size={48} />
-            Grammar Challenge
+            Grammar Practice
           </h1>
           <p className="text-lg text-white/80 mb-6">Master grammar rules with fun and simple exercises!</p>
 

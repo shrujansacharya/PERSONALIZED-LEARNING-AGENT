@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import confetti from 'canvas-confetti';
 import { useNavigate } from 'react-router-dom';
+import { useThemeStore } from '../store/theme';
+// Assuming supabase is a correctly configured library
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'AIzaSyDLXMuqZCaMYhf4pWbIoo9_YlRF7zOfHKo');
@@ -11,6 +13,7 @@ const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 export const PronunciationChallenge = () => {
   const navigate = useNavigate();
+  const theme = useThemeStore((state) => state.getThemeStyles());
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [pronunciationWords, setPronunciationWords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +28,7 @@ export const PronunciationChallenge = () => {
   const [showCompletion, setShowCompletion] = useState(false);
   const [canReattempt, setCanReattempt] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
 
   // Fallback profile data
   const fallbackProfile = {
@@ -97,6 +101,16 @@ export const PronunciationChallenge = () => {
       loadSavedState();
     }
   }, [profile]);
+  
+  useEffect(() => {
+    const backgrounds = theme.backgrounds;
+    if (backgrounds && backgrounds.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [theme.backgrounds]);
 
   // Save state whenever currentWordIndex or progress changes
   useEffect(() => {
@@ -387,9 +401,18 @@ export const PronunciationChallenge = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 via-pink-800 to-purple-700 flex items-center justify-center">
+      <div 
+        className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
+        style={{
+          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transition: 'background-image 1s ease-in-out',
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center"
+          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
@@ -403,9 +426,18 @@ export const PronunciationChallenge = () => {
   // Locked Screen
   if (isLocked) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 via-pink-800 to-purple-700 flex items-center justify-center p-8">
+      <div 
+        className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
+        style={{
+          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transition: 'background-image 1s ease-in-out',
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-md"
+          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-md"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
@@ -428,9 +460,18 @@ export const PronunciationChallenge = () => {
   // Completion Screen
   if (showCompletion) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 via-pink-800 to-purple-700 flex items-center justify-center p-8">
+      <div 
+        className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
+        style={{
+          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transition: 'background-image 1s ease-in-out',
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-md"
+          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-md"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
@@ -450,7 +491,7 @@ export const PronunciationChallenge = () => {
             )}
             <button
               onClick={() => navigate('/what-if')}
-              className="w-full bg-white/10 text-white px-6 py-3 rounded-xl font-medium hover:bg-white/20 transition-all"
+              className="w-full bg-black/80 text-white px-6 py-3 rounded-xl font-medium hover:bg-white/20 transition-all"
             >
               Back to Challenges
             </button>
@@ -461,11 +502,20 @@ export const PronunciationChallenge = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-900 via-pink-800 to-purple-700 p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div 
+      className="min-h-screen p-8 relative overflow-hidden"
+      style={{
+        backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        transition: 'background-image 1s ease-in-out',
+      }}
+    >
+      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+      <div className="max-w-4xl mx-auto space-y-8 relative z-10">
         {/* Header */}
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -473,7 +523,7 @@ export const PronunciationChallenge = () => {
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => navigate('/what-if')}
-              className="flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition"
+              className="flex items-center gap-2 bg-black/80 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition"
             >
               <ArrowLeft size={20} />
               Back to Challenges
@@ -483,7 +533,7 @@ export const PronunciationChallenge = () => {
               <select
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value)}
-                className="px-4 py-2 rounded-xl bg-white/10 text-white border border-white/20"
+                className="px-4 py-2 rounded-xl bg-black/80 text-white border border-white/20"
               >
                 <option value="4-6">4-6 (Beginner)</option>
                 <option value="7-9">7-9 (Intermediate)</option>
@@ -519,7 +569,7 @@ export const PronunciationChallenge = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentWordIndex}
-            className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+            className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
             style={{ perspective: '1000px' }}
             initial={{ opacity: 0, rotateX: -20 }}
             animate={{ opacity: 1, rotateX: 0 }}
@@ -529,7 +579,7 @@ export const PronunciationChallenge = () => {
             {currentWord && (
               <div className="text-center space-y-8">
                 <motion.div
-                  className="bg-white/5 p-8 rounded-2xl transform-gpu"
+                  className="bg-black/80 p-8 rounded-2xl transform-gpu"
                   whileHover={{ rotateY: 5, rotateX: 3 }}
                 >
                   <h2 className="text-4xl font-bold text-white mb-4">{currentWord.word}</h2>
@@ -573,7 +623,7 @@ export const PronunciationChallenge = () => {
 
                 {feedback && (
                   <motion.div
-                    className="bg-white/5 p-6 rounded-2xl"
+                    className="bg-black/80 p-6 rounded-2xl"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                   >

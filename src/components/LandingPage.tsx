@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Sun, Moon } from 'lucide-react';
+import { Bell, Sun, Moon, Sparkles, Zap, Heart, Star, Trophy, Users, BookOpen, Target, Rocket, Brain, Globe, Palette, Microscope, Crown } from 'lucide-react';
 
 interface NotificationBellProps {
   notifications: any[];
@@ -135,24 +135,24 @@ const LandingPage: React.FC = () => {
             33% { transform: translateY(-20px) rotate(5deg); }
             66% { transform: translateY(-10px) rotate(-3deg); }
         }
-        .bounce-in { animation: bounceIn 1s ease-out; }
+        .bounce-in { animation: bounceIn 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
         @keyframes bounceIn {
             0% { transform: scale(0.3); opacity: 0; }
             50% { transform: scale(1.05); }
             70% { transform: scale(0.9); }
             100% { transform: scale(1); opacity: 1; }
         }
-        .slide-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
-        .slide-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-        .swipe-card { opacity: 0; transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-        .swipe-card:nth-child(1) { transform: translateX(-100px); transition-delay: 0.2s; }
-        .swipe-card:nth-child(2) { transform: translateX(100px); transition-delay: 0.6s; }
-        .swipe-card:nth-child(3) { transform: translateX(-100px); transition-delay: 1s; }
+        .slide-card { transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .slide-card:hover { transform: translateY(-12px) scale(1.04); box-shadow: 0 25px 50px rgba(0,0,0,0.15); }
+        .swipe-card { opacity: 0; transition: all 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .swipe-card:nth-child(1) { transform: translateX(-100px); transition-delay: 0.3s; }
+        .swipe-card:nth-child(2) { transform: translateX(100px); transition-delay: 0.7s; }
+        .swipe-card:nth-child(3) { transform: translateX(-100px); transition-delay: 1.2s; }
         .swipe-card.animate-in { opacity: 1; transform: translateX(0); }
-        .theme-card { transition: all 0.3s ease; }
-        .theme-card:hover { transform: scale(1.05) rotate(2deg); }
+        .theme-card { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .theme-card:hover { transform: scale(1.07) rotate(3deg); }
         .theme-section { 
-          transition: background 0.6s ease; 
+          transition: background 1s cubic-bezier(0.4, 0, 0.2, 1); 
           background-size: cover !important;
           background-position: center !important;
         }
@@ -162,60 +162,81 @@ const LandingPage: React.FC = () => {
         .theme-nature { background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%); }
         .theme-science { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%); }
         .theme-history { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%); }
-        .career-icon { animation: pulse 2s infinite; }
+        .career-icon { animation: pulse 3s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.15); }
         }
-        .progress-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawPath 3s ease-in-out forwards; }
+        .progress-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawPath 4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
         @keyframes drawPath { to { stroke-dashoffset: 0; } }
-        .theme-bg-element { position: absolute; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; }
+        .theme-bg-element { position: absolute; pointer-events: none; opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         .theme-bg-element.active { opacity: 0.3; }
-        .nature-leaf { animation: leafFloat 4s ease-in-out infinite; }
-        .nature-flower { animation: flowerSway 3s ease-in-out infinite; }
-        .art-brush { animation: brushStroke 2s ease-in-out infinite; }
-        .art-color { animation: colorSplash 3s ease-in-out infinite; }
-        .cricket-bat { animation: batSwing 2.5s ease-in-out infinite; }
-        .cricket-ball { animation: ballBounce 2s ease-in-out infinite; }
+        .nature-leaf { animation: leafFloat 5s ease-in-out infinite; }
+        .nature-flower { animation: flowerSway 4s ease-in-out infinite; }
+        .art-brush { animation: brushStroke 3s ease-in-out infinite; }
+        .art-color { animation: colorSplash 4s ease-in-out infinite; }
+        .cricket-bat { animation: batSwing 3s ease-in-out infinite; }
+        .cricket-ball { animation: ballBounce 3s ease-in-out infinite; }
         @keyframes leafFloat { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-15px) rotate(10deg); } }
         @keyframes flowerSway { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
         @keyframes brushStroke { 0%, 100% { transform: rotate(-10deg) translateY(0px); } 50% { transform: rotate(10deg) translateY(-10px); } }
         @keyframes colorSplash { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
         @keyframes batSwing { 0%, 100% { transform: rotate(-15deg); } 50% { transform: rotate(15deg); } }
         @keyframes ballBounce { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
-        .nav-link { transition: all 0.3s ease; }
-        .nav-link:hover { transform: translateY(-2px); color: #FACC15; }
-        .sparkle { position: fixed; pointer-events: none; z-index: 9999; animation: sparkleAnim 1s ease-out forwards; }
+        .nav-link { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .nav-link:hover { transform: translateY(-3px); color: #FACC15; }
+        .sparkle { position: fixed; pointer-events: none; z-index: 9999; animation: sparkleAnim 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
         @keyframes sparkleAnim {
             0% { transform: scale(0) rotate(0deg); opacity: 1; }
             100% { transform: scale(1) rotate(180deg); opacity: 0; }
         }
-        .science-dna { animation: dnaRotate 4s ease-in-out infinite; }
-        .science-scope { animation: scopeMove 3s ease-in-out infinite; }
-        .history-book { animation: bookFlip 3s ease-in-out infinite; }
-        .history-glass { animation: glassMove 2.5s ease-in-out infinite; }
-        @keyframes dnaRotate { 0%, 100% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(10deg) scale(1.1); } }
-        @keyframes scopeMove { 0%, 100% { transform: translateY(0px) rotate(-5deg); } 50% { transform: translateY(-10px) rotate(5deg); } }
-        @keyframes bookFlip { 0%, 100% { transform: rotateY(0deg); } 50% { transform: rotateY(15deg); } }
-        @keyframes glassMove { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.1) rotate(10deg); } }
+        .science-dna { animation: dnaRotate 5s ease-in-out infinite; }
+        .science-scope { animation: scopeMove 4s ease-in-out infinite; }
+        .history-book { animation: bookFlip 4s ease-in-out infinite; }
+        .history-glass { animation: glassMove 3.5s ease-in-out infinite; }
       `}</style>
 
-      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 shadow-lg dark:bg-gray-900/90">
+      <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-xl z-50 shadow-2xl border-b border-white/20 dark:bg-gray-900/80 dark:border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-2">
-              <span className="text-3xl">🚀</span>
-              <span className="text-2xl font-bold text-blue-600 dark:text-white">LearnMyWay</span>
+            <div className="flex items-center space-x-3 group cursor-pointer">
+              <div className="relative">
+                <span className="text-4xl group-hover:scale-110 transition-transform duration-300">🚀</span>
+                <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
+              </div>
+              <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">
+                LearnMyWay
+              </span>
             </div>
-            <div className="hidden md:flex space-x-8 items-center">
-              <a onClick={() => scrollToSection('home')} className="nav-link text-gray-700 font-medium dark:text-gray-300">Home</a>
-              <a onClick={() => scrollToSection('modes')} className="nav-link text-gray-700 font-medium dark:text-gray-300">Modes</a>
-              <a onClick={() => scrollToSection('themes')} className="nav-link text-gray-700 font-medium dark:text-gray-300">Themes</a>
-              <a onClick={() => scrollToSection('careers')} className="nav-link text-gray-700 font-medium dark:text-gray-300">Careers</a>
-              <a onClick={() => scrollToSection('about')} className="nav-link text-gray-700 font-medium dark:text-gray-300">About</a>
-              <NotificationBell notifications={notifications} />
-              <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-white/20 dark:hover:bg-gray-700/50 transition-colors">
-                {darkMode ? <Sun className="h-6 w-6 text-yellow-400" /> : <Moon className="h-6 w-6 text-gray-600" />}
+            <div className="hidden md:flex space-x-1 items-center">
+              {[
+                { name: 'Home', id: 'home' },
+                { name: 'Modes', id: 'modes' },
+                { name: 'Themes', id: 'themes' },
+                { name: 'Careers', id: 'careers' },
+                { name: 'About', id: 'about' }
+              ].map((item) => (
+                <a
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
+                  className="nav-link relative px-4 py-2 text-gray-700 font-medium dark:text-gray-300 rounded-full hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-300 group"
+                >
+                  {item.name}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </a>
+              ))}
+              <div className="mx-2">
+                <NotificationBell notifications={notifications} />
+              </div>
+              <button
+                onClick={toggleDarkMode}
+                className="relative p-3 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900 dark:hover:to-purple-900 transition-all duration-300 hover:scale-110 shadow-lg"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 hover:opacity-20 transition-opacity duration-300"></div>
+                {darkMode ?
+                  <Sun className="h-6 w-6 text-yellow-400 relative z-10" /> :
+                  <Moon className="h-6 w-6 text-gray-600 dark:text-gray-300 relative z-10" />
+                }
               </button>
             </div>
           </div>
@@ -223,100 +244,268 @@ const LandingPage: React.FC = () => {
       </nav>
 
       <section id="home" className="gradient-bg min-h-screen flex items-center justify-center relative overflow-hidden pt-20">
+        {/* Enhanced floating elements with more variety */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="floating-icon absolute top-20 left-10 text-6xl">📚</div>
-          <div className="floating-icon absolute top-32 right-20 text-5xl">🚀</div>
-          <div className="floating-icon absolute bottom-40 left-20 text-4xl">✏</div>
-          <div className="floating-icon absolute bottom-20 right-10 text-6xl">✨</div>
-          <div className="floating-icon absolute top-1/2 left-1/3 text-5xl">🌟</div>
+          <div className="floating-icon absolute top-20 left-10 text-6xl animate-pulse">📚</div>
+          <div className="floating-icon absolute top-32 right-20 text-5xl animate-bounce">🚀</div>
+          <div className="floating-icon absolute bottom-40 left-20 text-4xl animate-spin">✏</div>
+          <div className="floating-icon absolute bottom-20 right-10 text-6xl animate-ping">✨</div>
+          <div className="floating-icon absolute top-1/2 left-1/3 text-5xl animate-pulse">🌟</div>
+          <div className="floating-icon absolute top-1/4 right-1/4 text-4xl animate-bounce">🎯</div>
+          <div className="floating-icon absolute bottom-1/4 left-1/4 text-5xl animate-spin">🎨</div>
+          <div className="floating-icon absolute top-3/4 right-10 text-4xl animate-ping">🔬</div>
         </div>
-        <div className="text-center z-10 px-4 max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 bounce-in">
-            Welcome to LearnMyWay 🚀
-          </h1>
-          <p className="text-xl md:text-2xl text-white/90 mb-4 bounce-in" style={{ animationDelay: '0.2s' }}>
-            Where Learning Feels Like Play!
+
+        {/* Animated background particles */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-white/20 rounded-full animate-ping"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${2 + Math.random() * 3}s`
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="text-center z-10 px-4 max-w-5xl mx-auto relative">
+          {/* Main heading with enhanced typography */}
+          <div className="relative mb-8">
+            <h1 className="text-6xl md:text-8xl font-black text-white mb-6 bounce-in bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-2xl">
+              Welcome to LearnMyWay
+            </h1>
+            <div className="absolute -top-4 -right-4 text-6xl animate-bounce">🚀</div>
+            <div className="absolute -bottom-4 -left-4 text-4xl animate-spin">✨</div>
+          </div>
+
+          {/* Enhanced subtitle */}
+          <p className="text-2xl md:text-3xl text-white/95 mb-6 bounce-in font-semibold" style={{ animationDelay: '0.2s' }}>
+            Where Learning Feels Like Play! 🎮
           </p>
-          <p className="text-lg md:text-xl text-white/80 mb-12 bounce-in" style={{ animationDelay: '0.4s' }}>
-            A magical space where Students, Teachers, and Parents connect, share, and grow together.
+
+          {/* Enhanced description */}
+          <p className="text-xl md:text-2xl text-white/85 mb-12 bounce-in max-w-4xl mx-auto leading-relaxed" style={{ animationDelay: '0.4s' }}>
+            A magical space where Students, Teachers, and Parents connect, share, and grow together in an exciting learning adventure! 🌟
           </p>
+
+          {/* Enhanced CTA buttons */}
           <div className="flex flex-col md:flex-row gap-6 justify-center items-center bounce-in" style={{ animationDelay: '0.6s' }}>
-            <button onClick={() => scrollToSection('modes')} className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-300">
-              🎓 Explore as Student
+            <button
+              onClick={() => scrollToSection('modes')}
+              className="group relative bg-gradient-to-r from-teal-400 to-teal-600 hover:from-teal-500 hover:to-teal-700 text-white px-10 py-5 rounded-2xl text-xl font-bold shadow-2xl transform hover:scale-110 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative z-10 flex items-center gap-3">
+                🎓 Explore as Student
+                <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+              </span>
             </button>
-            <button onClick={() => scrollToSection('modes')} className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-300">
-              👩‍🏫 Enter Teacher Mode
+
+            <button
+              onClick={() => scrollToSection('modes')}
+              className="group relative bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white px-10 py-5 rounded-2xl text-xl font-bold shadow-2xl transform hover:scale-110 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative z-10 flex items-center gap-3">
+                👩‍🏫 Enter Teacher Mode
+                <div className="w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
+              </span>
             </button>
-            <button onClick={() => scrollToSection('modes')} className="bg-purple-500 hover:bg-purple-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-300">
-              ❤ Parent Dashboard
+
+            <button
+              onClick={() => scrollToSection('modes')}
+              className="group relative bg-gradient-to-r from-purple-400 to-purple-600 hover:from-purple-500 hover:to-purple-700 text-white px-10 py-5 rounded-2xl text-xl font-bold shadow-2xl transform hover:scale-110 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative z-10 flex items-center gap-3">
+                💝 Parent Dashboard
+                <div className="w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDelay: '1s' }}></div>
+              </span>
             </button>
+          </div>
+
+          {/* Scroll indicator */}
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
+              <div className="w-1 h-3 bg-white/50 rounded-full mt-2 animate-pulse"></div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="modes" className="py-20 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="modes" className="py-20 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-10 left-10 w-20 h-20 bg-blue-200/30 rounded-full animate-pulse"></div>
+          <div className="absolute top-20 right-20 w-16 h-16 bg-purple-200/30 rounded-full animate-bounce"></div>
+          <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-teal-200/30 rounded-full animate-spin"></div>
+          <div className="absolute bottom-10 right-1/3 w-24 h-24 bg-orange-200/30 rounded-full animate-ping"></div>
+          <div className="absolute top-1/2 left-1/2 w-8 h-8 bg-pink-200/30 rounded-full animate-pulse"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
-              🦸 Choose Your Superpower
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">Discover your learning adventure!</p>
+            <div className="relative inline-block">
+              <h2 className="text-4xl md:text-6xl font-black text-gray-800 dark:text-white mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                🦸 Choose Your Superpower
+              </h2>
+              <div className="absolute -top-2 -right-2 text-4xl animate-bounce">⚡</div>
+              <div className="absolute -bottom-2 -left-2 text-3xl animate-spin">✨</div>
+            </div>
+            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 font-semibold">Discover your learning adventure!</p>
           </div>
+
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="swipe-card slide-card bg-gradient-to-br from-teal-400 to-teal-600 rounded-3xl p-8 text-white text-center">
-              <div className="text-6xl mb-6">🎓</div>
-              <h3 className="text-2xl font-bold mb-4">Student Power</h3>
-              <p className="text-lg leading-relaxed">
-                Step into your own learning world! Play with themes, solve challenges, chat with your study buddy, and explore your dream career — all while having fun!
-              </p>
-              <button onClick={() => navigate('/home')} className="mt-6 bg-white text-teal-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors">
-                Start Learning 🚀
-              </button>
+            {/* Student Card */}
+            <div className="swipe-card slide-card group relative bg-gradient-to-br from-teal-400 via-teal-500 to-teal-600 rounded-3xl p-8 text-white text-center transform hover:scale-105 hover:-translate-y-4 transition-all duration-500 shadow-2xl hover:shadow-teal-500/25 overflow-hidden">
+              {/* Card background animation */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+              {/* Floating elements */}
+              <div className="absolute top-4 right-4 text-2xl animate-bounce">🎓</div>
+              <div className="absolute bottom-4 left-4 text-xl animate-pulse">⭐</div>
+
+              <div className="relative z-10">
+                <div className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300">🎓</div>
+                <h3 className="text-3xl font-bold mb-4 group-hover:text-yellow-200 transition-colors duration-300">Student Power</h3>
+                <p className="text-lg leading-relaxed mb-6">
+                  Step into your own learning world! Play with themes, solve challenges, chat with your study buddy, and explore your dream career — all while having fun!
+                </p>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="group/btn relative bg-white text-teal-600 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 hover:shadow-lg overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-teal-100 to-blue-100 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                  <span className="relative z-10 flex items-center gap-2">
+                    Start Learning 🚀
+                    <div className="w-2 h-2 bg-teal-600 rounded-full animate-ping"></div>
+                  </span>
+                </button>
+              </div>
             </div>
-            <div className="swipe-card slide-card bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl p-8 text-white text-center">
-              <div className="text-6xl mb-6">👩‍🏫</div>
-              <h3 className="text-2xl font-bold mb-4">Teacher Power</h3>
-              <p className="text-lg leading-relaxed">
-                Track lessons, update completed topics, and collaborate with students. Teaching is now interactive, visual, and engaging!
-              </p>
-              <button onClick={() => navigate('/teacher')} className="mt-6 bg-white text-orange-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors">
-                Teach Now 📚
-              </button>
+
+            {/* Teacher Card */}
+            <div className="swipe-card slide-card group relative bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-3xl p-8 text-white text-center transform hover:scale-105 hover:-translate-y-4 transition-all duration-500 shadow-2xl hover:shadow-orange-500/25 overflow-hidden">
+              {/* Card background animation */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+              {/* Floating elements */}
+              <div className="absolute top-4 right-4 text-2xl animate-bounce">📚</div>
+              <div className="absolute bottom-4 left-4 text-xl animate-pulse">🎯</div>
+
+              <div className="relative z-10">
+                <div className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300">👩‍🏫</div>
+                <h3 className="text-3xl font-bold mb-4 group-hover:text-yellow-200 transition-colors duration-300">Teacher Power</h3>
+                <p className="text-lg leading-relaxed mb-6">
+                  Track lessons, update completed topics, and collaborate with students. Teaching is now interactive, visual, and engaging!
+                </p>
+                <button
+                  onClick={() => navigate('/teacher')}
+                  className="group/btn relative bg-white text-orange-600 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 hover:shadow-lg overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-red-100 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                  <span className="relative z-10 flex items-center gap-2">
+                    Teach Now 📚
+                    <div className="w-2 h-2 bg-orange-600 rounded-full animate-ping"></div>
+                  </span>
+                </button>
+              </div>
             </div>
-            <div className="swipe-card slide-card bg-gradient-to-br from-purple-400 to-purple-600 rounded-3xl p-8 text-white text-center">
-              <div className="text-6xl mb-6">👨‍👩‍👧‍👦</div>
-              <h3 className="text-2xl font-bold mb-4">Parent Power</h3>
-              <p className="text-lg leading-relaxed">
-                Stay in the loop with your child's learning journey. See completed portions, check progress, and cheer them on every step!
-              </p>
-              <button onClick={() => navigate('/parent')} className="mt-6 bg-white text-purple-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors">
-                Track Progress 📈
-              </button>
+
+            {/* Parent Card */}
+            <div className="swipe-card slide-card group relative bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 rounded-3xl p-8 text-white text-center transform hover:scale-105 hover:-translate-y-4 transition-all duration-500 shadow-2xl hover:shadow-purple-500/25 overflow-hidden">
+              {/* Card background animation */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+              {/* Floating elements */}
+              <div className="absolute top-4 right-4 text-2xl animate-bounce">💝</div>
+              <div className="absolute bottom-4 left-4 text-xl animate-pulse">🌟</div>
+
+              <div className="relative z-10">
+                <div className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300">👨‍👩‍👧‍👦</div>
+                <h3 className="text-3xl font-bold mb-4 group-hover:text-yellow-200 transition-colors duration-300">Parent Power</h3>
+                <p className="text-lg leading-relaxed mb-6">
+                  Stay in the loop with your child's learning journey. See completed portions, check progress, and cheer them on every step!
+                </p>
+                <button
+                  onClick={() => navigate('/parent')}
+                  className="group/btn relative bg-white text-purple-600 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 hover:shadow-lg overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-100 to-pink-100 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                  <span className="relative z-10 flex items-center gap-2">
+                    Track Progress 📈
+                    <div className="w-2 h-2 bg-purple-600 rounded-full animate-ping"></div>
+                  </span>
+                </button>
+              </div>
             </div>
+          </div>
+
+          {/* Bottom decorative elements */}
+          <div className="flex justify-center mt-12 space-x-4">
+            <div className="w-3 h-3 bg-teal-400 rounded-full animate-pulse"></div>
+            <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
           </div>
         </div>
       </section>
 
       <section
         id="themes"
-        className="theme-section py-20"
+        className="theme-section py-20 relative overflow-hidden"
         style={{
-          background: themeBg ? `url("https://image.pollinations.ai/prompt/${encodeURIComponent(themeBg)}")` : '#fff',
+          background: themeBg ? `url("https://image.pollinations.ai/prompt/${encodeURIComponent(themeBg)}")` : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-            🎨 Learn the Way YOU Love ✨
-          </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 mb-12">
-            Hover on a theme and watch the magic happen!
+        {/* Dynamic overlay based on active theme */}
+        <div className={`absolute inset-0 transition-all duration-1000 ${activeTheme ? 'bg-black/40' : 'bg-gradient-to-br from-blue-900/80 via-purple-900/80 to-pink-900/80'}`}></div>
+
+        {/* Floating particles */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(15)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-white/20 rounded-full animate-ping"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${2 + Math.random() * 3}s`
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <div className="relative mb-16">
+            <h2 className="text-4xl md:text-6xl font-black text-white mb-6 bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-2xl">
+              🎨 Learn the Way YOU Love ✨
+            </h2>
+            <div className="absolute -top-4 -right-4 text-4xl animate-bounce">🌟</div>
+            <div className="absolute -bottom-4 -left-4 text-3xl animate-spin">🎭</div>
+          </div>
+
+          <p className="text-xl md:text-2xl text-white/90 mb-12 font-semibold drop-shadow-lg">
+            Hover on a theme and watch the magic happen! ✨
           </p>
+
           <div className="grid md:grid-cols-3 gap-8">
-            {Object.keys(themeBackgrounds).map((theme) => (
+            {Object.keys(themeBackgrounds).map((theme, index) => (
               <div
                 key={theme}
-                className="rounded-2xl p-8 text-white text-center cursor-pointer transition-all transform hover:scale-105"
-                style={{ background: 'rgba(0,0,0,0.5)' }}
+                className="group relative rounded-3xl p-8 text-white text-center cursor-pointer transition-all duration-500 transform hover:scale-110 hover:-translate-y-6 overflow-hidden shadow-2xl"
+                style={{
+                  background: activeTheme === theme ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.6)',
+                  backdropFilter: 'blur(10px)',
+                  border: activeTheme === theme ? '2px solid rgba(255,255,255,0.8)' : '2px solid rgba(255,255,255,0.2)',
+                  animationDelay: `${index * 0.2}s`
+                }}
                 onMouseEnter={() => {
                   setActiveTheme(theme);
                   setThemeBg(themeBackgrounds[theme]);
@@ -326,53 +515,338 @@ const LandingPage: React.FC = () => {
                   setThemeBg(null);
                 }}
               >
-                <div className="text-5xl mb-4">
-                  {theme === 'cricket' && '🏏'}
-                  {theme === 'space' && '🌌'}
+                {/* Card background glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                {/* Animated border */}
+                <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-white/50 transition-all duration-300"></div>
+
+                {/* Floating elements */}
+                <div className="absolute top-4 right-4 text-2xl animate-bounce opacity-60 group-hover:opacity-100 transition-opacity">
+                  {theme === 'cricket' && '⚡'}
+                  {theme === 'space' && '🚀'}
+                  {theme === 'nature' && '🌸'}
+                  {theme === 'science' && '⚗️'}
+                  {theme === 'art' && '🎨'}
+                  {theme === 'history' && '📜'}
+                </div>
+
+                <div className="absolute bottom-4 left-4 text-xl animate-pulse opacity-60 group-hover:opacity-100 transition-opacity">
+                  {theme === 'cricket' && '🏆'}
+                  {theme === 'space' && '⭐'}
                   {theme === 'nature' && '🌿'}
                   {theme === 'science' && '🔬'}
-                  {theme === 'art' && '🎨'}
-                  {theme === 'history' && '🏛'}
+                  {theme === 'art' && '🖌️'}
+                  {theme === 'history' && '🏛️'}
                 </div>
-                <h3 className="text-2xl font-bold capitalize">{theme} Theme</h3>
-                <p className="mt-2">Make learning fun with {theme} adventures!</p>
+
+                <div className="relative z-10">
+                  <div className={`text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 ${activeTheme === theme ? 'animate-bounce' : ''}`}>
+                    {theme === 'cricket' && '🏏'}
+                    {theme === 'space' && '🌌'}
+                    {theme === 'nature' && '🌿'}
+                    {theme === 'science' && '🔬'}
+                    {theme === 'art' && '🎨'}
+                    {theme === 'history' && '🏛️'}
+                  </div>
+
+                  <h3 className={`text-2xl md:text-3xl font-bold capitalize mb-4 transition-colors duration-300 ${activeTheme === theme ? 'text-gray-800' : 'text-white'}`}>
+                    {theme} Theme
+                  </h3>
+
+                  <p className={`text-lg leading-relaxed transition-colors duration-300 ${activeTheme === theme ? 'text-gray-600' : 'text-white/90'}`}>
+                    Make learning fun with {theme} adventures!
+                  </p>
+
+                  {/* Hover indicator */}
+                  <div className="mt-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                      <span className="text-sm font-semibold">Click to explore</span>
+                      <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ripple effect on hover */}
+                <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                     style={{
+                       background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+                       animation: 'ripple 1s ease-out'
+                     }}>
+                </div>
               </div>
             ))}
           </div>
+
+          {/* Theme preview indicator */}
+          {activeTheme && (
+            <div className="mt-12 animate-fade-in">
+              <div className="inline-flex items-center gap-3 bg-white/20 backdrop-blur-md rounded-2xl px-6 py-3">
+                <span className="text-lg font-semibold text-white">🌟 Exploring {activeTheme} theme...</span>
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom decorative elements */}
+          <div className="flex justify-center mt-16 space-x-6">
+            <div className="w-4 h-4 bg-white/30 rounded-full animate-pulse"></div>
+            <div className="w-4 h-4 bg-white/30 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+            <div className="w-4 h-4 bg-white/30 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+          </div>
         </div>
+
+        <style>{`
+          @keyframes ripple {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(4); opacity: 0; }
+          }
+          @keyframes fade-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
       </section>
 
-      <section id="careers" className="py-20 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-gray-800 dark:to-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="careers" className="py-20 bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-200/20 rounded-full animate-pulse"></div>
+          <div className="absolute top-20 right-20 w-24 h-24 bg-orange-200/20 rounded-full animate-bounce"></div>
+          <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-red-200/20 rounded-full animate-spin"></div>
+          <div className="absolute bottom-10 right-1/3 w-28 h-28 bg-pink-200/20 rounded-full animate-ping"></div>
+          <div className="absolute top-1/2 left-1/2 w-16 h-16 bg-purple-200/20 rounded-full animate-pulse"></div>
+        </div>
+
+        {/* Floating particles */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full animate-ping opacity-60"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 4}s`,
+                animationDuration: `${3 + Math.random() * 4}s`
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
-              🚀 Dream Big. Start Early.
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">Explore careers with mini roadmaps, fun facts, and stories!</p>
+            <div className="relative inline-block">
+              <h2 className="text-4xl md:text-6xl font-black text-gray-800 dark:text-white mb-6 bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text text-transparent drop-shadow-2xl">
+                🚀 Dream Big. Start Early.
+              </h2>
+              <div className="absolute -top-4 -right-4 text-4xl animate-bounce">⭐</div>
+              <div className="absolute -bottom-4 -left-4 text-3xl animate-spin">🌟</div>
+            </div>
+            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 font-semibold">Explore careers with mini roadmaps, fun facts, and stories!</p>
           </div>
-          <div className="grid md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800">
-              <div className="career-icon text-4xl mb-3">🤖</div>
-              <h4 className="font-bold text-lg text-gray-800 dark:text-white">AI Scientist</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Build the future with artificial intelligence!</p>
+
+          <div className="grid md:grid-cols-4 gap-8">
+            {/* AI Scientist Card */}
+            <div className="group relative bg-white rounded-3xl p-8 text-center shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-4 dark:bg-gray-800 overflow-hidden">
+              {/* Card background glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 dark:from-blue-900/20 dark:to-purple-900/20"></div>
+
+              {/* Animated border */}
+              <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-blue-300 transition-all duration-300"></div>
+
+              {/* Floating elements */}
+              <div className="absolute top-4 right-4 text-2xl animate-bounce opacity-60 group-hover:opacity-100 transition-opacity">⚡</div>
+              <div className="absolute bottom-4 left-4 text-xl animate-pulse opacity-60 group-hover:opacity-100 transition-opacity">🤖</div>
+
+              <div className="relative z-10">
+                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce">🤖</div>
+                <h4 className="font-black text-xl md:text-2xl text-gray-800 dark:text-white mb-4 group-hover:text-blue-600 transition-colors duration-300">AI Scientist</h4>
+                <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed mb-6 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors duration-300">
+                  Build the future with artificial intelligence!
+                </p>
+
+                {/* Hover details */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
+                  <div className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-xl p-4 mb-4">
+                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">Skills: Python, Machine Learning, Data Science</p>
+                  </div>
+                  <div className="flex justify-center">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 cursor-pointer">
+                      <span>Explore Path</span>
+                      <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ripple effect on hover */}
+              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                   style={{
+                     background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)',
+                     animation: 'careerRipple 1s ease-out'
+                   }}>
+              </div>
             </div>
-            <div className="bg-white rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800">
-              <div className="career-icon text-4xl mb-3">🩺</div>
-              <h4 className="font-bold text-lg text-gray-800 dark:text-white">Doctor</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Help people and save lives every day!</p>
+
+            {/* Doctor Card */}
+            <div className="group relative bg-white rounded-3xl p-8 text-center shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-4 dark:bg-gray-800 overflow-hidden">
+              {/* Card background glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-teal-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 dark:from-green-900/20 dark:to-teal-900/20"></div>
+
+              {/* Animated border */}
+              <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-green-300 transition-all duration-300"></div>
+
+              {/* Floating elements */}
+              <div className="absolute top-4 right-4 text-2xl animate-bounce opacity-60 group-hover:opacity-100 transition-opacity">💚</div>
+              <div className="absolute bottom-4 left-4 text-xl animate-pulse opacity-60 group-hover:opacity-100 transition-opacity">🏥</div>
+
+              <div className="relative z-10">
+                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce">🩺</div>
+                <h4 className="font-black text-xl md:text-2xl text-gray-800 dark:text-white mb-4 group-hover:text-green-600 transition-colors duration-300">Doctor</h4>
+                <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed mb-6 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors duration-300">
+                  Help people and save lives every day!
+                </p>
+
+                {/* Hover details */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
+                  <div className="bg-gradient-to-r from-green-100 to-teal-100 dark:from-green-900/30 dark:to-teal-900/30 rounded-xl p-4 mb-4">
+                    <p className="text-sm font-semibold text-green-800 dark:text-green-200">Skills: Biology, Medicine, Compassion</p>
+                  </div>
+                  <div className="flex justify-center">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-green-600 hover:to-teal-700 transition-all duration-300 cursor-pointer">
+                      <span>Explore Path</span>
+                      <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ripple effect on hover */}
+              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                   style={{
+                     background: 'radial-gradient(circle, rgba(34,197,94,0.1) 0%, transparent 70%)',
+                     animation: 'careerRipple 1s ease-out'
+                   }}>
+              </div>
             </div>
-            <div className="bg-white rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800">
-              <div className="career-icon text-4xl mb-3">🛰</div>
-              <h4 className="font-bold text-lg text-gray-800 dark:text-white">Space Explorer</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Discover new worlds beyond Earth!</p>
+
+            {/* Space Explorer Card */}
+            <div className="group relative bg-white rounded-3xl p-8 text-center shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-4 dark:bg-gray-800 overflow-hidden">
+              {/* Card background glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 dark:from-purple-900/20 dark:to-indigo-900/20"></div>
+
+              {/* Animated border */}
+              <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-purple-300 transition-all duration-300"></div>
+
+              {/* Floating elements */}
+              <div className="absolute top-4 right-4 text-2xl animate-bounce opacity-60 group-hover:opacity-100 transition-opacity">🚀</div>
+              <div className="absolute bottom-4 left-4 text-xl animate-pulse opacity-60 group-hover:opacity-100 transition-opacity">⭐</div>
+
+              <div className="relative z-10">
+                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce">🛰</div>
+                <h4 className="font-black text-xl md:text-2xl text-gray-800 dark:text-white mb-4 group-hover:text-purple-600 transition-colors duration-300">Space Explorer</h4>
+                <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed mb-6 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors duration-300">
+                  Discover new worlds beyond Earth!
+                </p>
+
+                {/* Hover details */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
+                  <div className="bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-xl p-4 mb-4">
+                    <p className="text-sm font-semibold text-purple-800 dark:text-purple-200">Skills: Physics, Engineering, Astronomy</p>
+                  </div>
+                  <div className="flex justify-center">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-purple-600 hover:to-indigo-700 transition-all duration-300 cursor-pointer">
+                      <span>Explore Path</span>
+                      <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ripple effect on hover */}
+              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                   style={{
+                     background: 'radial-gradient(circle, rgba(147,51,234,0.1) 0%, transparent 70%)',
+                     animation: 'careerRipple 1s ease-out'
+                   }}>
+              </div>
             </div>
-            <div className="bg-white rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800">
-              <div className="career-icon text-4xl mb-3">🎮</div>
-              <h4 className="font-bold text-lg text-gray-800 dark:text-white">Game Designer</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Create amazing games that millions love!</p>
+
+            {/* Game Designer Card */}
+            <div className="group relative bg-white rounded-3xl p-8 text-center shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-4 dark:bg-gray-800 overflow-hidden">
+              {/* Card background glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-rose-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 dark:from-pink-900/20 dark:to-rose-900/20"></div>
+
+              {/* Animated border */}
+              <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-pink-300 transition-all duration-300"></div>
+
+              {/* Floating elements */}
+              <div className="absolute top-4 right-4 text-2xl animate-bounce opacity-60 group-hover:opacity-100 transition-opacity">🎯</div>
+              <div className="absolute bottom-4 left-4 text-xl animate-pulse opacity-60 group-hover:opacity-100 transition-opacity">🎮</div>
+
+              <div className="relative z-10">
+                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce">🎮</div>
+                <h4 className="font-black text-xl md:text-2xl text-gray-800 dark:text-white mb-4 group-hover:text-pink-600 transition-colors duration-300">Game Designer</h4>
+                <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed mb-6 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors duration-300">
+                  Create amazing games that millions love!
+                </p>
+
+                {/* Hover details */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
+                  <div className="bg-gradient-to-r from-pink-100 to-rose-100 dark:from-pink-900/30 dark:to-rose-900/30 rounded-xl p-4 mb-4">
+                    <p className="text-sm font-semibold text-pink-800 dark:text-pink-200">Skills: Art, Programming, Creativity</p>
+                  </div>
+                  <div className="flex justify-center">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-pink-600 hover:to-rose-700 transition-all duration-300 cursor-pointer">
+                      <span>Explore Path</span>
+                      <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ripple effect on hover */}
+              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                   style={{
+                     background: 'radial-gradient(circle, rgba(236,72,153,0.1) 0%, transparent 70%)',
+                     animation: 'careerRipple 1s ease-out'
+                   }}>
+              </div>
             </div>
+          </div>
+
+          {/* Career exploration CTA */}
+          <div className="text-center mt-16">
+            <div className="inline-flex items-center gap-4 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white px-8 py-4 rounded-2xl text-xl font-bold shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-500 cursor-pointer">
+              <span>Discover More Career Paths</span>
+              <div className="flex space-x-1">
+                <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                <div className="w-3 h-3 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-3 h-3 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom decorative elements */}
+          <div className="flex justify-center mt-12 space-x-6">
+            <div className="w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
+            <div className="w-4 h-4 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+            <div className="w-4 h-4 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+            <div className="w-4 h-4 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: '0.9s' }}></div>
           </div>
         </div>
+
+        <style>{`
+          @keyframes careerRipple {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(4); opacity: 0; }
+          }
+        `}</style>
       </section>
 
       <section className="py-20 bg-gradient-to-br from-blue-600 to-purple-600 text-white dark:from-gray-900 dark:to-gray-800">

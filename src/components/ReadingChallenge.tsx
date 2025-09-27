@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import confetti from 'canvas-confetti';
 import { useNavigate } from 'react-router-dom';
+import { useThemeStore } from '../store/theme';
+
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'AIzaSyDLXMuqZCaMYhf4pWbIoo9_YlRF7zOfHKo');
@@ -11,6 +13,7 @@ const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 export const ReadingChallenge = () => {
   const navigate = useNavigate();
+  const theme = useThemeStore((state) => state.getThemeStyles());
   const [readingPassage, setReadingPassage] = useState<any>(null);
   const [readingAnswers, setReadingAnswers] = useState<{ [key: number]: string }>({});
   const [readingSubmitted, setReadingSubmitted] = useState(false);
@@ -25,6 +28,7 @@ export const ReadingChallenge = () => {
   const [canReattempt, setCanReattempt] = useState(false);
   const [earnedPoints, setEarnedPoints] = useState(0);
   const [earnedBadge, setEarnedBadge] = useState<string | null>(null);
+  const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
 
   // Fallback profile data
   const fallbackProfile = {
@@ -42,6 +46,16 @@ export const ReadingChallenge = () => {
     checkAttempts();
     generateReadingChallenge();
   }, [selectedGrade]);
+
+  useEffect(() => {
+    const backgrounds = theme.backgrounds;
+    if (backgrounds && backgrounds.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [theme.backgrounds]);
 
   const fetchProfile = async () => {
     try {
@@ -343,9 +357,18 @@ export const ReadingChallenge = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-teal-800 to-blue-700 flex items-center justify-center">
+      <div 
+        className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
+        style={{
+          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transition: 'background-image 1s ease-in-out',
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center"
+          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
@@ -359,9 +382,18 @@ export const ReadingChallenge = () => {
   // Locked Screen
   if (isLocked) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-teal-800 to-blue-700 flex items-center justify-center p-8">
+      <div 
+        className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
+        style={{
+          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transition: 'background-image 1s ease-in-out',
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-md"
+          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-md"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
@@ -384,9 +416,18 @@ export const ReadingChallenge = () => {
   // Completion Screen
   if (showCompletion) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-teal-800 to-blue-700 flex items-center justify-center p-8">
+      <div 
+        className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
+        style={{
+          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transition: 'background-image 1s ease-in-out',
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-lg"
+          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-lg"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
@@ -399,7 +440,7 @@ export const ReadingChallenge = () => {
           {/* Feedback Display */}
           {feedback && (
             <motion.div
-              className="bg-white/5 p-4 rounded-2xl mb-6 text-left"
+              className="bg-black/80 p-4 rounded-2xl mb-6 text-left"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -434,11 +475,20 @@ export const ReadingChallenge = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-900 via-teal-800 to-blue-700 p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div 
+      className="min-h-screen p-8 relative overflow-hidden"
+      style={{
+        backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        transition: 'background-image 1s ease-in-out',
+      }}
+    >
+      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+      <div className="max-w-4xl mx-auto space-y-8 relative z-10">
         {/* Header */}
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -446,7 +496,7 @@ export const ReadingChallenge = () => {
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => navigate('/what-if')}
-              className="flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition"
+              className="flex items-center gap-2 bg-black/80 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition"
             >
               <ArrowLeft size={20} />
               Back to Challenges
@@ -456,7 +506,7 @@ export const ReadingChallenge = () => {
               <select
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value)}
-                className="px-4 py-2 rounded-xl bg-white/10 text-white border border-white/20"
+                className="px-4 py-2 rounded-xl bg-black/80 text-white border border-white/20"
               >
                 <option value="4-6">4-6 (Beginner)</option>
                 <option value="7-9">7-9 (Intermediate)</option>
@@ -491,7 +541,7 @@ export const ReadingChallenge = () => {
         {/* Reading Content */}
         <AnimatePresence mode="wait">
           <motion.div
-            className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+            className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
             style={{ perspective: '1000px' }}
             initial={{ opacity: 0, rotateX: -20 }}
             animate={{ opacity: 1, rotateX: 0 }}
@@ -501,7 +551,7 @@ export const ReadingChallenge = () => {
               <div className="space-y-8">
                 {/* Passage */}
                 <motion.div
-                  className="bg-white/5 p-6 rounded-2xl"
+                  className="bg-black/80 p-6 rounded-2xl"
                   whileHover={{ rotateY: 2, rotateX: 1 }}
                 >
                   <h2 className="text-2xl font-bold text-white mb-4">Reading Passage</h2>
@@ -514,7 +564,7 @@ export const ReadingChallenge = () => {
                   {readingPassage.questions.map((q: any, index: number) => (
                     <motion.div
                       key={q.id}
-                      className="bg-white/5 p-6 rounded-2xl"
+                      className="bg-black/80 p-6 rounded-2xl"
                       whileHover={{ rotateY: 2, rotateX: 1 }}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -558,7 +608,7 @@ export const ReadingChallenge = () => {
                 {/* Feedback */}
                 {readingSubmitted && feedback && (
                   <motion.div
-                    className="bg-white/5 p-6 rounded-2xl"
+                    className="bg-black/80 p-6 rounded-2xl"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                   >

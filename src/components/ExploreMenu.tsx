@@ -83,17 +83,17 @@ export const ExploreMenu = () => {
       color: 'from-indigo-400 to-indigo-600'
     },
     {
-      title: 'Daily Challenges',
+      title: 'English Skill Build',
       description: 'Ask curious questions and explore amazing possibilities',
       icon: Star,
       path: '/what-if',
       color: 'from-green-400 to-green-600'
     },
     {
-      title: 'Study Groups',
-      description: 'Learn together with friends in collaborative spaces',
-      icon: Users,
-      path: '/groups',
+      title: 'AI Study Planner',
+      description: 'Create personalized study plans with AI assistance',
+      icon: Brain,
+      path: '/ai-study-planner',
       color: 'from-blue-400 to-blue-600'
     },
     {
@@ -302,7 +302,7 @@ export const ExploreMenu = () => {
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 {Object.keys(themeConfig).map((themeName, index) => {
-                  const isActive = themeName === theme.name;
+                  const isActive = themeName === useThemeStore.getState().theme;
                   const gradients = [
                     "from-indigo-500 via-purple-500 to-pink-500",
                     "from-green-400 via-emerald-500 to-teal-500",

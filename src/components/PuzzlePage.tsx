@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Trophy, Star, Sparkles, Brain, Lightbulb } from 'lucide-react';
 import { GeminiService } from '../lib/gemini-service';
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 interface Puzzle {
   title: string;
@@ -20,9 +22,26 @@ const PuzzlePage: React.FC = () => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [attempts, setAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
-    fetchPuzzle();
+    const checkCompletion = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const userDocRef = doc(db, 'profiles', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const profileData = userDocSnap.data();
+          if (profileData.tasks_progress?.puzzle >= 100) {
+            setIsLocked(true);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+      fetchPuzzle();
+    };
+    checkCompletion();
   }, []);
 
   const fetchPuzzle = async () => {
@@ -34,10 +53,7 @@ const PuzzlePage: React.FC = () => {
       3. The correct solution
       4. An optional helpful hint
       Format as JSON: {"title": "string", "description": "string", "solution": "string", "hint": "string"}`;
-
       const response = await GeminiService.generateText(prompt);
-
-      // Parse the JSON response
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const generatedPuzzle = JSON.parse(jsonMatch[0]);
@@ -47,7 +63,6 @@ const PuzzlePage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching puzzle:', error);
-      // Fallback puzzle
       const fallbackPuzzle: Puzzle = {
         title: 'Word Scramble Challenge',
         description: 'Unscramble the letters to form a fruit: P P L E A',
@@ -60,27 +75,34 @@ const PuzzlePage: React.FC = () => {
     }
   };
 
+  const updateProgress = async (progress: number) => {
+    const user = auth.currentUser;
+    if (user) {
+      const userDocRef = doc(db, 'profiles', user.uid);
+      await updateDoc(userDocRef, {
+        'tasks_progress.puzzle': progress,
+      });
+    }
+  };
+
   const submitSolution = async () => {
-    if (!puzzle) return;
-
+    if (!puzzle || isLocked) return;
     setAttempts(prev => prev + 1);
-
     try {
       const userAnswer = userSolution.trim().toUpperCase();
       const correctAnswer = puzzle.solution.toUpperCase();
       const correct = userAnswer === correctAnswer;
-
       setIsCorrect(correct);
-
       if (correct) {
         setValidationMessage('🎉 Brilliant! You solved the puzzle! 🧠');
         setShowCelebration(true);
+        updateProgress(100);
         setTimeout(() => setShowCelebration(false), 4000);
+        setIsLocked(true);
       } else {
-        const feedback = attempts >= 2
-          ? 'Not quite right. Try using the hint! 💡'
-          : 'Keep thinking! You\'ve got this! 🤔';
+        const feedback = attempts >= 2 ? 'Not quite right. Try using the hint! 💡' : 'Keep thinking! You\'ve got this! 🤔';
         setValidationMessage(feedback);
+        updateProgress(50); // Set to 50% for incorrect attempt
       }
     } catch (error) {
       console.error('Error validating puzzle:', error);
@@ -106,9 +128,27 @@ const PuzzlePage: React.FC = () => {
     );
   }
 
+  if (isLocked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex flex-col items-center justify-center p-8">
+        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-lg">
+          <h2 className="text-3xl font-bold text-white mb-4">Challenge Locked</h2>
+          <p className="text-white mb-6">
+            You have already completed today's puzzle. Please come back tomorrow for a new one.
+          </p>
+          <button
+            onClick={() => navigate('/tasks')}
+            className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:from-purple-600 hover:to-indigo-600 transition"
+          >
+            Back to Tasks
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-8 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white flex flex-col items-center relative overflow-hidden">
-      {/* Celebration Animation */}
       {showCelebration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="text-center animate-bounce">
@@ -123,8 +163,6 @@ const PuzzlePage: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Floating sparkles for celebration */}
       {showCelebration && (
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(15)].map((_, i) => (
@@ -141,22 +179,16 @@ const PuzzlePage: React.FC = () => {
           ))}
         </div>
       )}
-
       <h1 className="text-5xl font-bold mb-8 text-center">Word Puzzle Challenge</h1>
-
       <div className="w-full max-w-4xl">
-        {/* Puzzle Card */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-8 shadow-2xl">
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold mb-4 text-yellow-400">{puzzle.title}</h2>
             <Brain className="w-16 h-16 mx-auto text-blue-400 mb-4" />
           </div>
-
           <div className="bg-white/5 rounded-xl p-6 mb-6">
             <p className="text-xl text-center font-medium">{puzzle.description}</p>
           </div>
-
-          {/* Solution Input */}
           <div className="mb-6">
             <label className="block text-lg font-semibold mb-3 text-center">Your Solution:</label>
             <input
@@ -168,8 +200,6 @@ const PuzzlePage: React.FC = () => {
               disabled={isCorrect}
             />
           </div>
-
-          {/* Hint Section */}
           {puzzle.hint && (
             <div className="mb-6">
               <button
@@ -186,8 +216,6 @@ const PuzzlePage: React.FC = () => {
               )}
             </div>
           )}
-
-          {/* Submit Button */}
           <div className="text-center">
             <button
               onClick={submitSolution}
@@ -198,8 +226,6 @@ const PuzzlePage: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {/* Validation Message */}
         {validationMessage && (
           <div className={`mb-8 p-6 rounded-xl text-center text-lg font-semibold ${
             isCorrect
@@ -212,15 +238,11 @@ const PuzzlePage: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Attempts Counter */}
         {attempts > 0 && !isCorrect && (
           <div className="text-center mb-6">
             <p className="text-yellow-300">Attempts: {attempts}</p>
           </div>
         )}
-
-        {/* Navigation */}
         <div className="flex justify-center">
           <button
             onClick={handleBack}

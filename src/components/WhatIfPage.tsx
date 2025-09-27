@@ -1,16 +1,19 @@
-
-// Updated WhatIfPage.tsx to pass selectedGrade to SpeakingPage via navigation state
+// Updated WhatIfPage.tsx to use the theme from ExploreMenu.tsx, fix the ReferenceError, and apply 80% black card backgrounds
 import React, { useState, useEffect } from 'react';
-import { Brain, BookOpen, MessageSquare, Mic, Award, Star, Trophy, Rotate3D, ArrowLeft, Volume2, PenSquare, Globe, Type, Layers, Target, Flame, Zap, Sparkles, Coffee } from 'lucide-react';
+import { Brain, BookOpen, MessageSquare, Mic, Award, Star, Trophy, ArrowLeft, PenSquare, Flame, Zap, Sparkles, Coffee, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useThemeStore } from '../store/theme';
+
 
 export const WhatIfPage = () => {
   const navigate = useNavigate();
+  const theme = useThemeStore((state) => state.getThemeStyles());
   const [profile, setProfile] = useState<any>(null);
   const [selectedGrade, setSelectedGrade] = useState('4-6');
   const [lockedChallenges, setLockedChallenges] = useState<{[key: string]: boolean}>({});
   const [currentLevel, setCurrentLevel] = useState('Beginner');
+  const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
 
   // Fallback profile data
   const fallbackProfile = {
@@ -27,6 +30,16 @@ export const WhatIfPage = () => {
     fetchProfile();
     checkLockedChallenges();
   }, []);
+
+  useEffect(() => {
+    const backgrounds = theme.backgrounds;
+    if (backgrounds && backgrounds.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [theme.backgrounds]);
 
   const fetchProfile = async () => {
     try {
@@ -80,7 +93,7 @@ export const WhatIfPage = () => {
   const challengeDefinitions = [
     {
       id: 'grammar',
-      title: 'Grammar Challenge',
+      title: 'Grammar Practice',
       description: 'Learn grammar rules through engaging exercises and explanations.',
       icon: BookOpen,
       color: 'text-purple-400',
@@ -90,7 +103,7 @@ export const WhatIfPage = () => {
     },
     {
       id: 'reading',
-      title: 'Reading Challenge',
+      title: 'Reading Practice',
       description: 'Improve comprehension with passages and interactive questions.',
       icon: BookOpen,
       color: 'text-green-400',
@@ -100,7 +113,7 @@ export const WhatIfPage = () => {
     },
     {
       id: 'writing',
-      title: 'Writing Challenge',
+      title: 'Writing Practice',
       description: 'Enhance writing skills with AI feedback and creative prompts.',
       icon: PenSquare,
       color: 'text-orange-400',
@@ -110,7 +123,7 @@ export const WhatIfPage = () => {
     },
     {
       id: 'pronunciation',
-      title: 'Pronunciation Challenge',
+      title: 'Pronunciation Practice',
       description: 'Perfect your pronunciation with AI-powered speech analysis.',
       icon: Mic,
       color: 'text-red-400',
@@ -118,8 +131,6 @@ export const WhatIfPage = () => {
       route: '/pronunciation',
       progress: profile?.progress?.pronunciation || 0
     },
-
-    
   ];
 
   // Check if all challenges are completed
@@ -144,29 +155,21 @@ export const WhatIfPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-800 to-zinc-900 p-8 relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 2px, transparent 2px),
-                           radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 2px, transparent 2px)`,
-          backgroundSize: '50px 50px'
-        }}></div>
-      </div>
-
-      {/* Background Animations */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="blob bg-slate-500/10 top-20 left-10 w-64 h-64"></div>
-        <div className="blob bg-gray-500/10 top-40 right-10 w-80 h-80"></div>
-        <div className="blob bg-zinc-500/10 bottom-20 left-20 w-72 h-72"></div>
-        <div className="blob bg-slate-400/10 bottom-40 right-20 w-56 h-56"></div>
-        <div className="blob bg-gray-400/10 top-1/2 left-1/2 w-40 h-40"></div>
-      </div>
+    <div 
+      className="min-h-screen p-8 relative overflow-hidden"
+      style={{
+        backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        transition: 'background-image 1s ease-in-out',
+      }}
+    >
+      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
 
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         {/* Header */}
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -174,7 +177,7 @@ export const WhatIfPage = () => {
           <div className="relative mb-6">
             <motion.button
               onClick={() => navigate('/explore-menu')}
-              className="absolute left-0 top-0 text-white hover:text-yellow-400 transition-colors p-2 rounded-lg bg-white/10"
+              className="absolute left-0 top-0 text-white hover:text-yellow-400 transition-colors p-2 rounded-lg bg-black/80"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
@@ -182,10 +185,10 @@ export const WhatIfPage = () => {
             </motion.button>
             <h1 className="text-5xl font-extrabold text-white flex items-center justify-center gap-4">
               <Brain className="text-yellow-400" size={48} />
-              Daily Challenges
+              English Skill Builder
             </h1>
           </div>
-          <p className="text-lg text-white/80 mb-8">Complete daily challenges and earn rewards and badges!</p>
+          <p className="text-lg text-white/80 mb-8">Practice fun activities to improve your English and earn rewards!</p>
 
           {/* Grade Level Selector */}
           <div className="flex items-center gap-4">
@@ -193,7 +196,7 @@ export const WhatIfPage = () => {
             <select
               value={selectedGrade}
               onChange={(e) => setSelectedGrade(e.target.value)}
-              className="px-6 py-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-yellow-400"
+              className="px-6 py-3 rounded-xl bg-black/80 text-white border border-white/20 focus:border-yellow-400"
             >
               <option value="4-6">4-6 (Beginner)</option>
               <option value="7-9">7-9 (Intermediate)</option>
@@ -204,7 +207,7 @@ export const WhatIfPage = () => {
 
         {/* Progress Overview */}
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-6 shadow-2xl border border-white/20"
+          className="bg-black/80 backdrop-blur-md rounded-3xl p-6 shadow-2xl border border-white/20"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -221,7 +224,7 @@ export const WhatIfPage = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex-1 bg-white/10 rounded-full h-4 overflow-hidden">
+            <div className="flex-1 bg-black/80 rounded-full h-4 overflow-hidden">
               <motion.div
                 className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full"
                 initial={{ width: 0 }}
@@ -239,7 +242,7 @@ export const WhatIfPage = () => {
           <div>
             <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
               <Award className="text-yellow-400" size={28} />
-              Daily Challenges
+              Skill Activities
             </h2>
             {/* Challenge Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -250,8 +253,8 @@ export const WhatIfPage = () => {
                     key={challenge.id}
                     className={`backdrop-blur-md rounded-3xl p-6 shadow-2xl border relative overflow-hidden ${
                       isLocked
-                        ? 'bg-gray-500/20 border-gray-400/30'
-                        : 'bg-white/10 border-white/20'
+                        ? 'bg-black/80 border-gray-400/30'
+                        : 'bg-black/80 border-white/20'
                     }`}
                     style={{ perspective: '1000px' }}
                     initial={{ opacity: 0, y: 50 }}
@@ -323,7 +326,7 @@ export const WhatIfPage = () => {
                       {isLocked ? (
                         <div className="w-full py-3 px-4 rounded-2xl font-semibold text-gray-400 bg-gray-600/20 border border-gray-500/30 flex items-center justify-center gap-2">
                           <Trophy className="text-gray-400" size={16} />
-                          Challenge Locked
+                          Activity Locked
                         </div>
                       ) : (
                         <motion.button
@@ -333,7 +336,7 @@ export const WhatIfPage = () => {
                           whileTap={{ scale: 0.95 }}
                         >
                           <Zap className="text-white" size={16} />
-                          Start Challenge
+                          Start Activity
                         </motion.button>
                       )}
                     </div>
@@ -346,7 +349,7 @@ export const WhatIfPage = () => {
           <div>
             {/* Speaking Practice Section */}
             <motion.div
-              className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+              className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -371,7 +374,7 @@ export const WhatIfPage = () => {
                 <select
                   value={currentLevel}
                   onChange={handleLevelChange}
-                  className="px-6 py-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-blue-400"
+                  className="px-6 py-3 rounded-xl bg-black/80 text-white border border-white/20 focus:border-blue-400"
                 >
                   <option value="Beginner">Beginner</option>
                   <option value="Intermediate">Intermediate</option>
@@ -383,7 +386,7 @@ export const WhatIfPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <motion.button
                   onClick={() => navigate('/speaking', { state: { level: currentLevel } })}
-                  className="p-4 rounded-xl text-left text-white bg-gradient-to-r from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 border border-blue-400/30 hover:border-blue-400/50 transition-all duration-300 group"
+                  className="p-4 rounded-xl text-left text-white bg-black/80 border border-blue-400/30 hover:border-blue-400/50 transition-all duration-300 group"
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -400,7 +403,7 @@ export const WhatIfPage = () => {
 
                 <motion.button
                   onClick={() => navigate('/sentence-practice', { state: { level: currentLevel } })}
-                  className="p-4 rounded-xl text-left text-white bg-gradient-to-r from-green-500/20 to-green-600/20 hover:from-green-500/30 hover:to-green-600/30 border border-green-400/30 hover:border-green-400/50 transition-all duration-300 group"
+                  className="p-4 rounded-xl text-left text-white bg-black/80 border border-green-400/30 hover:border-green-400/50 transition-all duration-300 group"
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -417,7 +420,7 @@ export const WhatIfPage = () => {
 
                 <motion.button
                   onClick={() => navigate('/casual', { state: { level: currentLevel } })}
-                  className="p-4 rounded-xl text-left text-white bg-gradient-to-r from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border border-purple-400/30 hover:border-purple-400/50 transition-all duration-300 group"
+                  className="p-4 rounded-xl text-left text-white bg-black/80 border border-purple-400/30 hover:border-purple-400/50 transition-all duration-300 group"
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -438,7 +441,7 @@ export const WhatIfPage = () => {
 
         {/* Achievement Section */}
         <motion.div
-          className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center"
+          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center"
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -452,9 +455,9 @@ export const WhatIfPage = () => {
             <Award className="text-yellow-400" size={48} />
           </motion.div>
 
-          <h3 className="text-3xl font-bold mb-4 text-white">Complete All Challenges!</h3>
+          <h3 className="text-3xl font-bold mb-4 text-white">Complete All Activities!</h3>
           <p className="text-white/70 text-lg mb-6 max-w-2xl mx-auto">
-            Finish all daily challenges to unlock special rewards, earn badges, and track your learning streak. Keep up the great work!
+            Finish all activities to unlock rewards, earn badges, and grow your English skills every day.
           </p>
 
           <div className="flex items-center justify-center gap-6 text-white/80">
@@ -472,8 +475,6 @@ export const WhatIfPage = () => {
             </div>
           </div>
         </motion.div>
-
-
       </div>
     </div>
   );
