@@ -14,6 +14,7 @@ dist-ssr
 backend/firebase-service-account.json
 .env
 backend/.env
+backend/*.json
 
 # Editor directories and files
 .vscode/*
