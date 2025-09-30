@@ -602,7 +602,7 @@ app.post('/api/generate-theme-images', async (req, res) => {
 
   const prompt = THEME_PROMPTS[theme];
   const publicImageUrls = [];
-  const BACKEND_URL = process.env.VITE_BACKEND_URL || 'http://localhost:5001';
+  const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
   const PYTHON_API_URL = 'http://localhost:5002/generate';
   const numberOfImages = 5;
 
@@ -667,7 +667,7 @@ app.post('/api/generate-topic-image', async (req, res) => {
     }
 
     const result = await pythonResponse.json();
-    const BACKEND_URL = process.env.VITE_BACKEND_URL || 'http://localhost:5001';
+    const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
     res.status(200).json({ imageUrl: `${BACKEND_URL}${result.path}` });
   } catch (error) {
     console.error('Error generating topic image:', error);
@@ -858,5 +858,6 @@ Please provide an adapted study plan that adjusts the difficulty and pace accord
   }
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
+const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -47,7 +47,14 @@ export const ExploreMenu = () => {
             setTheme(data.interests as keyof typeof themeConfig);
           }
           if (data.generatedThemeImages && data.generatedThemeImages.length > 0) {
-            setDynamicBackgrounds(data.generatedThemeImages);
+            const baseUrl = import.meta.env.VITE_BACKEND_URL || '';
+            const fullUrls = data.generatedThemeImages.map((img: string) => {
+              if (img.startsWith('http') || img.startsWith('https')) {
+                return img;
+              }
+              return baseUrl + (img.startsWith('/') ? img : '/' + img);
+            });
+            setDynamicBackgrounds(fullUrls);
           }
         }
       } catch (error) {
@@ -124,7 +131,7 @@ export const ExploreMenu = () => {
   const handleChangeTheme = useCallback(async (newTheme: string) => {
     setIsThemeSelectorOpen(false);
     setIsGenerating(true);
-    
+
     try {
       const generateResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/generate-theme-images`, {
         method: 'POST',
@@ -132,10 +139,17 @@ export const ExploreMenu = () => {
         body: JSON.stringify({ theme: newTheme }),
       });
       const data = await generateResponse.json();
-      
+
       if (generateResponse.ok) {
         setTheme(newTheme as keyof typeof themeConfig);
-        setDynamicBackgrounds(data.backgrounds);
+        const baseUrl = import.meta.env.VITE_BACKEND_URL || '';
+        const processedBackgrounds = data.backgrounds.map((img: string) => {
+          if (img.startsWith('http') || img.startsWith('https')) {
+            return img;
+          }
+          return baseUrl + (img.startsWith('/') ? img : '/' + img);
+        });
+        setDynamicBackgrounds(processedBackgrounds);
 
         const user = auth.currentUser;
         if (user) {
@@ -150,7 +164,7 @@ export const ExploreMenu = () => {
             body: JSON.stringify({
               learningStyle: 'visual', // You may want to fetch the current learning style instead of hardcoding
               interests: newTheme,
-              generatedThemeImages: data.backgrounds,
+              generatedThemeImages: processedBackgrounds,
             }),
           });
           if (!saveResponse.ok) {
@@ -190,7 +204,7 @@ export const ExploreMenu = () => {
         transition: 'background-image 1s ease-in-out',
       }}
     >
-      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-black bg-opacity-20 backdrop-blur-sm"></div>
       
       {isGenerating && <LoadingSpinner />}
       

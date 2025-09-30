@@ -7,7 +7,8 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   sendEmailVerification,
-  signOut
+  signOut,
+  getIdToken
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
@@ -32,20 +33,31 @@ const AuthPage: React.FC = () => {
         await signOut(auth); // Log out the user
         return;
       }
-      
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/${user.uid}`);
+
+      // Get ID token for authenticated user
+      const token = await user.getIdToken();
+
+      // Include token in Authorization header for /api/user
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/${user.uid}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (!response.ok) {
-        await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            firebaseUid: user.uid,
-            name: email.split('@')[0],
-            email: user.email,
-            dob: null,
-            class: null,
-          }),
-        });
+        // If user not found, try to register
+        try {
+          await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              firebaseUid: user.uid,
+              name: email.split('@')[0],
+              email: user.email,
+              dob: null,
+              class: null,
+            }),
+          });
+        } catch (registerError: any) {
+          alert(`Failed to register user: ${registerError.message}`);
+        }
       }
       navigate('/welcome-back');
     } catch (error: any) {
@@ -60,18 +72,22 @@ const AuthPage: React.FC = () => {
       const user = userCredential.user;
 
       await sendEmailVerification(user); // Send verification email
-      
-      await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firebaseUid: user.uid,
-          name: username,
-          dob,
-          class: userClass,
-          email,
-        }),
-      });
+
+      try {
+        await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firebaseUid: user.uid,
+            name: username,
+            dob,
+            class: userClass,
+            email,
+          }),
+        });
+      } catch (registerError: any) {
+        alert(`Failed to register user: ${registerError.message}`);
+      }
 
       // Navigate to a dedicated page for email verification
       navigate('/verify-email');
@@ -243,13 +259,13 @@ const FloatingInput = ({ icon, label, type, value, onChange, isPassword }: any) 
         value={value}
         onChange={onChange}
         required
-        className="peer w-full px-12 py-4 rounded-xl bg-transparent text-white 
-                   border-2 border-gray-500 focus:border-pink-500 
+        className="peer w-full px-12 py-4 rounded-xl bg-transparent text-white
+                   border-2 border-gray-500 focus:border-pink-500
                    focus:ring-0 outline-none placeholder-transparent"
         placeholder=" " // keep placeholder hidden for floating label
       />
-      <label className="absolute left-12 text-gray-400 transition-all 
-                         peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 
+      <label className="absolute left-12 text-gray-400 transition-all
+                         peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2
                          peer-placeholder-shown:text-base
                          peer-focus:top-2 peer-focus:text-xs peer-focus:text-pink-400">
         {label}
@@ -276,8 +292,8 @@ const FloatingSelect = ({ icon, label, value, onChange, options }: any) => {
         value={value}
         onChange={onChange}
         required
-        className="peer w-full px-12 py-4 rounded-xl bg-transparent text-white 
-                   border-2 border-gray-500 focus:border-pink-500 
+        className="peer w-full px-12 py-4 rounded-xl bg-transparent text-white
+                   border-2 border-gray-500 focus:border-pink-500
                    focus:ring-0 outline-none appearance-none"
       >
         <option value="" disabled hidden></option>

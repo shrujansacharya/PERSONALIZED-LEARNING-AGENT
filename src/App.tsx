@@ -30,6 +30,7 @@ import { BotAI } from './components/BotAI';
 import Chatbot from './components/Chatbot';
 import AboutPage from './components/AboutPage';
 import WelcomeBack from './components/WelcomeBack';
+import AIStudyPlanner from './components/AIStudyPlanner';
 
 import AuthPage from './components/AuthPage';
 import AuthWrapper from './components/AuthWrapper';
@@ -83,6 +84,7 @@ const App: React.FC = () => {
           <Route path="/explore" element={<ExplorationMode />} />
           <Route path="/what-if" element={<WhatIfPage />} />
           <Route path="/study-groups" element={<StudyGroups />} />
+          <Route path="/ai-study-planner" element={<AIStudyPlanner />} />
           <Route path="/progress" element={<ProgressMap />} />
           <Route path="/careers" element={<CareerHub />} />
           <Route path="/project-builder" element={<ProjectBuilder />} />

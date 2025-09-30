@@ -8,8 +8,8 @@ import torch
 from datetime import datetime
 
 # --- Load the model ONCE at startup ---
-MODEL_PATH = "stable-diffusion-v1-4"
-OUTPUT_DIR = "uploads/theme_images"
+MODEL_PATH = "./stable-diffusion-v1-4"
+OUTPUT_DIR = "./uploads/theme_images"
 
 try:
     # Use float16 for better performance on GPU
@@ -33,8 +33,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Import and register AI Study Planner blueprint
-from ai_study_planner.api import ai_study_planner_bp
-app.register_blueprint(ai_study_planner_bp, url_prefix='/ai-study-planner')
+#
 
 @app.route('/generate', methods=['POST'])
 def generate():
@@ -67,7 +66,7 @@ def generate():
 
 if __name__ == '__main__':
     # Run the Flask app on port 5001 to match frontend configuration
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host='0.0.0.0', port=5002)
 
 
 
