@@ -25,7 +25,7 @@ credentials_path = os.path.join(os.getcwd(), 'agile-ratio-451415-u9-3af22c65bd8d
 if os.path.exists(credentials_path):
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
 
-gcp_project_id = os.getenv("GCP_PROJECT_ID", "agile-ratio-451415-u9")
+gcp_project_id = os.getenv("GCP_PROJECT_ID")
 
 try:
     vertexai.init(project=gcp_project_id, location="us-central1")
