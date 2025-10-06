@@ -640,7 +640,7 @@ app.post('/api/generate-topic-image', async (req, res) => {
   try {
     // Generate prompt using Gemini
     const promptResponse = await axios.post(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
       {
         contents: [{ role: 'user', parts: [{ text: `Generate a detailed, visual prompt for Stable Diffusion to create an educational image about: "${topic}". Make it suitable for students, clear, illustrative, and educational. Respond with only the prompt, no other text.` }] }],
         generationConfig: { temperature: 0.7, maxOutputTokens: 200 },
@@ -684,12 +684,18 @@ app.post('/api/generate-plan', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    console.log('Generating plan for:', { syllabus: syllabus.substring(0, 100), days, learningStyle, classStandard, subject });
+
     const prompt = `Generate a detailed ${days}-day study plan for ${classStandard} students studying ${subject}. The learning style is ${learningStyle}. Use this content as reference: ${syllabus}
 
 Please structure the response as a JSON object with a "plan" field containing the study plan in markdown format. Make it comprehensive and educational.`;
 
+    // Add timeout to Gemini API call
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: {
@@ -699,8 +705,11 @@ Please structure the response as a JSON object with a "plan" field containing th
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.7, maxOutputTokens: 2000 },
         }),
+        signal: controller.signal,
       }
     );
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown API error' }));
@@ -708,12 +717,26 @@ Please structure the response as a JSON object with a "plan" field containing th
     }
 
     const result = await response.json();
-    const plan = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Unable to generate study plan';
+    let plan = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Unable to generate study plan';
+
+    // Try to parse if it's JSON
+    try {
+      const parsed = JSON.parse(plan);
+      if (parsed.plan) {
+        plan = parsed.plan;
+      }
+    } catch (e) {
+      // Use as is if not JSON
+    }
 
     res.status(200).json({ plan });
   } catch (error) {
     console.error('Error generating study plan:', error);
-    res.status(500).json({ error: `Failed to generate study plan: ${error.message}` });
+    if (error.name === 'AbortError') {
+      res.status(500).json({ error: 'Request timed out. Please try again.' });
+    } else {
+      res.status(500).json({ error: `Failed to generate study plan: ${error.message}` });
+    }
   }
 });
 
@@ -721,21 +744,27 @@ app.post('/api/generate-answers', async (req, res) => {
   try {
     const { questionPaperText, textbookText, subject } = req.body;
 
+    console.log('Received request body:', { questionPaperText: questionPaperText?.substring(0, 100), textbookText: textbookText?.substring(0, 100), subject });
+
     if (!questionPaperText) {
       return res.status(400).json({ error: 'Question paper text is required' });
     }
 
-    const prompt = `Generate detailed answers for the following question paper on ${subject}. Use the textbook content as reference if provided.
+    const prompt = `You are an AI tutor. Generate detailed, comprehensive answers for the following question paper on ${subject}. Use the provided textbook content as reference. Do not ask for more information or clarification. Provide the answers directly.
 
 Question Paper:
 ${questionPaperText}
 
 ${textbookText ? `Textbook Reference:\n${textbookText}` : ''}
 
-Please provide comprehensive, accurate answers in a clear, educational format.`;
+Generate the answers now in a clear, educational format.`;
+
+    // Add timeout to Gemini API call
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
     const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
       {
         method: 'POST',
         headers: {
@@ -746,8 +775,11 @@ Please provide comprehensive, accurate answers in a clear, educational format.`;
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.7, maxOutputTokens: 2000 },
         }),
+        signal: controller.signal,
       }
     );
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown API error' }));
@@ -760,7 +792,11 @@ Please provide comprehensive, accurate answers in a clear, educational format.`;
     res.status(200).json({ answers });
   } catch (error) {
     console.error('Error generating answers:', error);
-    res.status(500).json({ error: 'Failed to generate answers' });
+    if (error.name === 'AbortError') {
+      res.status(500).json({ error: 'Request timed out. Please try again.' });
+    } else {
+      res.status(500).json({ error: 'Failed to generate answers' });
+    }
   }
 });
 
@@ -774,26 +810,27 @@ app.post('/api/youtube-videos', async (req, res) => {
 
     // Mock YouTube videos data since we don't have YouTube API key
     // In production, you would use YouTube Data API v3
-    const mockVideos = [
-      {
-        title: `${subject} - Introduction and Basics`,
-        video_id: 'dQw4w9WgXcQ',
-        thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-      },
-      {
-        title: `Advanced ${subject} Concepts`,
-        video_id: 'dQw4w9WgXcQ',
-        thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-      },
-      {
-        title: `${subject} Practice Problems`,
-        video_id: 'dQw4w9WgXcQ',
-        thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-      }
-    ];
+    // In server.js
+const mockVideos = [
+  {
+    title: `${subject} - Introduction and Basics`,
+    video_id: 'YOUTUBE_ID_1', // Unique ID
+    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+  },
+  {
+    title: `Advanced ${subject} Concepts`,
+    video_id: 'YOUTUBE_ID_2', // Unique ID
+    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+  },
+  {
+    title: `${subject} Practice Problems`,
+    video_id: 'YOUTUBE_ID_3', // Unique ID
+    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+  }
+];
 
     res.status(200).json({ videos: mockVideos });
   } catch (error) {
@@ -828,8 +865,12 @@ ${previousPlan}
 
 Please provide an adapted study plan that adjusts the difficulty and pace according to the student's performance.`;
 
+    // Add timeout to Gemini API call
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
     const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
       {
         method: 'POST',
         headers: {
@@ -840,8 +881,11 @@ Please provide an adapted study plan that adjusts the difficulty and pace accord
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.7, maxOutputTokens: 2000 },
         }),
+        signal: controller.signal,
       }
     );
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown API error' }));
@@ -854,7 +898,11 @@ Please provide an adapted study plan that adjusts the difficulty and pace accord
     res.status(200).json({ adaptedPlan });
   } catch (error) {
     console.error('Error adapting study plan:', error);
-    res.status(500).json({ error: 'Failed to adapt study plan' });
+    if (error.name === 'AbortError') {
+      res.status(500).json({ error: 'Request timed out. Please try again.' });
+    } else {
+      res.status(500).json({ error: 'Failed to adapt study plan' });
+    }
   }
 });
 

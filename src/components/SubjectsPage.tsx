@@ -1,3 +1,4 @@
+// SubjectsPage.tsx (Updated)
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Book, Calculator, FlaskRound as Flask, Globe, MessageSquare, Languages, Atom, ArrowLeft, Search, Code, Laptop, Database, Beaker, Landmark, FileText, X, File, MessageCircle, Eye, Bot, Download, Calendar, Clock, Filter, Grid, List, Star, CheckCircle, AlertCircle, PlayCircle, Image, Video, FileType, FileText as FileTextIcon } from 'lucide-react';
@@ -176,7 +177,8 @@ export const SubjectsPage = () => {
 
       const { context } = await response.json();
 
-      navigate(`/subjects/${selectedSubject.id}/chat`, { state: { context } });
+      // Updated: Pass comment in state for better placeholder
+      navigate(`/subjects/${selectedSubject.id}/chat`, { state: { context, comment: material.comment || '' } });
 
     } catch (error) {
       console.error("Analysis failed:", error);
@@ -518,7 +520,7 @@ export const SubjectsPage = () => {
                   onClick={() => setActionableMaterial(null)}
                   className="absolute top-3 right-3 text-gray-400 bg-gray-900/50 rounded-full p-2 hover:bg-red-500/50 transition-colors"
                 >
-                  X size={20}
+                  <X size={20} />
                 </button>
               </motion.div>
             </motion.div>

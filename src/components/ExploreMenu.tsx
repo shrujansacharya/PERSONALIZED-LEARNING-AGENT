@@ -210,49 +210,72 @@ export const ExploreMenu = () => {
       
       <div className="relative max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8 relative">
+          {/* START: Back Button - Designed like the image */}
           <button
             onClick={() => navigate(-1)}
-            className="bg-white/90 backdrop-blur text-purple-600 px-6 py-3 rounded-full font-semibold flex items-center gap-2 hover:bg-white transition-colors"
+            className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center 
+                       shadow-md hover:bg-indigo-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75"
+            title="Go Back"
           >
-            <ArrowLeft size={20} />
-            Back
+            <ArrowLeft size={24} className="text-white" />
           </button>
+          {/* END: Back Button */}
           
           <div className="flex items-center gap-4 ml-auto">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => navigate('/tasks')}
-              className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold py-3 px-4 rounded-xl shadow-lg hover:opacity-90 transition-opacity flex items-center gap-2"
-              title="Tasks"
-            >
-              <Star size={20} />
-              Tasks
-            </motion.button>
+            
+            {/* START: Change Theme Button - Reverted to Dark Gradient Style */}
             <button
               onClick={() => setIsThemeSelectorOpen(true)}
-              className="bg-white/90 backdrop-blur text-purple-600 px-6 py-3 rounded-full font-semibold flex items-center gap-2 hover:bg-white transition-colors"
+              className="bg-gradient-to-r from-purple-700 to-indigo-700 text-white px-6 py-3 rounded-full font-semibold flex items-center gap-2 shadow-lg hover:from-purple-800 hover:to-indigo-800 transition-all duration-300 transform hover:scale-[1.02]"
             >
               <Palette size={20} />
               Change Theme
             </button>
+            {/* END: Change Theme Button */}
+
+            {/* START: Account Button with Perfectly Round, Segmented, Rotating Border */}
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsAccountModalOpen(true)}
-              className="bg-indigo-600 text-white rounded-full p-2 shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center"
+              // The main wrapper for size and shape
+              className="relative w-14 h-14 rounded-full shadow-lg transition-all flex items-center justify-center overflow-hidden"
               title="My Account"
             >
-              {profileImageUrl ? (
-                <img
-                  src={`${import.meta.env.VITE_BACKEND_URL}${profileImageUrl}`}
-                  alt="Profile"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white"
-                />
-              ) : (
-                <UserCircle size={28} />
-              )}
+              {/* Spinning Segmented Gradient Element */}
+              <div 
+                // Using conic-gradient via style for segmented color stops (6 colors / 6 = 60 degrees per color)
+                className="absolute inset-[-100%] w-[300%] h-[300%] animate-spin"
+                style={{ 
+                  animationDuration: '8s', 
+                  backgroundImage: `conic-gradient(
+                    from 0deg, 
+                    #FF0000 0deg 60deg,  /* Red */
+                    #FFFF00 60deg 120deg, /* Yellow */
+                    #00FF00 120deg 180deg, /* Green */
+                    #E0115F 180deg 240deg, /* Ruby */
+                    #0000FF 240deg 300deg, /* Blue */
+                    #800000 300deg 360deg  /* Burgundy */
+                  )`
+                }}
+              ></div>
+
+              {/* Inner Circle (Very Dark) for the actual profile picture/icon */}
+              {/* This circle is slightly smaller to create the border effect around it */}
+              <div className="relative w-12 h-12 bg-black rounded-full flex items-center justify-center z-10">
+                {profileImageUrl ? (
+                  <img
+                    src={`${import.meta.env.VITE_BACKEND_URL}${profileImageUrl}`}
+                    alt="Profile"
+                    className="w-11 h-11 rounded-full object-cover" 
+                  />
+                ) : (
+                  // Placeholder icon inside the dark ring
+                  <UserCircle size={28} className="text-white w-11 h-11" />
+                )}
+              </div>
             </motion.button>
+            {/* END: Account Button with Perfectly Round, Segmented, Rotating Border */}
           </div>
         </div>
 

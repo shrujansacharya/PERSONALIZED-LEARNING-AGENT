@@ -1,9 +1,10 @@
 // src/components/modals/AccountModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Import useRef
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { auth } from '../../lib/firebase';
 import { signOut } from 'firebase/auth';
+import { useThemeStore } from '../../store/theme';
 import { X, User, LogOut, Upload, Camera, Mail, Calendar, BookOpen, Target, TrendingUp, Award, Settings } from 'lucide-react';
 
 interface AccountModalProps {
@@ -18,6 +19,7 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onProfileU
   const [uploading, setUploading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null); // Create a ref for the file input
 
   const fetchUserData = async () => {
     const user = auth.currentUser;
@@ -59,13 +61,18 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onProfileU
   }, [isOpen]);
 
   const handleLogout = async () => {
+    // Reset theme to default before logout
+    const { setTheme, setDynamicBackgrounds } = useThemeStore.getState();
+    setTheme('cricket');
+    setDynamicBackgrounds([]);
+
     try {
       await signOut(auth);
-      navigate('/login');
-      onClose();
     } catch (error) {
       console.error("Logout failed:", error);
     }
+    navigate('/login');
+    onClose();
   };
   
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +151,7 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onProfileU
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed top-0 right-0 h-full w-full max-w-md z-50 bg-black shadow-2xl overflow-hidden"
+            className="fixed top-0 right-0 h-full w-full max-w-md z-50 bg-black shadow-2xl"
           >
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-20">
@@ -168,8 +175,10 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onProfileU
               <X size={20} />
             </motion.button>
 
-            <div className="h-full overflow-y-auto">
-              <div className="flex flex-col min-h-full">
+            {/* Main Content Area (Scrollable) */}
+            <div className="h-full flex flex-col">
+              {/* Increased pb to ensure button is clear of the bottom edge when scrolled */}
+              <div className="flex flex-col flex-1 overflow-y-auto pb-16"> 
                 {/* Header Section */}
                 <motion.div
                   initial={{ opacity: 0, y: -30 }}
@@ -183,22 +192,60 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onProfileU
                     transition={{ delay: 0.3, duration: 0.5 }}
                     className="relative inline-block mb-4"
                   >
-                    {userData?.profileImage ? (
-                      <div className="relative">
-                        <img
-                          src={`${import.meta.env.VITE_BACKEND_URL}${userData.profileImage}`}
-                          alt="Profile"
-                          className="w-20 h-20 rounded-full object-cover border-4 border-white/30 shadow-xl mx-auto"
-                        />
-                        <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-full shadow-lg">
-                          <Camera size={14} className="text-white" />
-                        </div>
+                    {/* START: Profile Icon with Perfectly Round, Segmented, Rotating Border */}
+                    <div 
+                        // The main wrapper for size and shape (slightly larger for modal)
+                        className="relative w-24 h-24 p-[4px] rounded-full shadow-xl flex items-center justify-center overflow-hidden mx-auto"
+                      >
+                      {/* Spinning Segmented Gradient Element */}
+                      <div 
+                        // Conic-gradient with high saturation colors
+                        className="absolute inset-[-100%] w-[300%] h-[300%] animate-spin"
+                        style={{ 
+                          animationDuration: '8s', 
+                          backgroundImage: `conic-gradient(
+                            from 0deg, 
+                            #FF0000 0deg 60deg,  /* Red */
+                            #FFFF00 60deg 120deg, /* Yellow */
+                            #00FF00 120deg 180deg, /* Green */
+                            #E0115F 180deg 240deg, /* Ruby */
+                            #0000FF 240deg 300deg, /* Blue */
+                            #800000 300deg 360deg  /* Burgundy */
+                          )`
+                        }}
+                      ></div>
+
+                      {/* Inner Circle (Very Dark) for the actual profile picture/icon */}
+                      <div className="relative w-full h-full bg-black rounded-full flex items-center justify-center z-10 p-[2px]">
+                        {userData?.profileImage ? (
+                          <img
+                            src={`${import.meta.env.VITE_BACKEND_URL}${userData.profileImage}`}
+                            alt="Profile"
+                            className="w-full h-full rounded-full object-cover" 
+                          />
+                        ) : (
+                          // Placeholder icon inside the dark ring
+                          <User size={40} className="text-white" />
+                        )}
+                        {/* Camera Icon - Now a functional label for the hidden file input */}
+                        <label 
+                          htmlFor="profile-image-upload" // Connects label to input
+                          className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform"
+                          title="Change Profile Picture"
+                        >
+                          <Camera size={14} className="text-gray-800" />
+                          <input 
+                            type="file" 
+                            id="profile-image-upload" // ID matches htmlFor
+                            className="hidden" // Keep it hidden
+                            onChange={handleImageChange} 
+                            accept="image/*" 
+                            ref={fileInputRef} // Assign ref to this input
+                          />
+                        </label>
                       </div>
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center shadow-xl mx-auto">
-                        <User size={32} className="text-white" />
-                      </div>
-                    )}
+                    </div>
+                    {/* END: Profile Icon with Perfectly Round, Segmented, Rotating Border */}
                   </motion.div>
 
                   <motion.h1
@@ -219,37 +266,32 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onProfileU
                     Your Learning Profile
                   </motion.p>
 
-                  {/* Image Upload Section */}
+                  {/* Image Upload Section - simplified, now only showing confirm if image selected */}
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    <label className="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-md text-white rounded-full cursor-pointer hover:bg-white/20 transition-all duration-300 hover:scale-105 border border-white/20 text-sm">
-                      <Upload size={16} className="mr-2" />
-                      {selectedImage ? selectedImage.name : "Update Picture"}
-                      <input type="file" className="hidden" onChange={handleImageChange} accept="image/*" />
-                    </label>
                     {selectedImage && (
                       <motion.button
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         onClick={handleImageUpload}
                         disabled={uploading}
-                        className="ml-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full font-semibold hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 transition-all duration-300 hover:scale-105 shadow-lg text-sm"
+                        className="mx-auto px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full font-semibold hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 transition-all duration-300 hover:scale-105 shadow-lg text-sm"
                       >
-                        {uploading ? 'Uploading...' : 'Confirm'}
+                        {uploading ? 'Uploading...' : 'Confirm New Picture'}
                       </motion.button>
                     )}
                   </motion.div>
                 </motion.div>
 
-                {/* Content Section */}
+                {/* Content Section (Scrolls) */}
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.6 }}
-                  className="flex-1 px-6 py-6"
+                  className="px-6 py-6"
                 >
                   {loading ? (
                     <motion.div
@@ -371,6 +413,22 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onProfileU
                           </div>
                         </motion.div>
                       )}
+
+                      {/* Logout Button - FINAL LOCATION AND Z-INDEX FIX */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.7 }}
+                        className="mt-6 text-center relative z-20" // Added z-20 for clickability insurance
+                      >
+                        <button
+                          onClick={handleLogout}
+                          className="w-64 mx-auto py-3 px-6 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full font-bold text-sm flex items-center justify-center gap-2 hover:from-red-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 shadow-xl"
+                        >
+                          <LogOut size={18} />
+                          Logout
+                        </button>
+                      </motion.div>
                     </div>
                   ) : (
                     <motion.div
@@ -387,22 +445,6 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onProfileU
                       </button>
                     </motion.div>
                   )}
-                </motion.div>
-
-                {/* Footer with Logout */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                  className="p-6 border-t border-white/10"
-                >
-                  <button
-                    onClick={handleLogout}
-                    className="w-full py-3 px-6 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full font-bold text-sm flex items-center justify-center gap-2 hover:from-red-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 shadow-xl"
-                  >
-                    <LogOut size={18} />
-                    Logout
-                  </button>
                 </motion.div>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Lock, Mail, ArrowLeft, Calendar, GraduationCap } from 'lucide-react';
@@ -8,7 +8,8 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   signOut,
-  getIdToken
+  getIdToken,
+  onAuthStateChanged
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
@@ -21,6 +22,15 @@ const AuthPage: React.FC = () => {
   const [userClass, setUserClass] = useState('');
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.emailVerified) {
+        navigate('/welcome-back');
+      }
+    });
+    return unsubscribe;
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
