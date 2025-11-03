@@ -35,3 +35,6 @@ backend/agile-ratio-451415-u9-3af22c65bd8d.json
 AI STUDY PLANNER/agile-ratio-451415-u9-3af22c65bd8d.json
 # A generic pattern to catch the key anywhere (recommended)
 **/agile-ratio-451415-u9-3af22c65bd8d.json
+
+echo "backend/firebase-service-account.json" >> .gitignore
+echo "backend/vertex-service-account.json" >> .gitignore
