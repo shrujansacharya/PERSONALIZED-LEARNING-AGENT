@@ -1,3 +1,4 @@
+// UploadMaterials.tsx - Updated with enhancements
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,6 +18,7 @@ const UploadMaterials: React.FC<UploadMaterialsProps> = ({ onBack, onViewUploads
     const [studentsInClass, setStudentsInClass] = useState<any[]>([]);
     const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
     const [file, setFile] = useState<File | null>(null);
+    const [dragActive, setDragActive] = useState(false);
     const [comment, setComment] = useState<string>('');
     const [uploading, setUploading] = useState<boolean>(false);
     const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
@@ -120,8 +122,14 @@ const UploadMaterials: React.FC<UploadMaterialsProps> = ({ onBack, onViewUploads
     // Main component render
     if (uploadSuccess) {
         return (
-            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl text-center">
-                <CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                className="p-8 bg-white dark:bg-gray-800 rounded-xl shadow-2xl text-center border border-green-100 dark:border-green-900"
+            >
+                <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 1, ease: 'easeInOut' }}>
+                    <CheckCircle className="w-20 h-20 mx-auto text-green-500 mb-4" />
+                </motion.div>
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Upload Successful!</h2>
                 <p className="text-gray-600 dark:text-gray-400 mt-2 mb-6">The material has been assigned to the selected students.</p>
                 <div className="flex justify-center gap-4">
@@ -147,19 +155,52 @@ const UploadMaterials: React.FC<UploadMaterialsProps> = ({ onBack, onViewUploads
                 </button>
             </div>
             
-            {/* Stepper */}
-            <div className="flex justify-between items-center mb-8">
-                {steps.map((step, index) => (
-                    <React.Fragment key={step.id}>
-                        <div className="flex flex-col items-center">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${currentStep >= step.id ? 'bg-purple-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
-                                <step.icon size={24} />
-                            </div>
-                            <p className={`mt-2 text-sm font-semibold ${currentStep >= step.id ? 'text-gray-800 dark:text-white' : 'text-gray-500'}`}>{step.name}</p>
-                        </div>
-                        {index < steps.length - 1 && <div className={`flex-1 h-1 mx-2 ${currentStep > step.id ? 'bg-purple-600' : 'bg-gray-200 dark:bg-gray-700'}`} />}
-                    </React.Fragment>
-                ))}
+            {/* Enhanced Stepper */}
+            <div className="relative mb-8 overflow-hidden">
+                <div className="flex justify-between items-center">
+                    {steps.map((step, index) => (
+                        <React.Fragment key={step.id}>
+                            <motion.div
+                                className="flex flex-col items-center z-10"
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ delay: index * 0.1 }}
+                            >
+                                <div className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
+                                    currentStep >= step.id
+                                        ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white'
+                                        : 'bg-white dark:bg-gray-700 text-gray-400 border-2 border-gray-200 dark:border-gray-600'
+                                }`}>
+                                    <step.icon size={20} />
+                                    {currentStep === step.id && (
+                                        <motion.div
+                                            className="absolute -inset-1 rounded-full bg-purple-200 dark:bg-purple-900/50 blur"
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            transition={{ duration: 0.5 }}
+                                        />
+                                    )}
+                                </div>
+                                <p className={`mt-2 text-xs font-medium px-2 py-1 rounded-full ${
+                                    currentStep === step.id
+                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
+                                        : currentStep > step.id
+                                        ? 'text-purple-600 dark:text-purple-400'
+                                        : 'text-gray-500'
+                                }`}>
+                                    {step.name}
+                                </p>
+                            </motion.div>
+                            {index < steps.length - 1 && (
+                                <div className={`flex-1 h-1 mx-4 rounded-full transition-all duration-500 ${
+                                    currentStep > step.id
+                                        ? 'bg-gradient-to-r from-purple-500 to-purple-600'
+                                        : 'bg-gray-200 dark:bg-gray-600'
+                                }`} />
+                            )}
+                        </React.Fragment>
+                    ))}
+                </div>
             </div>
 
             {/* Step Content */}
@@ -209,13 +250,32 @@ const UploadMaterials: React.FC<UploadMaterialsProps> = ({ onBack, onViewUploads
                         {currentStep === 3 && (
                             <div>
                                 <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Step 3: Upload File & Add Details</h3>
-                                <div className="mb-4">
-                                    <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                            <FileUp className="w-10 h-10 mb-3 text-gray-400" />
-                                            <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">{file ? `Selected: ${file.name}` : <><span className="font-semibold">Click to upload</span> or drag and drop</>}</p>
-                                        </div>
-                                        <input id="file-upload" type="file" className="hidden" onChange={e => setFile(e.target.files ? e.target.files[0] : null)} />
+                                <div
+                                    className={`relative mb-4 transition-all duration-300 ${
+                                        dragActive ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 scale-105' : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700'
+                                    }`}
+                                    onDragOver={e => { e.preventDefault(); setDragActive(true); }}
+                                    onDragLeave={() => setDragActive(false)}
+                                    onDrop={e => { e.preventDefault(); setDragActive(false); setFile(e.dataTransfer.files[0]); }}
+                                >
+                                    <label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-xl cursor-pointer hover:shadow-lg transition-shadow">
+                                        <motion.div
+                                            className="flex flex-col items-center justify-center pt-5 pb-6"
+                                            animate={{ scale: dragActive ? 1.05 : 1 }}
+                                            transition={{ type: 'spring', stiffness: 400 }}
+                                        >
+                                            <FileUp className={`w-10 h-10 mb-3 transition-colors ${dragActive ? 'text-purple-500' : 'text-gray-400'}`} />
+                                            <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                                {file ? `Selected: ${file.name}` : (
+                                                    <>
+                                                        <span className="font-semibold text-gray-900 dark:text-white">Click to upload</span><br />
+                                                        or drag and drop
+                                                    </>
+                                                )}
+                                            </p>
+                                            <p className="text-xs text-gray-400">Supports PDF, Images, Videos (max 50MB)</p>
+                                        </motion.div>
+                                        <input id="file-upload" type="file" className="hidden" onChange={e => setFile(e.target.files ? e.target.files[0] : null)} accept=".pdf,.jpg,.png,.mp4" />
                                     </label>
                                 </div>
                                 <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="Add a task or comment (optional)..." className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" rows={4}/>

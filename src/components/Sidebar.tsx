@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PlusCircle,
@@ -10,6 +10,7 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 
 interface Subject {
@@ -68,16 +69,32 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [sidebarView, setSidebarView] = useState<'main' | 'account'>('main');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(''); // New: Search state
 
-  const groupedByWeekday = Object.entries(sessionsBySubject).reduce((acc, [subjectId, sessions]) => {
-    sessions.forEach(session => {
-      if (!acc[session.weekday]) {
-        acc[session.weekday] = [];
-      }
-      acc[session.weekday].push(session);
+  const groupedByWeekday = useMemo(() => {
+    return Object.entries(sessionsBySubject).reduce((acc, [subjectId, sessions]) => {
+      sessions.forEach(session => {
+        if (!acc[session.weekday]) {
+          acc[session.weekday] = [];
+        }
+        acc[session.weekday].push(session);
+      });
+      return acc;
+    }, {} as Record<string, ChatSession[]>);
+  }, [sessionsBySubject]);
+
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery.trim()) return groupedByWeekday;
+    const lowerQuery = searchQuery.toLowerCase();
+    const filtered = { ...groupedByWeekday };
+    Object.keys(filtered).forEach(day => {
+      filtered[day] = filtered[day].filter(session => 
+        session.name.toLowerCase().includes(lowerQuery)
+      );
+      if (filtered[day].length === 0) delete filtered[day];
     });
-    return acc;
-  }, {} as Record<string, ChatSession[]>);
+    return filtered;
+  }, [groupedByWeekday, searchQuery]);
 
   const weekdayOfNow = () => {
     return new Date().toLocaleDateString("en-US", { weekday: "long" });
@@ -108,113 +125,192 @@ const Sidebar: React.FC<SidebarProps> = ({
     setRenameValue("");
   };
 
+  // New: Clear History handler (placeholder - integrate with confirmation modal)
+  const handleClearHistory = () => {
+    if (window.confirm('Clear all history? This cannot be undone.')) {
+      // Implement clear logic here
+      console.log('Clearing history...');
+    }
+  };
+
+  // Unified button style for action buttons
+  const unifiedActionButtonClass = `flex items-center w-full p-3.5 rounded-xl bg-black/50 hover:bg-gray-800/70 transition-all duration-200 text-gray-300 hover:text-white font-medium shadow-sm hover:shadow-glow focus-visible:ring-2 focus-visible:ring-indigo-500/50 ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`;
+
   return (
     <motion.div
-      initial={{ width: 250 }}
-      animate={{ width: isSidebarCollapsed ? 100 : 250 }}
-      transition={{ duration: 0.3 }}
-      className="fixed top-0 bottom-0 flex flex-col bg-black/70 border-r border-white/20 p-4 shrink-0"
+      initial={{ width: 220 }}
+      animate={{ width: isSidebarCollapsed ? 60 : 220 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="fixed top-0 bottom-0 flex flex-col bg-black border-r border-gray-800/50 backdrop-blur-xl shadow-2xl z-40"
+      role="navigation"
+      aria-label="Sidebar navigation"
     >
-      <button
-        onClick={onBackButtonClick}
-        className="group relative w-12 h-12 flex items-center justify-center p-2 rounded-full transition-all duration-200 
-                   bg-black/50 hover:bg-black/80 mb-4"
-        title="Back to Subjects"
-      >
-        <div className="absolute inset-0 rounded-full z-10 
-                       bg-gradient-to-br from-purple-600 to-indigo-800
-                       group-hover:from-purple-500 group-hover:to-indigo-700
-                       transition-all duration-300 transform group-hover:scale-110"></div>
-        <ArrowLeft
-          size={24}
-          className="relative z-20 text-white"
-          style={{
-            filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.8))'
-          }}
-        />
-      </button>
-
-      <div className="flex items-center gap-2 pb-4 mb-4">
-        <div className="h-10 w-10 relative flex items-center justify-center">
-          <div
-            className={`absolute inset-0 bg-no-repeat bg-contain`}
-            style={{ backgroundImage: `url('/src/styles/chatbotimage.png')` }}
+      {/* Header */}
+      <div className="p-4 border-b border-gray-800/30">
+        <button
+          onClick={onBackButtonClick}
+          className="group relative w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-300 
+                     bg-gray-900/50 hover:bg-gray-800/70 mb-4 shadow-glow hover:shadow-glow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+          aria-label="Back to Subjects"
+          title="Back to Subjects"
+        >
+          <div className="absolute inset-0 rounded-xl z-10 
+                         bg-gradient-to-br from-purple-600/30 to-indigo-600/30
+                         group-hover:from-purple-500/40 group-hover:to-indigo-500/40
+                         transition-all duration-300 transform group-hover:scale-105"></div>
+          <ArrowLeft
+            size={20}
+            className="relative z-20 text-gray-300 group-hover:text-white transition-colors shrink-0"
+            style={{
+              filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.5))'
+            }}
           />
+        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 relative flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 shadow-glow-lg shrink-0">
+            <div
+              className={`absolute inset-0 bg-no-repeat bg-contain opacity-95`}
+              style={{ backgroundImage: `url('/src/styles/chatbotimage.png')` }}
+            />
+          </div>
+          <AnimatePresence>
+            {!isSidebarCollapsed && (
+              <motion.span
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="text-lg font-bold whitespace-nowrap"
+                style={{
+                  background: 'linear-gradient(90deg, #a855f7, #ec4899, #3b82f6)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                Learny
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
-        <AnimatePresence>
-          {!isSidebarCollapsed && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-xl font-bold text-white whitespace-nowrap"
-              style={{
-                background: 'linear-gradient(90deg, #a855f7, #ec4899)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              Learny
-            </motion.span>
-          )}
-        </AnimatePresence>
       </div>
-      
-      <div className="flex flex-col space-y-2 flex-1 overflow-y-auto">
+
+      {/* Main Content */}
+      <div className="flex flex-col space-y-2 flex-1 overflow-y-auto px-3 py-3">
         {sidebarView === 'main' ? (
           <>
-            <button
+            {/* Action Buttons - Unified Style */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={startNewChatSameSubject}
-              className="flex items-center gap-3 w-full p-3 rounded-md bg-blue-600 hover:bg-blue-500 transition text-white font-semibold"
+              className={unifiedActionButtonClass}
+              aria-label="Start New Chat"
+              title="New Chat"
             >
-              <PlusCircle size={20} />
+              <PlusCircle size={18} className="shrink-0 text-indigo-400 group-hover:text-indigo-300" />
               <AnimatePresence>
                 {!isSidebarCollapsed && (
-                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <motion.span initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -5 }}>
                     New Chat
                   </motion.span>
                 )}
               </AnimatePresence>
-            </button>
-            <button
-              className="flex items-center gap-3 w-full p-3 rounded-md hover:bg-white/20 transition text-blue-300 font-semibold"
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={unifiedActionButtonClass}
+              aria-label="Search Chats"
+              title="Search"
             >
-              <Search size={20} />
+              <Search size={18} className="shrink-0 text-indigo-400 group-hover:text-indigo-300" />
               <AnimatePresence>
                 {!isSidebarCollapsed && (
-                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <motion.span initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -5 }}>
                     Search
                   </motion.span>
                 )}
               </AnimatePresence>
-            </button>
-            <button
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center justify-between w-full p-3 rounded-md hover:bg-white/20 transition text-blue-300 font-semibold"
+              className={`${unifiedActionButtonClass.replace('justify-between', 'justify-between w-full')} focus-visible:ring-2 focus-visible:ring-indigo-500/50`}
+              aria-expanded={showHistory}
+              aria-label="Toggle History"
+              title="History"
             >
-              <div className="flex items-center gap-3">
-                <HistoryIcon size={20} />
+              <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
+                <HistoryIcon size={18} className="shrink-0 text-indigo-400 group-hover:text-indigo-300" />
                 <AnimatePresence>
                   {!isSidebarCollapsed && (
-                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <motion.span initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -5 }}>
                       History
                     </motion.span>
                   )}
                 </AnimatePresence>
               </div>
-            </button>
+              <AnimatePresence>
+                {!isSidebarCollapsed && (
+                  <ChevronRight size={18} className={`transition-transform duration-200 shrink-0 text-indigo-400 ${showHistory ? 'rotate-90' : ''}`} />
+                )}
+              </AnimatePresence>
+            </motion.button>
+
+            {/* History Section */}
             <AnimatePresence>
               {showHistory && !isSidebarCollapsed && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                  {Object.keys(groupedByWeekday).length === 0 && (
-                    <p className="text-[11px] text-gray-400 p-2">No saved chats.</p>
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-3 overflow-y-auto max-h-64"
+                >
+                  {/* New: Search Input */}
+                  <div className="relative mb-2">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="Search chats..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 bg-black/60 border border-gray-700/50 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-colors"
+                      aria-label="Search history"
+                    />
+                  </div>
+
+                  {/* New: Clear History Button */}
+                  {Object.keys(filteredSessions).length > 0 && (
+                    <motion.button
+                      whileHover={{ scale: 0.98 }}
+                      onClick={handleClearHistory}
+                      className="flex items-center gap-2 w-full p-2 text-xs text-red-400 hover:text-red-300 bg-black/60 hover:bg-red-900/20 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-red-500/50"
+                      aria-label="Clear All History"
+                      title="Clear History"
+                    >
+                      <Trash2 size={14} />
+                      Clear History
+                    </motion.button>
                   )}
-                  {Object.entries(groupedByWeekday).map(([day, sessions]) => (
-                    <div key={day} className="mb-3">
-                      <p className="text-[11px] uppercase tracking-wider text-gray-400 mb-1 pl-2">{day}</p>
-                      <div className="space-y-1.5">
-                        {sessions.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).map((s) => (
-                          <div key={s.id} className={`group p-2 rounded-md ${currentSessionId === s.id ? "bg-blue-600" : "bg-black/40 hover:bg-black/30 transition"}`}>
+
+                  {Object.entries(filteredSessions).map(([day, sessions]) => (
+                    <div key={day} className="mb-4">
+                      <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 pl-2 font-semibold border-l-2 border-indigo-500/30">
+                        {day}
+                      </p>
+                      <div className="space-y-1.5 divide-y divide-gray-700/30">
+                        {sessions.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).map((s, index) => (
+                          <motion.div
+                            key={s.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }} // Staggered animation
+                            className={`group relative p-3 rounded-xl ${currentSessionId === s.id ? "bg-gradient-to-r from-indigo-600/80 to-purple-600/80 shadow-glow-lg border border-indigo-500/30" : "bg-black/30 hover:bg-gray-800/40 transition-all duration-200 border border-transparent"}`}
+                          >
                             {renamingId === s.id ? (
                               <input
                                 autoFocus
@@ -222,12 +318,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 onChange={(e) => setRenameValue(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && commitRename(s)}
                                 onBlur={() => commitRename(s)}
-                                className="w-full bg-transparent text-xs text-blue-200 outline-none border-b border-blue-700/60"
+                                className="w-full bg-transparent text-sm text-indigo-200 outline-none border-b border-indigo-500/50 focus:border-indigo-400/70 transition-colors"
+                                aria-label={`Rename session: ${s.name}`}
                               />
                             ) : (
                               <button
                                 onClick={() => loadSession(s)}
-                                className="w-full text-left text-xs text-white truncate"
+                                className="w-full text-left text-sm text-white truncate font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                                aria-label={`Load session: ${s.name}`}
                                 title={s.name}
                               >
                                 {s.name}
@@ -235,107 +333,135 @@ const Sidebar: React.FC<SidebarProps> = ({
                             )}
                             {renamingId !== s.id && (
                               <button
-                                onClick={() => setRenamingId(s.id)}
-                                className="opacity-0 group-hover:opacity-100 transition text-[10px] text-gray-400 mt-1 flex items-center gap-1"
+                                onClick={() => {
+                                  setRenamingId(s.id);
+                                  setRenameValue(s.name);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-all duration-200 absolute top-2 right-2 text-xs text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700/50 focus-visible:ring-2 focus-visible:ring-gray-500/50"
+                                aria-label="Rename chat"
                                 title="Rename chat"
                               >
-                                <Pencil size={12} /> rename
+                                <Pencil size={14} />
                               </button>
                             )}
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
                     </div>
                   ))}
+                  {Object.keys(filteredSessions).length === 0 && searchQuery && (
+                    <p className="text-center text-sm text-gray-500 py-4">No chats found.</p>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
           </>
         ) : (
           <>
-            <div className="flex items-center gap-2 p-1 mb-2">
+            {/* Account View */}
+            <div className="flex items-center gap-2 p-2 mb-3 rounded-lg hover:bg-gray-800/30 transition-colors">
               <button
                 onClick={() => setSidebarView('main')}
-                className="p-2 rounded-md hover:bg-white/20 transition text-white"
+                className="p-2 rounded-lg hover:bg-gray-700/50 transition text-gray-400 hover:text-white focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                aria-label="Back to menu"
                 title="Back to menu"
               >
-                <ChevronsLeft size={22} />
+                <ChevronsLeft size={18} className="shrink-0" />
               </button>
               {!isSidebarCollapsed && (
-                <h3 className="font-bold text-lg text-white">
-                  My Account
-                </h3>
+                <h3 className="font-bold text-base text-white">My Account</h3>
               )}
             </div>
             
-            <div className="flex flex-col items-center p-2 text-center">
+            <div className="flex flex-col items-center p-4 text-center mb-4 rounded-xl bg-black/60 border border-gray-700/30 backdrop-blur-sm shadow-glow">
               {userData?.profileImage ? (
                 <img
                   src={`${import.meta.env.VITE_BACKEND_URL}${userData.profileImage}`}
                   alt="Profile"
-                  className="w-20 h-20 rounded-full object-cover mb-3 border-2 border-purple-400"
+                  loading="lazy"
+                  className="w-16 h-16 rounded-full object-cover mb-3 border-2 border-purple-500/40 shadow-glow-lg shrink-0"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-blue-800 flex items-center justify-center mb-3 border-2 border-purple-400">
-                  <User size={40} />
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center mb-3 border-2 border-purple-500/40 shadow-glow-lg shrink-0">
+                  <User size={32} className="text-white shrink-0" />
                 </div>
               )}
-              <h3 className="font-bold text-lg w-full truncate text-white">{userData?.name || 'Explorer'}</h3>
-              <p className="text-xs text-gray-400 w-full truncate">{userData?.email}</p>
+              <AnimatePresence>
+                {!isSidebarCollapsed && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <h3 className="font-bold text-base w-full truncate text-white">{userData?.name || 'Explorer'}</h3>
+                    <p className="text-xs text-gray-400 w-full truncate">{userData?.email}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
-            <div className="space-y-2 p-2 mt-4">
-              <div className="p-3 bg-black/40 rounded-lg">
-                <label className="text-xs text-gray-400">Learning Style</label>
-                <p className="font-medium text-white">{userData?.learningStyle || 'Not set'}</p>
-              </div>
-              <div className="p-3 bg-black/40 rounded-lg">
-                <label className="text-xs text-gray-400">Interests</label>
-                <p className="font-medium text-white">{userData?.interests || 'Not set'}</p>
-              </div>
-              <div className="p-3 bg-black/40 rounded-lg">
-                <label className="text-xs text-gray-400">Performance Level</label>
-                <p className="font-medium text-white">
-                  {(() => {
-                    if (!userData?.performanceLevels || !selectedSubject) return 'Not set';
-                    const level = userData.performanceLevels[selectedSubject.name];
-                    return level ? level.charAt(0).toUpperCase() + level.slice(1) : 'Not set';
-                  })()}
-                </p>
-              </div>
-            </div>
+            <AnimatePresence>
+              {!isSidebarCollapsed && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 p-2">
+                  <div className="p-3.5 bg-black/60 rounded-xl border border-gray-700/30 backdrop-blur-sm shadow-inner">
+                    <label className="text-xs text-gray-500 font-medium block mb-1">Learning Style</label>
+                    <p className="font-semibold text-white">{userData?.learningStyle || 'Not set'}</p>
+                  </div>
+                  <div className="p-3.5 bg-black/60 rounded-xl border border-gray-700/30 backdrop-blur-sm shadow-inner">
+                    <label className="text-xs text-gray-500 font-medium block mb-1">Interests</label>
+                    <p className="font-semibold text-white">{userData?.interests || 'Not set'}</p>
+                  </div>
+                  <div className="p-3.5 bg-black/60 rounded-xl border border-gray-700/30 backdrop-blur-sm shadow-inner">
+                    <label className="text-xs text-gray-500 font-medium block mb-1">Performance Level</label>
+                    <p className="font-semibold text-white">
+                      {(() => {
+                        if (!userData?.performanceLevels || !selectedSubject) return 'Not set';
+                        const level = userData.performanceLevels[selectedSubject.name];
+                        return level ? level.charAt(0).toUpperCase() + level.slice(1) : 'Not set';
+                      })()}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         )}
       </div>
 
-      <div className="mt-auto pt-4 border-t border-white/20 flex items-center justify-between">
-        <button
+      {/* Footer */}
+      <div className="mt-auto pt-4 border-t border-gray-800/30 px-3 pb-3">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setSidebarView('account')}
-          className="flex items-center gap-2 p-3 rounded-md hover:bg-white/20 transition w-full text-left"
+          className={`flex items-center justify-center rounded-xl hover:bg-gray-800/70 transition-all duration-200 text-gray-300 hover:text-white mb-2 shadow-glow focus-visible:ring-2 focus-visible:ring-indigo-500/50 ${isSidebarCollapsed ? 'w-10 h-10' : 'w-full p-3.5 gap-3'}`}
+          aria-label="View Account"
+          title="My Account"
         >
           {userData?.profileImage ? (
             <img
               src={`${import.meta.env.VITE_BACKEND_URL}${userData.profileImage}`}
               alt="Profile"
-              className="w-8 h-8 rounded-full object-cover shrink-0"
+              loading="lazy"
+              className="w-6 h-6 rounded-full object-cover shrink-0 border border-gray-600/40"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-blue-800 flex items-center justify-center text-sm font-semibold text-white shrink-0">
-              {userData ? (userData.name || userData.email)?.charAt(0).toUpperCase() : <User size={16} />}
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-xs font-semibold text-white shrink-0">
+              {userData ? (userData.name || userData.email)?.charAt(0).toUpperCase() : <User size={12} />}
             </div>
           )}
-          {!isSidebarCollapsed && (
-            <span
-              className="text-sm font-semibold text-white whitespace-nowrap truncate"
-              title={userData?.email}
-            >
-              {userData ? userData.name || userData.email : "Loading..."}
-            </span>
-          )}
-        </button>
-        <button
+          <AnimatePresence>
+            {!isSidebarCollapsed && (
+              <motion.span initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -5 }} className="text-sm font-medium whitespace-nowrap truncate">
+                {userData ? userData.name || userData.email : "Loading..."}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
+
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className="p-2 text-white hover:text-white transition z-10 shrink-0"
+          className="flex items-center justify-center w-full p-3.5 rounded-xl bg-black/50 hover:bg-gray-800/70 transition-all duration-200 text-gray-400 hover:text-white focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+          aria-label={`Toggle sidebar ${isSidebarCollapsed ? 'expanded' : 'collapsed'}`}
+          title={`Toggle sidebar ${isSidebarCollapsed ? 'expanded' : 'collapsed'}`}
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -346,16 +472,33 @@ const Sidebar: React.FC<SidebarProps> = ({
               transition={{ duration: 0.2 }}
             >
               {isSidebarCollapsed ? (
-                <ChevronRight size={20} />
+                <ChevronRight size={18} className="shrink-0 text-indigo-400" />
               ) : (
-                <ChevronLeft size={20} />
+                <ChevronLeft size={18} className="shrink-0 text-indigo-400" />
               )}
             </motion.div>
           </AnimatePresence>
-        </button>
+        </motion.button>
       </div>
     </motion.div>
   );
 };
+
+// New: Custom Tailwind utilities (add to your tailwind.config.js)
+const customStyles = `
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.1);
+  }
+  .shadow-glow-lg {
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.15);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+`;
 
 export default Sidebar;

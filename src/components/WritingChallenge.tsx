@@ -5,15 +5,18 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import confetti from 'canvas-confetti';
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../store/theme';
-// Assuming supabase is a correctly configured library
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+
 
 // Initialize Gemini API
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'AIzaSyDLXMuqZCaMYhf4pWbIoo9_YlRF7zOfHKo');
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 export const WritingChallenge = () => {
   const navigate = useNavigate();
-  const theme = useThemeStore((state) => state.getThemeStyles());
+  const themeStore = useThemeStore();
+  const theme = themeStore.getThemeStyles();
   const [writingPrompt, setWritingPrompt] = useState('');
   const [writingInput, setWritingInput] = useState('');
   const [writingFeedback, setWritingFeedback] = useState('');
@@ -29,6 +32,26 @@ export const WritingChallenge = () => {
   const [showCelebration, setShowCelebration] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'info' | 'success' | 'error' } | null>(null);
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
+  const currentBackground = theme.backgrounds?.[currentBackgroundIndex] || (theme.backgrounds && theme.backgrounds.length > 0 ? theme.backgrounds[0] : '');
+
+  useEffect(() => {
+    saveProgress();
+  }, [writingInput]);
+
+  const saveProgress = () => {
+    localStorage.setItem('writingChallengeProgress', writingInput);
+  };
+
+  const loadProgress = () => {
+    const savedProgress = localStorage.getItem('writingChallengeProgress');
+    if (savedProgress) {
+      setWritingInput(savedProgress);
+    }
+  };
+
+  const clearProgress = () => {
+    localStorage.removeItem('writingChallengeProgress');
+  };
 
   // Fallback profile data
   const fallbackProfile = {
@@ -45,6 +68,7 @@ export const WritingChallenge = () => {
     fetchProfile();
     checkAttempts();
     generateWritingPrompt();
+    loadProgress();
   }, [selectedGrade]);
   
   useEffect(() => {
@@ -57,26 +81,22 @@ export const WritingChallenge = () => {
     }
   }, [theme.backgrounds]);
 
+  useEffect(() => {
+    saveProgress();
+  }, [writingInput]);
+
   const fetchProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-        const fetchedProfile = profileData || fallbackProfile;
-        setProfile(fetchedProfile);
-        setProgress(fetchedProfile.progress?.writing || 0);
+    const user = auth.currentUser;
+    if (user) {
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        setProfile(userDoc.data());
       } else {
         setProfile(fallbackProfile);
-        setProgress(fallbackProfile.progress.writing);
       }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+    } else {
       setProfile(fallbackProfile);
-      setProgress(fallbackProfile.progress.writing);
     }
   };
 
@@ -136,6 +156,7 @@ export const WritingChallenge = () => {
     setShowCelebration(false);
     setNotification(null);
     generateWritingPrompt();
+    clearProgress();
   };
 
   const showNotification = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
@@ -254,10 +275,7 @@ export const WritingChallenge = () => {
       // Update profile
       if (profile.user_id !== 'test-user-id') {
         const newProfileProgress = { ...profile.progress, writing: newProgress };
-        await supabase
-          .from('profiles')
-          .update({ progress: newProfileProgress })
-          .eq('user_id', profile.user_id);
+
       }
 
       setWritingFeedback(`📝 **Writing Evaluation Results:**\n\nOverall Score: ${evaluation.score}/10\n\n💬 ${evaluation.feedback}\n\n✅ **Strengths:** ${evaluation.strengths}\n\n💡 **Improvements:** ${evaluation.improvements}\n\n📊 **Detailed Scores:**\n- Grammar: ${evaluation.grammarScore}/10\n- Vocabulary: ${evaluation.vocabularyScore}/10\n- Creativity: ${evaluation.creativityScore}/10`);
@@ -301,25 +319,122 @@ export const WritingChallenge = () => {
     }
   };
 
+  const awardBadgeAndPoints = async () => {
+    if (profile && profile.user_id) {
+      const userDocRef = doc(db, 'users', profile.user_id);
+      const newPoints = (profile.points || 0) + 50;
+      const newBadges = [...(profile.badges || []), {
+        id: `writing-mastery-${Date.now()}`,
+        name: 'Creative Writer',
+        description: 'Mastered a writing challenge.',
+        timestamp: new Date().toISOString(),
+      }];
+
+      await updateDoc(userDocRef, {
+        points: newPoints,
+        badges: newBadges,
+      });
+    }
+  };
+
+
+  const submitWriting = async () => {
+    if (profile && profile.user_id) {
+      const userDocRef = doc(db, 'users', profile.user_id);
+      const newProgress = {
+        ...profile.progress,
+        writing: progress,
+      };
+
+      await updateDoc(userDocRef, {
+        progress: newProgress,
+      });
+    }
+  };
+
+
   if (loading) {
     return (
       <div
-        className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
+        className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gray-900"
         style={{
-          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          transition: 'background-image 1s ease-in-out',
         }}
       >
-        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-0"></div>
+
+        <div className="absolute inset-0 z-5">
+          {[...Array(50)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-teal-300"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                width: `${1 + Math.random() * 2}px`,
+                height: `${1 + Math.random() * 2}px`,
+              }}
+              animate={{
+                y: [0, (Math.random() > 0.5 ? 1 : -1) * Math.random() * 200],
+                x: [0, (Math.random() > 0.5 ? 1 : -1) * Math.random() * 200],
+                opacity: [0, 1, 0],
+              }}
+              transition={{
+                duration: 1.5 + Math.random() * 2,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
+          ))}
+        </div>
+        
         <motion.div
-          className="bg-black/75 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center"
+          className="bg-black/80 backdrop-blur-xl rounded-3xl p-10 shadow-2xl border border-white/10 text-center relative z-10 max-w-lg w-full"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          <Rotate3D className="text-teal-400 mx-auto mb-4" size={48} />
-          <p className="text-white text-xl">Generating Writing Practice...</p>
+          <motion.div className="relative mb-6 w-16 h-16 mx-auto">
+            <motion.div
+              animate={{ scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] }}
+              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <PenTool className="text-teal-400 w-16 h-16" />
+            </motion.div>
+            <motion.div
+              className="absolute top-0 left-0 w-full h-0.5 bg-blue-300/80"
+              style={{ boxShadow: '0 0 8px #67e8f9' }}
+              animate={{ y: [0, 64], opacity: [0.8, 0] }}
+              transition={{ duration: 1, repeat: Infinity, ease: "circIn" }}
+            />
+          </motion.div>
+
+          <h2 className="text-3xl font-bold text-white mb-3 font-mono tracking-wide">
+             Crafting Your Prompt...
+          </h2>
+
+          <p className="text-white/70 text-lg mb-6">
+            Preparing your challenge...
+          </p>
+
+          <div className="w-full bg-white/10 rounded-full h-2.5 mb-6 overflow-hidden">
+             <motion.div
+               className="bg-gradient-to-r from-blue-500 to-teal-400 h-full"
+               initial={{ width: '0%' }}
+               animate={{ width: '100%' }}
+               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+             />
+          </div>
+
+          <motion.div
+            className="text-teal-300 text-sm font-medium"
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+          >
+            🚀 Just a moment...
+          </motion.div>
         </motion.div>
       </div>
     );
@@ -343,10 +458,10 @@ export const WritingChallenge = () => {
             You have reached the maximum of 2 attempts for today. Please come back tomorrow to try again.
           </p>
           <button
-            onClick={() => navigate('/what-if')}
+            onClick={() => navigate(-1)}
             className="bg-gradient-to-r from-blue-500 to-teal-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:from-blue-600 hover:to-teal-600 transition"
           >
-            Back to Challenges
+            Previous Page
           </button>
         </div>
       </div>
@@ -381,10 +496,10 @@ export const WritingChallenge = () => {
               </button>
             )}
             <button
-              onClick={() => navigate('/what-if')}
+              onClick={() => navigate(-1)}
               className="bg-white text-teal-600 px-6 py-3 rounded-lg font-semibold shadow-lg hover:bg-gray-100 transition"
             >
-              Back to Challenges
+              Previous Page
             </button>
           </div>
         </div>
@@ -413,11 +528,11 @@ export const WritingChallenge = () => {
         >
           <div className="flex items-center justify-between mb-6">
             <button
-              onClick={() => navigate('/what-if')}
+              onClick={() => navigate(-1)}
               className="flex items-center gap-2 bg-black/75 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition"
             >
               <ArrowLeft size={20} />
-              Back to Challenges
+              Previous Page
             </button>
             <div className="flex items-center gap-4">
               <label className="text-white font-medium">Grade Level:</label>

@@ -111,10 +111,10 @@ export const ExploreMenu = () => {
       color: 'from-purple-400 to-purple-600'
     },
     {
-      title: 'Career Hub',
+      title: 'Coding Hub',
       description: 'Discover exciting future careers and opportunities',
       icon: Award,
-      path: '/careers',
+      path: '/codinghub',
       color: 'from-red-400 to-red-600'
     },
     {

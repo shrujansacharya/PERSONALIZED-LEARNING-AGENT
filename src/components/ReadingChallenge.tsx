@@ -5,48 +5,67 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import confetti from 'canvas-confetti';
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../store/theme';
-
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 // Initialize Gemini API
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'AIzaSyDLXMuqZCaMYhf4pWbIoo9_YlRF7zOfHKo');
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 export const ReadingChallenge = () => {
   const navigate = useNavigate();
-  const theme = useThemeStore((state) => state.getThemeStyles());
+  const themeStore = useThemeStore();
+  const theme = themeStore.getThemeStyles();
   const [readingPassage, setReadingPassage] = useState<any>(null);
-  const [readingAnswers, setReadingAnswers] = useState<{ [key: number]: string }>({});
+  const [readingAnswers, setReadingAnswers] = useState<{[key: number]: string}>({});
   const [readingSubmitted, setReadingSubmitted] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [selectedGrade, setSelectedGrade] = useState('4-6');
-  const [progress, setProgress] = useState(0);
-  const [profile, setProfile] = useState<any>(null);
   const [feedback, setFeedback] = useState('');
+  const [progress, setProgress] = useState(0);
+  const [canReattempt, setCanReattempt] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
   const [attempts, setAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
-  const [canReattempt, setCanReattempt] = useState(false);
-  const [earnedPoints, setEarnedPoints] = useState(0);
-  const [earnedBadge, setEarnedBadge] = useState<string | null>(null);
+  const [selectedGrade, setSelectedGrade] = useState('4-6');
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [earnedBadge, setEarnedBadge] = useState('');
+  const [earnedPoints, setEarnedPoints] = useState(0);
+  // *** CORRECTED: Define currentBackground once for consistent use ***
+  const currentBackground = theme.backgrounds?.[currentBackgroundIndex] || (theme.backgrounds && theme.backgrounds.length > 0 ? theme.backgrounds[0] : '');
 
-  // Fallback profile data
-  const fallbackProfile = {
-    user_id: 'test-user-id',
-    username: 'Student',
-    points: 0,
-    time_spent: {},
-    completed_activities: [],
-    progress: { vocabulary: 0, grammar: 0, conversation: 0, pronunciation: 0, reading: 0, writing: 0 },
-    badges: []
+  const saveProgress = () => {
+    const progress = {
+      readingAnswers,
+    };
+    localStorage.setItem('readingChallengeProgress', JSON.stringify(progress));
+  };
+
+  const loadProgress = () => {
+    const savedProgress = localStorage.getItem('readingChallengeProgress');
+    if (savedProgress) {
+      const { readingAnswers: savedAnswers } = JSON.parse(savedProgress);
+      if (savedAnswers) {
+        setReadingAnswers(savedAnswers);
+      }
+    }
+  };
+
+  const clearProgress = () => {
+    localStorage.removeItem('readingChallengeProgress');
   };
 
   useEffect(() => {
-    fetchProfile();
+    fetchUserProfile();
     checkAttempts();
     generateReadingChallenge();
-  }, [selectedGrade]);
+    loadProgress();
+  }, []);
 
+  useEffect(() => {
+    saveProgress();
+  }, [readingAnswers]);
+  
   useEffect(() => {
     const backgrounds = theme.backgrounds;
     if (backgrounds && backgrounds.length > 1) {
@@ -57,26 +76,26 @@ export const ReadingChallenge = () => {
     }
   }, [theme.backgrounds]);
 
-  const fetchProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-        const fetchedProfile = profileData || fallbackProfile;
-        setProfile(fetchedProfile);
-        setProgress(fetchedProfile.progress?.reading || 0);
-      } else {
-        setProfile(fallbackProfile);
-        setProgress(fallbackProfile.progress.reading);
+  const fetchUserProfile = async () => {
+    const user = auth.currentUser;
+    if (user) {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userProfile = userDoc.data();
+        setProfile(userProfile);
+        setProgress(userProfile.progress?.reading || 0);
       }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      setProfile(fallbackProfile);
-      setProgress(fallbackProfile.progress.reading);
+    } else {
+      // Mock profile for demonstration if no user is logged in
+      const mockProfile = {
+        user_id: 'test-user-id',
+        username: 'Test User',
+        progress: { reading: 0 },
+        badges: [],
+        points: 0,
+      };
+      setProfile(mockProfile);
+      setProgress(mockProfile.progress.reading);
     }
   };
 
@@ -171,7 +190,7 @@ export const ReadingChallenge = () => {
         const updatedPoints = (profile.points || 0) + pointsToAward;
 
         // Update profile locally
-        setProfile(prev => ({
+        setProfile((prev: any) => ({
           ...prev,
           badges: updatedBadges,
           points: updatedPoints
@@ -180,23 +199,25 @@ export const ReadingChallenge = () => {
         setEarnedBadge(badgeToAward);
         setEarnedPoints(pointsToAward);
 
-        // Update profile in supabase
-        await supabase
-          .from('profiles')
-          .update({ badges: updatedBadges, points: updatedPoints })
-          .eq('user_id', profile.user_id);
+        // Update profile in firebase
+        const user = auth.currentUser;
+        if (user) {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { badges: updatedBadges, points: updatedPoints });
+        }
       } else {
         // Already has badge, just award points
         const updatedPoints = (profile.points || 0) + pointsToAward;
-        setProfile(prev => ({
+        setProfile((prev: any) => ({
           ...prev,
           points: updatedPoints
         }));
         setEarnedPoints(pointsToAward);
-        await supabase
-          .from('profiles')
-          .update({ points: updatedPoints })
-          .eq('user_id', profile.user_id);
+        const user = auth.currentUser;
+        if (user) {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { points: updatedPoints });
+        }
       }
     }
   };
@@ -241,6 +262,7 @@ export const ReadingChallenge = () => {
     if (!readingPassage) return;
 
     setReadingSubmitted(true);
+    setFeedback('Evaluating your answers...');
     let totalScore = 0;
     let correctAnswers = 0;
 
@@ -312,11 +334,15 @@ export const ReadingChallenge = () => {
       // Update profile
       if (profile.user_id !== 'test-user-id') {
         const newProfileProgress = { ...profile.progress, reading: newProgress };
-        await supabase
-          .from('profiles')
-          .update({ progress: newProfileProgress })
-          .eq('user_id', profile.user_id);
+        const user = auth.currentUser;
+        if (user) {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { progress: newProfileProgress });
+        }
       }
+
+      // Award badges and points based on score
+      await awardBadgeAndPoints(overallEvaluation.score * 10); // Convert to 0-100 scale
 
       setFeedback(`📖 **Reading Comprehension Results:**\n\nKeyword Match Score: ${percentageScore.toFixed(1)}%\nCorrect Answers: ${correctAnswers}/${readingPassage.questions.length}\n\n💬 ${overallEvaluation.feedback}\n\n✅ **Strengths:** ${overallEvaluation.strengths}\n\n💡 **Improvements:** ${overallEvaluation.improvements}`);
 
@@ -357,23 +383,88 @@ export const ReadingChallenge = () => {
 
   if (loading) {
     return (
-      <div 
-        className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
+      <div
+        className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gray-900"
         style={{
-          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          // *** CORRECTED: Using consistent variable for background ***
+          backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           transition: 'background-image 1s ease-in-out',
         }}
       >
-        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-0"></div>
+
+        <div className="absolute inset-0 z-5">
+          {[...Array(50)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-green-300"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                width: `${1 + Math.random() * 2}px`,
+                height: `${1 + Math.random() * 2}px`,
+              }}
+              animate={{
+                y: [0, (Math.random() > 0.5 ? 1 : -1) * Math.random() * 200],
+                x: [0, (Math.random() > 0.5 ? 1 : -1) * Math.random() * 200],
+                opacity: [0, 1, 0],
+              }}
+              transition={{
+                duration: 1.5 + Math.random() * 2,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
+          ))}
+        </div>
+        
         <motion.div
-          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center"
+          className="bg-black/80 backdrop-blur-xl rounded-3xl p-10 shadow-2xl border border-white/10 text-center relative z-10 max-w-lg w-full"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          <Rotate3D className="text-green-400 mx-auto mb-4" size={48} />
-          <p className="text-white text-xl">Generating Reading Challenge...</p>
+          <motion.div className="relative mb-6 w-16 h-16 mx-auto">
+            <motion.div
+              animate={{ scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] }}
+              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Book className="text-green-400 w-16 h-16" />
+            </motion.div>
+            <motion.div
+              className="absolute top-0 left-0 w-full h-0.5 bg-teal-300/80"
+              style={{ boxShadow: '0 0 8px #67e8f9' }}
+              animate={{ y: [0, 64], opacity: [0.8, 0] }}
+              transition={{ duration: 1, repeat: Infinity, ease: "circIn" }}
+            />
+          </motion.div>
+
+          <h2 className="text-3xl font-bold text-white mb-3 font-mono tracking-wide">
+             Finding A Good Read...
+          </h2>
+
+          <p className="text-white/70 text-lg mb-6">
+            Preparing your challenge...
+          </p>
+
+          <div className="w-full bg-white/10 rounded-full h-2.5 mb-6 overflow-hidden">
+             <motion.div
+               className="bg-gradient-to-r from-green-500 to-teal-400 h-full"
+               initial={{ width: '0%' }}
+               animate={{ width: '100%' }}
+               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+             />
+          </div>
+
+          <motion.div
+            className="text-green-300 text-sm font-medium"
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+          >
+            🚀 Just a moment...
+          </motion.div>
         </motion.div>
       </div>
     );
@@ -385,7 +476,8 @@ export const ReadingChallenge = () => {
       <div 
         className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
         style={{
-          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          // *** CORRECTED: Using consistent variable for background ***
+          backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           transition: 'background-image 1s ease-in-out',
@@ -403,10 +495,10 @@ export const ReadingChallenge = () => {
             You've reached the maximum attempts (2) for today. Come back tomorrow for a fresh challenge!
           </p>
           <button
-            onClick={() => navigate('/what-if')}
+            onClick={() => navigate(-1)}
             className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:from-green-600 hover:to-teal-600 transition-all duration-300"
           >
-            Back to Challenges
+            Previous Page
           </button>
         </motion.div>
       </div>
@@ -419,7 +511,8 @@ export const ReadingChallenge = () => {
       <div 
         className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
         style={{
-          backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+          // *** CORRECTED: Using consistent variable for background ***
+          backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           transition: 'background-image 1s ease-in-out',
@@ -461,12 +554,12 @@ export const ReadingChallenge = () => {
               </motion.button>
             )}
             <motion.button
-              onClick={() => navigate('/what-if')}
+              onClick={() => navigate(-1)}
               className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:from-green-600 hover:to-teal-600 transition-all duration-300"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Back to Challenges
+              Previous Page
             </motion.button>
           </div>
         </motion.div>
@@ -478,7 +571,8 @@ export const ReadingChallenge = () => {
     <div 
       className="min-h-screen p-8 relative overflow-hidden"
       style={{
-        backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
+        // *** CORRECTED: Using consistent variable for background ***
+        backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         transition: 'background-image 1s ease-in-out',
@@ -495,11 +589,11 @@ export const ReadingChallenge = () => {
         >
           <div className="flex items-center justify-between mb-6">
             <button
-              onClick={() => navigate('/what-if')}
+              onClick={() => navigate(-1)}
               className="flex items-center gap-2 bg-black/80 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition"
             >
               <ArrowLeft size={20} />
-              Back to Challenges
+              Previous Page
             </button>
             <div className="flex items-center gap-4">
               <label className="text-white font-medium">Grade Level:</label>

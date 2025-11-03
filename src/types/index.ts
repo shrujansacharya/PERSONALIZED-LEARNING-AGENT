@@ -220,3 +220,43 @@ export interface InputProps {
   className?: string;
 }
 
+// src/types/index.ts
+export interface Subject {
+  id: string;
+  name: string;
+  category: string;
+}
+
+export interface RelatedVideo {
+  videoUrl: string;
+  thumbnailUrl: string;
+}
+
+export interface Message {
+  id?: string;
+  text: string;
+  isBot: boolean;
+  timestamp: string;
+  attachmentUrl?: string;
+  videoList?: RelatedVideo[];
+  title?: string;
+  extractedMath?: string;
+  quiz?: { q: string; options: string[]; correct: number }[];
+  feedback?: 'good' | 'adjust';
+}
+
+export interface ChatSession {
+  id: string;
+  name: string;
+  weekday: string;
+  createdAt: string;
+  messages: Message[];
+}
+
+export type SessionsBySubject = Record<string, ChatSession[]>;
+
+export interface UserData {
+  learningStyle?: string;
+  performanceLevels?: Record<string, string>;
+  interests?: string;
+}

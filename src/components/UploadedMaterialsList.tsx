@@ -1,6 +1,7 @@
+// UploadedMaterialsList.tsx - Updated with enhancements
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Trash2, File, Image as ImageIcon, Users, Filter } from 'lucide-react';
+import { ArrowLeft, Trash2, File, Image as ImageIcon, Users, Filter, ChevronRight, FileText } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import { subjectDetails } from '../utils/subjects';
 
@@ -40,6 +41,7 @@ const UploadedMaterialsList: React.FC<UploadedMaterialsListProps> = ({ onBack })
     const [loading, setLoading] = useState(true);
     const [selectedSubject, setSelectedSubject] = useState<string>('All');
     const [selectedClass, setSelectedClass] = useState<string>('All');
+    const [searchQuery, setSearchQuery] = useState<string>('');
 
     const availableSubjects = ['All', ...subjectDetails.map(s => s.name)];
     const availableClasses = ['All', '4th std', '5th std', '6th std', '7th std', '8th std', '9th std', '10th std'];
@@ -74,16 +76,16 @@ const UploadedMaterialsList: React.FC<UploadedMaterialsListProps> = ({ onBack })
     const filteredMaterials = useMemo(() => {
         return materials.filter(material => {
             const subjectMatch = selectedSubject === 'All' || material.subject === selectedSubject;
-            
-            if (!subjectMatch) return false;
-
-            if (selectedClass === 'All') return true;
-
-            return material.targetStudents && material.targetStudents.some((student: any) => 
+            const classMatch = selectedClass === 'All' || (material.targetStudents && material.targetStudents.some((student: any) => 
                 student?.class?.trim().toLowerCase() === selectedClass.trim().toLowerCase()
-            );
+            ));
+            const searchMatch = searchQuery === '' || 
+                material.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (material.comment && material.comment.toLowerCase().includes(searchQuery.toLowerCase()));
+
+            return subjectMatch && classMatch && searchMatch;
         });
-    }, [materials, selectedSubject, selectedClass]);
+    }, [materials, selectedSubject, selectedClass, searchQuery]);
 
     const handleDelete = async (materialId: string) => {
         if (window.confirm('Are you sure you want to delete this material?')) {
@@ -124,40 +126,100 @@ const UploadedMaterialsList: React.FC<UploadedMaterialsListProps> = ({ onBack })
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Uploaded Materials</h2>
             </div>
 
-            <div className="p-4 mb-8 bg-gray-50 dark:bg-gray-700 rounded-lg flex flex-col md:flex-row gap-4 items-center border dark:border-gray-600">
-                <div className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200">
-                    <Filter size={20} />
-                    <span>Filter by:</span>
+            {/* Enhanced Filters */}
+            <div className="sticky top-0 z-10 p-4 mb-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 flex flex-wrap gap-3 items-center">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                    <Filter size={18} />
+                    Filters
                 </div>
-                <div className="flex-1 w-full md:w-auto">
-                    <select id="subject-filter" value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)} className="w-full p-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500">
+                <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+                    <select
+                        value={selectedSubject}
+                        onChange={e => setSelectedSubject(e.target.value)}
+                        className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    >
                         {availableSubjects.map(subject => (<option key={subject} value={subject}>{subject === 'All' ? 'All Subjects' : subject}</option>))}
                     </select>
-                </div>
-                <div className="flex-1 w-full md:w-auto">
-                    <select id="class-filter" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} className="w-full p-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500">
+                    <select
+                        value={selectedClass}
+                        onChange={e => setSelectedClass(e.target.value)}
+                        className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    >
                         {availableClasses.map(cls => (<option key={cls} value={cls}>{cls === 'All' ? 'All Classes' : cls}</option>))}
                     </select>
+                    <input
+                        type="text"
+                        placeholder="Search files..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[200px]"
+                    />
                 </div>
+                <button 
+                    onClick={() => { setSelectedSubject('All'); setSelectedClass('All'); setSearchQuery(''); }} 
+                    className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-full hover:bg-purple-700 shadow-sm transition-all"
+                >
+                    Clear
+                </button>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredMaterials.length > 0 ? filteredMaterials.map((material: any) => (
-                    <div key={material._id} className="relative p-4 border rounded-xl shadow-sm bg-gray-50 dark:bg-gray-700 flex flex-col">
-                        <div className="flex justify-between items-start mb-2">
+                    <motion.div
+                        key={material._id}
+                        whileHover={{ y: -4, scale: 1.02 }}
+                        className="group relative p-6 border border-gray-200 dark:border-gray-600 rounded-2xl shadow-sm bg-white dark:bg-gray-800 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-t from-purple-50/50 to-transparent dark:from-purple-900/20" />
+                        <div className="flex justify-between items-start mb-2 relative z-10">
                             <h4 className="font-bold text-lg text-gray-900 dark:text-white truncate pr-8" title={material.fileName}>{material.fileName}</h4>
-                            <button onClick={() => handleDelete(material._id)} className="absolute top-3 right-3 text-red-500 hover:text-red-700 p-1">
+                            <button onClick={() => handleDelete(material._id)} className="text-red-500 hover:text-red-700 p-1 relative z-10">
                                 <Trash2 size={20} />
                             </button>
                         </div>
-                        {material.comment && (<p className="text-sm text-gray-600 dark:text-gray-400 mb-2"><strong>Task:</strong> {material.comment}</p>)}
-                        <div className="mb-3"><AssignedStudentsSummary students={material.targetStudents} /></div>
-                        <div className="flex-grow flex items-center justify-center p-4 mt-auto border rounded-lg bg-white dark:bg-gray-800">
-                           {isImage(material.fileName) ? ( <img src={`${import.meta.env.VITE_BACKEND_URL}${material.filePath}`} alt={material.fileName} className="max-h-28 object-contain" /> ) : isVideo(material.fileName) ? ( <video src={`${import.meta.env.VITE_BACKEND_URL}${material.filePath}`} className="max-h-28 object-contain" controls={false} /> ) : ( <div className="flex items-center text-gray-500 dark:text-gray-300"><File size={32} className="mr-2" /><span>{material.fileName.split('.').pop()?.toUpperCase()} File</span></div> )}
+                        {material.comment && (<p className="text-sm text-gray-600 dark:text-gray-400 mb-2 relative z-10"><strong>Task:</strong> {material.comment}</p>)}
+                        <div className="mb-3 relative z-10"><AssignedStudentsSummary students={material.targetStudents} /></div>
+                        <div className="flex-grow flex items-center justify-center p-6 mt-auto border border-gray-100 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 relative overflow-hidden">
+                            {isImage(material.fileName) ? (
+                                <img
+                                    src={`${import.meta.env.VITE_BACKEND_URL}${material.filePath}`}
+                                    alt={material.fileName}
+                                    className="max-h-32 object-cover w-full group-hover:scale-105 transition-transform duration-300"
+                                    loading="lazy"
+                                />
+                            ) : isVideo(material.fileName) ? (
+                                <video
+                                    src={`${import.meta.env.VITE_BACKEND_URL}${material.filePath}`}
+                                    className="max-h-32 object-cover w-full"
+                                    muted
+                                    playsInline
+                                    onMouseEnter={e => (e.currentTarget.play())}
+                                    onMouseLeave={e => (e.currentTarget.pause())}
+                                />
+                            ) : (
+                                <div className="flex items-center justify-center text-gray-400 dark:text-gray-500 relative z-10">
+                                    <File size={48} className="mr-3" />
+                                    <span className="text-sm font-medium">{material.fileName.split('.').pop()?.toUpperCase()} File</span>
+                                </div>
+                            )}
                         </div>
-                    </div>
+                        <button className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-white dark:bg-gray-900 rounded-full shadow-lg relative z-10">
+                            <ChevronRight size={20} className="text-purple-600" />
+                        </button>
+                    </motion.div>
                 )) : (
-                     <p className="col-span-full text-center text-gray-500 dark:text-gray-400 mt-12">No materials found for the selected filters.</p>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="col-span-full flex flex-col items-center justify-center py-16 text-center"
+                    >
+                        <FileText className="w-16 h-16 text-gray-400 mb-4" />
+                        <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No materials yet</h3>
+                        <p className="text-gray-500 dark:text-gray-400 mb-6">Start by uploading your first teaching resource.</p>
+                        <button onClick={() => {/* Navigate to upload - implement as needed */}} className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 shadow-lg transition-all">
+                            Upload Material
+                        </button>
+                    </motion.div>
                 )}
             </div>
         </motion.div>

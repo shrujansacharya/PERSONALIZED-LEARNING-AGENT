@@ -12,6 +12,8 @@
   "type": "commonjs",
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.3.0",
+    "@google-cloud/vertexai": "^1.10.0",
+    "canvas": "^3.2.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^4.21.2",
@@ -23,6 +25,8 @@
     "node-fetch": "^2.7.0",
     "path-to-regexp": "^8.3.0",
     "pdf-parse": "^1.1.1",
+    "pdf-poppler": "^0.2.3",
+    "pdfjs-dist": "^3.10.111",
     "peer": "^1.0.2",
     "python-shell": "^5.0.0",
     "react-tsparticles": "^2.12.2",

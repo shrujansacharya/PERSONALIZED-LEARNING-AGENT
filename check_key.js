@@ -1,4 +1,4 @@
-const key = 'AIzaSyAn7T-Z1weqVC1NYi1Y-5UcA-NSUpmPasg';
+const key = 'AIzaSyAGYOjwNY44CyHAZstlqsDPBaFQlG0N8uc';
 const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 fetch(apiUrl, {

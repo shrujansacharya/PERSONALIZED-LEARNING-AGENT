@@ -83,6 +83,13 @@ const fallbackQuizzes: Quiz[] = [
   },
 ];
 
+const skillChallenges = [
+  { id: 'grammar', name: 'Grammar Practice', icon: '📚' },
+  { id: 'reading', name: 'Reading Practice', icon: '📖' },
+  { id: 'writing', name: 'Writing Practice', icon: '✍️' },
+  { id: 'pronunciation', name: 'Pronunciation Practice', icon: '🗣️' }
+];
+
 export const ProgressMap = () => {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -256,98 +263,52 @@ export const ProgressMap = () => {
           </div>
         </motion.div>
 
-        {/* Project Builder Section */}
+        {/* Skill Activities Progress Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
           className="p-6 rounded-xl border border-white/20 backdrop-blur-sm bg-black/70 mb-8"
         >
           <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-            <Code className="text-blue-300 w-6 h-6" />
-            Project Builder Progress
+            <BookOpen className="text-yellow-300 w-6 h-6" />
+            Skill Activities Progress
           </h3>
-          <div className="space-y-6">
-            {projectCategories.map((category, idx) => {
-              const progress = (profile.project_builder_progress || {})[category.id] || 0;
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {skillChallenges.map((challenge, idx) => {
+              const progress = (profile.progress || {})[challenge.id] || 0;
               return (
                 <motion.div
-                  key={category.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  key={challenge.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 * idx }}
+                  className="bg-black/70 p-4 rounded-lg shadow-sm backdrop-blur-sm border border-white/20"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">{category.icon}</span>
-                    <h4 className="font-semibold text-white" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>{category.name}</h4>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-2xl">{challenge.icon}</span>
+                    <h4 className="font-semibold text-white" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>{challenge.name}</h4>
                   </div>
-                  <div className="bg-white/30 rounded-full h-4 overflow-hidden mb-2">
-                    <motion.div
-                      className={`h-full rounded-full bg-gradient-to-r ${getProgressColor(progress)}`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                      transition={{ duration: 1.5, ease: 'easeOut', delay: idx * 0.1 }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-200" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>
-                    <span>Planning</span>
-                    <span>Building</span>
-                    <span>Testing</span>
-                    <span>Complete</span>
-                  </div>
-                  <div className="mt-4 flex justify-between items-center">
-                    <div className="flex gap-1">
-                      {[25, 50, 75, 100].map((milestone) => (
-                        <div
-                          key={milestone}
-                          className={`w-2 h-2 rounded-full ${
-                            progress >= milestone ? 'bg-green-300' : 'bg-white/40'
-                          }`}
-                        />
-                      ))}
+                  <div className="relative pt-1">
+                    <div className="overflow-hidden h-3 mb-2 text-xs flex rounded bg-white/10">
+                      <motion.div 
+                        style={{ width: `${progress}%` }}
+                        className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r ${getProgressColor(progress)}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 1.5, ease: 'easeOut' }}
+                      />
                     </div>
-                    <span className="text-xs text-gray-200" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>
-                      {getProgressStatus(progress)}
-                    </span>
+                    <div className="flex justify-between text-xs text-gray-200" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>
+                      <span>0%</span>
+                      <span>{progress}%</span>
+                      <span>100%</span>
+                    </div>
                   </div>
+                  <p className="text-sm mt-2 text-gray-200" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>{getProgressStatus(progress)}</p>
                 </motion.div>
               );
             })}
-          </div>
-        </motion.div>
-
-        {/* Overall Progress Summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="p-6 rounded-xl border border-white/20 backdrop-blur-sm bg-black/70"
-        >
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-            <Award className="text-indigo-300 w-6 h-6" />
-            Overall Progress Summary
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-black/70 p-4 rounded-lg shadow-sm backdrop-blur-sm border border-white/20"> 
-              <div className="text-2xl font-bold text-blue-300" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>
-                {Math.round((Object.values(profile.daily_challenges_progress || {}) as number[]).reduce((a, b) => a + b, 0) / dailyChallenges.length)}%
-              </div>
-              <div className="text-sm text-gray-200" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>Daily Tasks Average</div>
-            </div>
-            <div className="bg-black/70 p-4 rounded-lg shadow-sm backdrop-blur-sm border border-white/20"> 
-              <div className="text-2xl font-bold text-green-300" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>
-                {Math.round((Object.values(profile.project_builder_progress || {}) as number[]).reduce((a, b) => a + b, 0) / projectCategories.length)}%
-              </div>
-              <div className="text-sm text-gray-200" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>Project Builder Average</div>
-            </div>
-            <div className="bg-black/70 p-4 rounded-lg shadow-sm backdrop-blur-sm border border-white/20"> 
-              <div className="text-2xl font-bold text-purple-300" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>
-                {Math.round(((Object.values(profile.daily_challenges_progress || {}) as number[]).reduce((a, b) => a + b, 0) +
-                            (Object.values(profile.project_builder_progress || {}) as number[]).reduce((a, b) => a + b, 0)) /
-                           (dailyChallenges.length + projectCategories.length))}%
-              </div>
-              <div className="text-sm text-gray-200" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>Overall Progress</div>
-            </div>
           </div>
         </motion.div>
 

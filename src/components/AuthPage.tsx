@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Lock, Mail, ArrowLeft, Calendar, GraduationCap } from 'lucide-react';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
-  sendEmailVerification,
-  signOut,
-  getIdToken,
-  onAuthStateChanged
+  sendEmailVerification // 👈 --- ADDED: Import for sending verification email
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import './AuthPage.css';
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -23,51 +20,25 @@ const AuthPage: React.FC = () => {
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.emailVerified) {
-        navigate('/welcome-back');
-      }
-    });
-    return unsubscribe;
-  }, [navigate]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      if (!user.emailVerified) {
-        alert("Please verify your email address to continue. Check your inbox for a verification link.");
-        await signOut(auth); // Log out the user
-        return;
-      }
-
-      // Get ID token for authenticated user
-      const token = await user.getIdToken();
-
-      // Include token in Authorization header for /api/user
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/${user.uid}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/${user.uid}`);
       if (!response.ok) {
-        // If user not found, try to register
-        try {
-          await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              firebaseUid: user.uid,
-              name: email.split('@')[0],
-              email: user.email,
-              dob: null,
-              class: null,
-            }),
-          });
-        } catch (registerError: any) {
-          alert(`Failed to register user: ${registerError.message}`);
-        }
+        await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firebaseUid: user.uid,
+            name: email.split('@')[0],
+            email: user.email,
+            dob: null,
+            class: null,
+          }),
+        });
       }
       navigate('/welcome-back');
     } catch (error: any) {
@@ -81,26 +52,26 @@ const AuthPage: React.FC = () => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      await sendEmailVerification(user); // Send verification email
+      // 📧 --- ADDED: Send verification email to the new user
+      await sendEmailVerification(user);
 
-      try {
-        await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            firebaseUid: user.uid,
-            name: username,
-            dob,
-            class: userClass,
-            email,
-          }),
-        });
-      } catch (registerError: any) {
-        alert(`Failed to register user: ${registerError.message}`);
-      }
+      // Register user details in your backend
+      await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firebaseUid: user.uid,
+          name: username,
+          dob: dob,
+          class: userClass,
+          email,
+        }),
+      });
 
-      // Navigate to a dedicated page for email verification
+      // 📢 --- MODIFIED: Update alert and redirect to the verification page
+      alert("Account created! Please check your inbox to verify your email.");
       navigate('/verify-email');
+      
     } catch (error: any) {
       alert(`Failed to create account. ${error.message}`);
     }
@@ -118,101 +89,172 @@ const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-800 overflow-hidden">
-      <div className="absolute top-20 left-10 w-72 h-72 bg-purple-600/30 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-20 right-10 w-72 h-72 bg-indigo-600/30 rounded-full blur-3xl animate-pulse"></div>
+    <div className="animated-bg min-h-screen flex items-center justify-center p-4 overflow-hidden relative">
+      {/* Floating Background Icons */}
+      <div className="floating-icon absolute top-20 left-20 text-6xl opacity-30">📚</div>
+      <div className="floating-icon absolute top-40 right-32 text-5xl opacity-25">✨</div>
+      <div className="floating-icon absolute bottom-32 left-16 text-7xl opacity-20">🚀</div>
+      <div className="floating-icon absolute bottom-20 right-20 text-6xl opacity-30">🎮</div>
+      <div className="floating-icon absolute top-60 left-1/2 text-4xl opacity-25">🌟</div>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6 }}
-        className="relative z-10 w-full max-w-lg p-10 rounded-3xl shadow-2xl bg-white/10 backdrop-blur-xl border border-white/20"
-      >
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-extrabold text-white tracking-tight drop-shadow">
-            {isLogin ? "Welcome Back 👋" : "Create Account ✨"}
-          </h1>
-          <p className="text-sm text-gray-300 mt-2">
-            {isLogin ? "Login to continue your journey" : "Sign up and explore new learning paths"}
-          </p>
+      {/* Animated Particles */}
+      <div className="particles-container absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="particle absolute w-2 h-2 bg-white rounded-full opacity-60" style={{ top: '10%', left: '15%', animation: 'particleFloat 8s linear infinite' }}></div>
+        <div className="particle absolute w-1 h-1 bg-pink-300 rounded-full opacity-70" style={{ top: '20%', left: '80%', animation: 'particleFloat 12s linear infinite 2s' }}></div>
+        <div className="particle absolute w-3 h-3 bg-blue-300 rounded-full opacity-50" style={{ top: '60%', left: '10%', animation: 'particleFloat 10s linear infinite 4s' }}></div>
+        <div className="particle absolute w-2 h-2 bg-purple-300 rounded-full opacity-60" style={{ top: '80%', left: '70%', animation: 'particleFloat 15s linear infinite 1s' }}></div>
+        <div className="particle absolute w-1 h-1 bg-yellow-300 rounded-full opacity-80" style={{ top: '30%', left: '60%', animation: 'particleFloat 9s linear infinite 3s' }}></div>
+        <div className="particle absolute w-2 h-2 bg-green-300 rounded-full opacity-50" style={{ top: '70%', left: '30%', animation: 'particleFloat 11s linear infinite 5s' }}></div>
+      </div>
+
+      {/* Main Container */}
+      <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-8 z-10">
+        {/* Left Side Illustration */}
+        <div className="flex-1 text-center lg:text-left">
+          <div className="text-white mb-8">
+            <h1 className="text-5xl lg:text-7xl font-bold mb-4 drop-shadow-lg">LearnMyWay</h1>
+            <p className="text-xl lg:text-2xl opacity-90 font-semibold">Where Learning Becomes an Adventure! 🌟</p>
+          </div>
+          <div className="flex justify-center lg:justify-start space-x-8">
+            <div className="wiggle text-6xl lg:text-8xl">🧑‍🎓</div>
+            <div className="wiggle text-6xl lg:text-8xl">👩‍🏫</div>
+            <div className="wiggle text-6xl lg:text-8xl">👨‍👩‍👧‍👦</div>
+          </div>
         </div>
 
-        <form onSubmit={isLogin ? handleLogin : handleSignup} className="space-y-6">
-          {!isLogin && (
-            <>
-              <FloatingInput
-                icon={<User size={18} />}
-                label="Username"
-                type="text"
-                value={username}
-                onChange={(e: any) => setUsername(e.target.value)}
-              />
-
-              <FloatingInput
-                icon={<Calendar size={18} />}
-                label="Date of Birth"
-                type="date"
-                value={dob}
-                onChange={(e: any) => setDob(e.target.value)}
-              />
-
-              <FloatingSelect
-                icon={<GraduationCap size={18} />}
-                label="Select Class"
-                value={userClass}
-                onChange={(e: any) => setUserClass(e.target.value)}
-                options={["4th std", "5th std", "6th std", "7th std", "8th std", "9th std", "10th std"]}
-              />
-            </>
-          )}
-
-          <FloatingInput
-            icon={<Mail size={18} />}
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e: any) => setEmail(e.target.value)}
-          />
-
-          <FloatingInput
-            icon={<Lock size={18} />}
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e: any) => setPassword(e.target.value)}
-            isPassword
-          />
-
-          {isLogin && (
-            <div className="text-right text-sm">
-              <span
-                onClick={() => setIsForgotPasswordModalOpen(true)}
-                className="cursor-pointer text-purple-400 hover:text-purple-200"
+        {/* Right Side Form */}
+        <div className="flex-1 w-full max-w-md">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="glass-card rounded-3xl p-8 relative"
+          >
+            {/* Toggle Buttons */}
+            <div className="flex bg-white bg-opacity-20 rounded-2xl p-1 mb-6">
+              <button
+                className={`flex-1 py-3 px-6 rounded-xl font-bold text-white transition-all duration-300 ${isLogin ? 'bg-gradient-to-r from-purple-500 to-pink-500' : ''}`}
+                onClick={() => setIsLogin(true)}
               >
-                Forgot Password?
-              </span>
+                Login
+              </button>
+              <button
+                className={`flex-1 py-3 px-6 rounded-xl font-bold text-white transition-all duration-300 ${!isLogin ? 'bg-gradient-to-r from-purple-500 to-pink-500' : ''}`}
+                onClick={() => setIsLogin(false)}
+              >
+                Sign Up
+              </button>
             </div>
-          )}
 
-          <button
-            type="submit"
-            className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-lg rounded-xl shadow-lg hover:scale-105 transform transition duration-300"
-          >
-            {isLogin ? "Login" : "Sign Up"}
-          </button>
-        </form>
+            {/* Form Content with Animation */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={isLogin ? 'login' : 'signup'}
+                initial={{ opacity: 0, x: isLogin ? -20 : 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: isLogin ? 20 : -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {isLogin ? (
+                  /* Login Form */
+                  <div id="loginForm">
+                    <div className="text-center mb-6">
+                      <h2 className="text-2xl font-bold text-white mb-2">Welcome Back!</h2>
+                      <p className="text-white opacity-80">Your adventure continues 🚀</p>
+                    </div>
 
-        <div className="mt-6 text-center">
-          <span
-            onClick={() => setIsLogin(!isLogin)}
-            className="cursor-pointer text-purple-300 hover:text-white underline underline-offset-2 transition-colors"
-          >
-            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
-          </span>
+                    <form onSubmit={handleLogin}>
+                      <FloatingInput
+                        icon="📧"
+                        label="Email Address"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                      <FloatingInput
+                        icon="🔒"
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        isPassword
+                      />
+                      <div className="text-center mb-6">
+                        <span
+                          onClick={() => setIsForgotPasswordModalOpen(true)}
+                          className="cursor-pointer text-white opacity-80 hover:opacity-100 font-semibold underline"
+                        >
+                          Forgot Password? 🤔
+                        </span>
+                      </div>
+                      <button
+                        type="submit"
+                        className="btn-bounce w-full py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 text-white font-bold text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        Start Learning! 🎯
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  /* Signup Form */
+                  <div id="signupForm">
+                    <div className="text-center mb-6">
+                      <h2 className="text-2xl font-bold text-white mb-2">Join the Adventure!</h2>
+                      <p className="text-white opacity-80">Unlock your learning superpowers ✨</p>
+                    </div>
+
+                    <form onSubmit={handleSignup}>
+                      <FloatingInput
+                        icon="👤"
+                        label="Username"
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                      />
+                      <FloatingInput
+                        icon="📧"
+                        label="Email Address"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                      <FloatingInput
+                        icon="🔒"
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        isPassword
+                      />
+                      <FloatingInput
+                        icon="🎂"
+                        label="Date of Birth"
+                        type="date"
+                        value={dob}
+                        onChange={(e) => setDob(e.target.value)}
+                      />
+                      <FloatingSelect
+                        icon="🎓"
+                        label="Select Your Class"
+                        value={userClass}
+                        onChange={(e) => setUserClass(e.target.value)}
+                        options={["4th std", "5th std", "6th std", "7th std", "8th std", "9th std", "10th std"]}
+                      />
+                      <button
+                        type="submit"
+                        className="btn-bounce w-full py-4 bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 text-white font-bold text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        Begin My Journey! 🌟
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Forgot Password Modal */}
       <AnimatePresence>
         {isForgotPasswordModalOpen && (
           <motion.div
@@ -225,29 +267,32 @@ const AuthPage: React.FC = () => {
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 40, opacity: 0 }}
-              className="relative w-full max-w-md bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-gray-400/30 text-white"
+              className="relative w-full max-w-md glass-card rounded-2xl p-8 border text-white"
             >
-              <button
-                onClick={() => setIsForgotPasswordModalOpen(false)}
-                className="absolute top-4 right-4 text-gray-300 hover:text-white"
-              >
-                <ArrowLeft size={22} />
-              </button>
               <h2 className="text-2xl font-bold text-center mb-6">Reset Password</h2>
               <form onSubmit={handlePasswordReset} className="space-y-6">
                 <FloatingInput
-                  icon={<Mail size={18} />}
-                  label="Email"
+                  icon="📧"
+                  label="Enter your email"
                   type="email"
                   value={email}
-                  onChange={(e: any) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
-                <button
-                  type="submit"
-                  className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl shadow-lg hover:scale-105 transition-transform"
-                >
-                  Send Reset Link
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    className="flex-1 py-3 bg-gray-500 bg-opacity-50 text-white font-bold rounded-2xl hover:bg-opacity-70 transition-all duration-300"
+                    onClick={() => setIsForgotPasswordModalOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-2xl hover:shadow-lg transition-all duration-300"
+                  >
+                    Send Link ✨
+                  </button>
+                </div>
               </form>
             </motion.div>
           </motion.div>
@@ -262,29 +307,31 @@ const FloatingInput = ({ icon, label, type, value, onChange, isPassword }: any) 
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="relative w-full">
-      {icon && <div className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400">{icon}</div>}
+    <div className="relative w-full mb-4">
+      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-300 text-xl">
+        {icon}
+      </div>
       <input
         type={isPassword ? (showPassword ? "text" : "password") : type}
         value={value}
         onChange={onChange}
         required
-        className="peer w-full px-12 py-4 rounded-xl bg-transparent text-white
-                   border-2 border-gray-500 focus:border-pink-500
-                   focus:ring-0 outline-none placeholder-transparent"
-        placeholder=" " // keep placeholder hidden for floating label
+        className="input-glow w-full pl-12 pr-12 py-4 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-2xl text-white font-semibold focus:outline-none placeholder-transparent"
+        placeholder=" "
       />
-      <label className="absolute left-12 text-gray-400 transition-all
-                         peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2
-                         peer-placeholder-shown:text-base
-                         peer-focus:top-2 peer-focus:text-xs peer-focus:text-pink-400">
+      <label
+        className="absolute left-12 text-white/70 transition-all 
+                   peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 
+                   peer-placeholder-shown:text-base
+                   peer-focus:top-3 peer-focus:text-xs peer-focus:text-pink-400"
+      >
         {label}
       </label>
 
       {isPassword && (
         <span
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 cursor-pointer hover:text-white"
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-white"
         >
           {showPassword ? "🙈" : "👁️"}
         </span>
@@ -295,29 +342,45 @@ const FloatingInput = ({ icon, label, type, value, onChange, isPassword }: any) 
 
 /* --- Floating Select Component --- */
 const FloatingSelect = ({ icon, label, value, onChange, options }: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleSelect = (option: string) => {
+    onChange({ target: { value: option } });
+    setIsOpen(false);
+  };
+
   return (
-    <div className="relative w-full">
-      {icon && <div className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400">{icon}</div>}
-      <select
-        value={value}
-        onChange={onChange}
-        required
-        className="peer w-full px-12 py-4 rounded-xl bg-transparent text-white
-                   border-2 border-gray-500 focus:border-pink-500
-                   focus:ring-0 outline-none appearance-none"
+    <div className="relative w-full mb-6">
+      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-300 text-xl pointer-events-none">
+        {icon}
+      </div>
+      <div
+        className="input-glow w-full pl-12 pr-4 py-4 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-2xl text-white font-semibold focus:outline-none cursor-pointer flex justify-between items-center"
+        onClick={() => setIsOpen(!isOpen)}
       >
-        <option value="" disabled hidden></option>
-        {options.map((opt: string, idx: number) => (
-          <option key={idx} value={opt} className="text-gray-900">
-            {opt}
-          </option>
-        ))}
-      </select>
-      <label className={`absolute left-12 text-gray-400 transition-all
-                         ${value ? "top-2 text-xs text-pink-400" : "top-1/2 -translate-y-1/2 text-base"}
-                         peer-focus:top-2 peer-focus:text-xs peer-focus:text-pink-400`}>
-        {label}
-      </label>
+        <span>{value || label}</span>
+        <span className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`}>▾</span>
+      </div>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute bottom-full left-0 right-0 mb-2 rounded-2xl bg-black/80 backdrop-blur-md border border-white/20 overflow-hidden z-20"
+          >
+            {options.map((option: string, idx: number) => (
+              <div
+                key={idx}
+                className="py-3 px-12 text-white hover:bg-white/20 transition-colors cursor-pointer"
+                onClick={() => handleSelect(option)}
+              >
+                {option}
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

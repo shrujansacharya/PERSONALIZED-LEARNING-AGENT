@@ -4,25 +4,30 @@ import { Routes, Route } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import HomePage from './components/HomePage';
 import UploadedMaterialsList from './components/UploadedMaterialsList';
+import SentencePracticePage from './components/SentencePracticePage';
 
 import TasksPage from './components/TasksPage';
+
+//project builder components
+import ProjectBuilderMenu from './components/ProjectBuilderComponents/ProjectBuilderMenu';
+import ProjectsPage from './components/ProjectBuilderComponents/ProjectsPage';
+import ProjectDetailPage from './components/ProjectBuilderComponents/ProjectDetailPage';
+
+import CodingHub from "./components/CodingHub";
+import codingData from "./components/CodingData"; 
 
 // All other existing component imports
 import QuizPage from './components/QuizPage';
 import LearningStyleQuiz from './components/LearningStyleQuiz';
 import PuzzlePage from './components/PuzzlePage';
 import GamesPage from './components/GamesPage';
-import ReadingPage from './components/ReadingPage';
 import TeacherDashboard from './components/TeacherDashboard';
 import { ParentDashboard } from './components/ParentDashboard';
 import { ExplorationMode } from './components/ExplorationMode';
 import { WhatIfPage } from './components/WhatIfPage';
 import StudyGroups from './components/StudyGroups';
-//import AIStudyPlanner from './components/AIStudyPlanner';
+import AIStudyPlanner from './components/AIStudyPlanner'; // <-- IMPORT ADDED
 import { ProgressMap } from './components/ProgressMap';
-import CareerHub from './components/CareerHub';
-import ProjectBuilder, { projectTemplates } from './components/ProjectBuilder';
-import ProjectDetail from './components/ProjectDetail';
 import { ExploreMenu } from './components/ExploreMenu';
 import { SubjectsPage } from './components/SubjectsPage';
 import { SubjectDetailsPage } from './components/SubjectDetailsPage';
@@ -49,6 +54,11 @@ import ReadingChallenge from './components/ReadingChallenge';
 import ListeningComprehensionChallenge from './components/ListeningComprehensionChallenge';
 import { SpeakingPage } from './components/SpeakingPage';
 
+// New imports for Teacher Dashboard sub-components
+import Analytics from './components/Analytics';
+import Settings from './components/Settings';
+import Calendar from './components/Calendar';
+
 import './styles/App.css'; // Keep existing styles
 
 const App: React.FC = () => {
@@ -69,6 +79,8 @@ const App: React.FC = () => {
         <Route path="/login" element={<AuthPage />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
 
+        <Route path="/codinghub/*" element={<CodingHub />} />
+
         {/* Protected Routes - AuthWrapper remains the same */}
         <Route element={<AuthWrapper />}>
           <Route path="/welcome-back" element={<WelcomeBack />} />
@@ -78,17 +90,12 @@ const App: React.FC = () => {
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/puzzle" element={<PuzzlePage />} />
           <Route path="/games" element={<GamesPage />} />
-          <Route path="/reading" element={<ReadingPage />} />
           <Route path="/explore-menu" element={<ExploreMenu />} />
           <Route path="/explore" element={<ExplorationMode />} />
           <Route path="/what-if" element={<WhatIfPage />} />
           <Route path="/study-groups" element={<StudyGroups />} />
+          <Route path="/ai-study-planner" element={<AIStudyPlanner />} /> {/* <-- ROUTE ADDED */}
           <Route path="/progress" element={<ProgressMap />} />
-          <Route path="/careers" element={<CareerHub />} />
-          <Route path="/project-builder" element={<ProjectBuilder />} />
-          <Route path="/create" element={<ProjectBuilder />} />
-          <Route path="/project/:id" element={<ProjectDetail projectTemplates={projectTemplates} />} />
-          <Route path="/template/:id" element={<ProjectDetail projectTemplates={projectTemplates} />} />
           <Route path="/subjects" element={<SubjectsPage />} />
           <Route path="/subjects/:subjectId" element={<SubjectDetailsPage />} />
           <Route path="/subjects/:subjectId/chat" element={<Chatbot />} />
@@ -96,6 +103,13 @@ const App: React.FC = () => {
           <Route path="/botai" element={<BotAI />} />
           <Route path="/account" element={<AccountDetails />} />
           <Route path="/reading-challenge" element={<ReadingChallenge />} />
+          <Route path="/sentence-practice" element={<SentencePracticePage />} />
+          <Route path="/project-builder" element={<ProjectBuilderMenu />} />
+          <Route path="/project-builder/software" element={<ProjectsPage />} />
+          <Route path="/project-builder/science" element={<ProjectsPage />} />
+          <Route path="/project-builder/software/:projectId" element={<ProjectDetailPage />} />
+          <Route path="/project-builder/science/:projectId" element={<ProjectDetailPage />} />
+          <Route path="/create" element={<ProjectBuilderMenu />} />
 
           {/* New routes for challenge components */}
 
@@ -114,6 +128,9 @@ const App: React.FC = () => {
 
         {/* Teacher and Parent dashboards are still public routes with their own password protection */}
         <Route path="/teacher" element={<TeacherDashboard />} />
+        <Route path="/teacher/analytics" element={<Analytics onBack={() => window.history.back()} />} />
+        <Route path="/teacher/calendar" element={<Calendar onBack={() => window.history.back()} />} />
+        <Route path="/teacher/settings" element={<Settings onBack={() => window.history.back()} />} />
         <Route path="/parent" element={<ParentDashboard />} />
         <Route path="/teacher/uploads" element={<UploadedMaterialsList onBack={() => window.history.back()} />} />
 
