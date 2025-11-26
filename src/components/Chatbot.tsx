@@ -1,14 +1,15 @@
-// Chatbot.tsx - Fixed input box visibility during loading
+// Chatbot.tsx - UPDATED (Welcome message hides on send)
 import React, { useState, useRef, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useThemeStore } from '../store/theme';
-import Sidebar from "./Sidebar";
+import Sidebar from "./SidebarChatbot";
 import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
 import { useChatLogic } from "../hooks/useChatLogic";
 import { findInitialSubject, loadSessions, generatePDF } from "../utils/chatUtils";
 import type { Subject, UserData, SessionsBySubject, ChatSession } from "../types";
+import { Menu, ArrowLeft } from "lucide-react"; 
 
 const ChatInterface: React.FC = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
@@ -22,8 +23,10 @@ const ChatInterface: React.FC = () => {
   const [newMessage, setNewMessage] = useState<string>('');
   const [sessionsBySubject, setSessionsBySubject] = useState<SessionsBySubject>(loadSessions());
   const [userInterests, setUserInterests] = useState<string[]>([]);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   
+  const [showWelcome, setShowWelcome] = useState(true);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +79,8 @@ const ChatInterface: React.FC = () => {
     }
   }, [userData, setCurrentTheme]);
 
+  // MODIFICATION: The 10-second timer useEffect has been REMOVED.
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) console.log("File selected:", file.name);
@@ -85,7 +90,20 @@ const ChatInterface: React.FC = () => {
   const handleBackToSubjectSelect = () => navigate('/subjects');
   const theme = useThemeStore();
 
-  const sidebarOffset = isSidebarCollapsed ? '100px' : '250px';
+  const topNavButtonClass = "p-2 bg-black/50 rounded-lg text-white backdrop-blur-md hover:bg-white/20 transition-colors";
+
+  // MODIFICATION: Created a new function to wrap handleSend
+  const handleSubmitMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Hide the welcome message if it's currently shown
+    if (showWelcome) {
+      setShowWelcome(false);
+    }
+    
+    // Call the original send function from the hook
+    handleSend(e);
+  };
 
   return (
     <div
@@ -99,25 +117,65 @@ const ChatInterface: React.FC = () => {
       }}
     >
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-0"></div>
+
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-black/60 z-30"
+          />
+        )}
+      </AnimatePresence>
+
+      <div className="fixed top-4 left-4 z-50 flex flex-col gap-2">
+        <button
+          onClick={handleBackToSubjectSelect}
+          className={topNavButtonClass}
+          aria-label="Back to subjects"
+          title="Back to subjects"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className={topNavButtonClass}
+          aria-label="Open menu"
+          title="Open menu"
+        >
+          <Menu size={24} />
+        </button>
+      </div>
+
+      <Sidebar
+        selectedSubject={selectedSubject}
+        sessionsBySubject={sessionsBySubject}
+        setSessionsBySubject={setSessionsBySubject}
+        loadSession={loadSession}
+        startNewChatSameSubject={startNewChatSameSubject}
+        userData={userData}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+        onBackButtonClick={() => {
+          handleBackToSubjectSelect();
+          setIsSidebarOpen(false);
+        }}
+      />
+
       <div className="flex flex-1 overflow-hidden relative z-10 h-screen">
-        <Sidebar
-          selectedSubject={selectedSubject}
-          sessionsBySubject={sessionsBySubject}
-          loadSession={loadSession}
-          startNewChatSameSubject={startNewChatSameSubject}
-          userData={userData}
-          isSidebarCollapsed={isSidebarCollapsed}
-          setIsSidebarCollapsed={setIsSidebarCollapsed}
-          onBackButtonClick={handleBackToSubjectSelect}
-        />
-        <div className={`relative flex flex-col flex-1 ml-[${sidebarOffset}] transition-all duration-300 pt-20`}>
+        
+        <div className={`relative flex flex-col flex-1 transition-all duration-300 pt-20`}>
+          
           <ChatMessages
             messages={messages}
             loading={loading}
             recommendedMessages={recommendedMessages}
             onRecommendationClick={handleRecommendationClick}
             selectedSubject={selectedSubject}
-            isSidebarCollapsed={isSidebarCollapsed}
+            isSidebarCollapsed={!isSidebarOpen}
             theme={theme}
             currentBackgroundIndex={currentBackgroundIndex}
             userLearningStyle={userLearningStyle}
@@ -133,7 +191,7 @@ const ChatInterface: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 50 }}
               transition={{ duration: 0.3 }}
-              className={`absolute bottom-0 z-20 flex flex-col items-center left-0 right-0 px-6 pb-6 bg-transparent`}
+              className={`absolute bottom-0 z-20 flex flex-col items-center left-0 right-0 px-4 pb-4 md:px-6 md:pb-6 bg-transparent`}
             >
               <div className="w-full max-w-6xl mx-auto mb-4">
                 <div className="flex gap-2 overflow-x-auto">
@@ -165,7 +223,8 @@ const ChatInterface: React.FC = () => {
                 isRecording={isRecording}
                 activeTool={activeTool}
                 setActiveTool={setActiveTool}
-                onSubmit={handleSend}
+                // MODIFICATION: Pass the new wrapper function to onSubmit
+                onSubmit={handleSubmitMessage}
                 inputRef={inputRef}
                 fileInputRef={fileInputRef}
                 currentTheme={currentTheme}
@@ -181,7 +240,7 @@ const ChatInterface: React.FC = () => {
       </div>
       
       {isOffline && (
-        <div className="fixed top-4 left-4 bg-red-600 text-white p-2 rounded z-30">
+        <div className="fixed top-20 left-4 bg-red-600 text-white p-2 rounded z-30">
           Offline Mode
         </div>
       )}
@@ -200,17 +259,21 @@ const ChatInterface: React.FC = () => {
         </button>
       )}
       <AnimatePresence>
-        {messages.length <= 1 && selectedSubject && (
+        {showWelcome && messages.length <= 1 && selectedSubject && (
           <motion.div
-            initial={{ opacity: 0, y: -50 }}
+            initial={{ opacity: 1, y: 0 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
+            exit={{ opacity: 0, y: -50 }}
             transition={{ duration: 0.5 }}
-            className={`fixed top-0 left-0 right-0 z-20 flex justify-center transition-all duration-300`}
+            className={`fixed top-0 left-0 right-0 z-20 flex justify-center transition-all duration-300 pt-16 px-4`}
           >
-            <div className="p-6 text-center text-white backdrop-blur-md bg-black/70 shadow-lg border-b border-white/20">
-              <h2 className="text-2xl md:text-3xl font-bold mb-1">Welcome to the {selectedSubject.name} Chatbot!</h2>
-              <p className="text-lg text-gray-200">I'm here to help you learn. Feel free to ask me anything.</p>
+            <div className="text-center">
+              <h2 className="text-2xl md:text-3xl font-bold mb-1 welcome-gradient-text welcome-text-glow">
+                Welcome to the {selectedSubject.name} Chatbot!
+              </h2>
+              <p className="text-lg text-gray-200 welcome-text-glow">
+                I'm here to help you learn. Feel free to ask me anything.
+              </p>
             </div>
           </motion.div>
         )}

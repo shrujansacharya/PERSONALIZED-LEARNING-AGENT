@@ -23,23 +23,21 @@ const iconMap: { [key: string]: React.ElementType } = {
   'Database': Database,
 };
 
-const isImage = (fileName: string) => {
-  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg'];
-  const extension = fileName.split('.').pop()?.toLowerCase();
-  return extension && imageExtensions.includes(extension);
+// --- UPDATE 1: Use mimeType for checks ---
+const isImage = (mimeType: string) => {
+  return mimeType && mimeType.startsWith('image/');
 };
 
-const isVideo = (fileName: string) => {
-    const videoExtensions = ['mp4', 'avi', 'mov', 'webm'];
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    return extension && videoExtensions.includes(extension);
+const isVideo = (mimeType: string) => {
+    return mimeType && mimeType.startsWith('video/');
 };
 
-const getFileTypeIcon = (fileName: string) => {
-  if (isImage(fileName)) return Image;
-  if (isVideo(fileName)) return Video;
+const getFileTypeIcon = (mimeType: string) => {
+  if (isImage(mimeType)) return Image;
+  if (isVideo(mimeType)) return Video;
   return FileTextIcon;
 };
+// --- End Update 1 ---
 
 export const SubjectsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,6 +58,8 @@ export const SubjectsPage = () => {
   const { answers, setAnswer } = useQuizStore();
   const theme = getThemeStyles();
   const currentBackground = theme.backgrounds?.[currentBackgroundIndex] || '';
+  
+  const VITE_BACKEND_URL = 'http://localhost:5001'; // Hardcode from .env
 
   const fetchUploadedMaterials = async () => {
     const user = auth.currentUser;
@@ -67,7 +67,7 @@ export const SubjectsPage = () => {
 
     try {
       const token = await user.getIdToken();
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/materials`, {
+      const response = await fetch(`${VITE_BACKEND_URL}/api/materials`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -86,7 +86,7 @@ export const SubjectsPage = () => {
     if (user && !answers.interests) {
       try {
         const token = await user.getIdToken();
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/${user.uid}`, {
+        const response = await fetch(`${VITE_BACKEND_URL}/api/user/${user.uid}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -136,17 +136,20 @@ export const SubjectsPage = () => {
   const handleSubjectClick = (subject: (typeof subjectDetails)[0]) => setSelectedSubject(subject);
   const handleBackToSubjects = () => setSelectedSubject(null);
 
+  // --- UPDATE 2: Filter logic uses fileMimeType ---
   const subjectMaterials = selectedSubject ? uploadedMaterials.filter(material =>
     (material.subject.toLowerCase() === selectedSubject.name.toLowerCase() ||
     (selectedSubject.name.toLowerCase() === 'mathematics' && material.subject.toLowerCase() === 'math')) &&
     (fileTypeFilter === 'All' ||
-     (fileTypeFilter === 'Image' && isImage(material.fileName)) ||
-     (fileTypeFilter === 'Video' && isVideo(material.fileName)) ||
-     (fileTypeFilter === 'Document' && !isImage(material.fileName) && !isVideo(material.fileName)))
+     (fileTypeFilter === 'Image' && isImage(material.fileMimeType)) ||
+     (fileTypeFilter === 'Video' && isVideo(material.fileMimeType)) ||
+     (fileTypeFilter === 'Document' && !isImage(material.fileMimeType) && !isVideo(material.fileMimeType)))
   ) : [];
+  // --- End Update 2 ---
 
   const SubjectIcon = selectedSubject ? iconMap[selectedSubject.icon] : null;
 
+  // --- UPDATE 3: Send material._id to analysis endpoint ---
   const handleAnalyzeAndChat = async (material: any) => {
     if (!selectedSubject || !material) return;
 
@@ -158,17 +161,18 @@ export const SubjectsPage = () => {
       if (!user) throw new Error("User not authenticated.");
       const token = await user.getIdToken();
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/materials/analyze`, {
+      const response = await fetch(`${VITE_BACKEND_URL}/api/materials/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ 
-          filePath: material.filePath, 
-          comment: material.comment || '' 
+          materialId: material._id, // Send ID instead of filePath
+          comment: material.comment || '' // Pass comment from material
         }),
       });
+      // --- End Update 3 ---
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -182,7 +186,7 @@ export const SubjectsPage = () => {
 
     } catch (error) {
       console.error("Analysis failed:", error);
-      alert(`Sorry, we couldn't analyze that material. Please try again later. Error: ${error}`);
+      // alert(`Sorry, we couldn't analyze that material. Please try again later. Error: ${error}`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -258,7 +262,7 @@ export const SubjectsPage = () => {
           </motion.div>
         )}
 
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {!selectedSubject ? (
             <motion.div
               key="subject-grid"
@@ -421,7 +425,8 @@ export const SubjectsPage = () => {
                       {subjectMaterials.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                           {subjectMaterials.map((material, index) => {
-                            const FileIcon = getFileTypeIcon(material.fileName);
+                            // --- UPDATE 4: Use fileMimeType ---
+                            const FileIcon = getFileTypeIcon(material.fileMimeType);
                             return (
                               <motion.div
                                 key={index}
@@ -436,11 +441,12 @@ export const SubjectsPage = () => {
                                   </div>
                                 )}
                                 <div className="relative flex items-center justify-center h-40 mb-4 rounded-xl overflow-hidden bg-gray-700">
-                                  {isImage(material.fileName) ? (
-                                    <img src={`${import.meta.env.VITE_BACKEND_URL}${material.filePath}`} alt={material.fileName} className="w-full h-full object-cover" />
-                                  ) : isVideo(material.fileName) ? (
+                                  {/* --- UPDATE 5: Use fileData and fileMimeType --- */}
+                                  {isImage(material.fileMimeType) ? (
+                                    <img src={material.fileData} alt={material.fileName} className="w-full h-full object-cover" />
+                                  ) : isVideo(material.fileMimeType) ? (
                                     <>
-                                      <video src={`${import.meta.env.VITE_BACKEND_URL}${material.filePath}`} className="w-full h-full object-cover" controls={false} />
+                                      <video src={material.fileData} className="w-full h-full object-cover" controls={false} />
                                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-lg font-bold">
                                         <PlayCircle size={48} className="text-gold-400" />
                                       </div>
@@ -448,6 +454,7 @@ export const SubjectsPage = () => {
                                   ) : (
                                     <FileIcon size={60} className="text-gold-300" />
                                   )}
+                                  {/* --- End Update 5 --- */}
                                 </div>
                                 <div className="flex justify-between items-center mt-2">
                                   <p className="text-sm font-medium text-gray-200 truncate flex-1">{material.fileName}</p>
@@ -459,7 +466,7 @@ export const SubjectsPage = () => {
                       ) : (
                         <div className="flex flex-col items-center justify-center h-48 text-gray-400">
                           <FileText size={60} className="mb-3" />
-                          <p className="text-lg font-medium">No materials uploaded yet.</p>
+                          <p className="text-lg font-medium">No materials uploaded for this subject/filter.</p>
                         </div>
                       )}
                     </motion.div>
@@ -527,6 +534,7 @@ export const SubjectsPage = () => {
           )}
         </AnimatePresence>
 
+        {/* --- UPDATE 6: View File Modal --- */}
         {selectedFile && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -557,15 +565,15 @@ export const SubjectsPage = () => {
                 )}
 
                 <div className="flex items-center justify-center max-h-[70vh] w-full bg-black/30 rounded-xl p-5 shadow-lg">
-                  {isImage(selectedFile.fileName) ? (
+                  {isImage(selectedFile.fileMimeType) ? (
                     <img
-                      src={`${import.meta.env.VITE_BACKEND_URL}${selectedFile.filePath}`}
+                      src={selectedFile.fileData} // Use Base64 data
                       alt={selectedFile.fileName}
                       className="max-h-[70vh] object-contain shadow-md rounded-lg"
                     />
-                  ) : isVideo(selectedFile.fileName) ? (
+                  ) : isVideo(selectedFile.fileMimeType) ? (
                     <video
-                      src={`${import.meta.env.VITE_BACKEND_URL}${selectedFile.filePath}`}
+                      src={selectedFile.fileData} // Use Base64 data
                       className="max-h-[70vh] object-contain shadow-md rounded-lg"
                       controls
                     />
@@ -573,10 +581,10 @@ export const SubjectsPage = () => {
                     <div className="flex flex-col items-center justify-center h-full text-center">
                       <File size={72} className="text-gold-300 mb-4" />
                       <p className="text-base text-gray-300 font-medium">File preview not available.</p>
+                      {/* Make the download link use Base64 data */}
                       <a
-                        href={`${import.meta.env.VITE_BACKEND_URL}${selectedFile.filePath}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={selectedFile.fileData} // Use Base64 data
+                        download={selectedFile.fileName} // Add download attribute
                         className="mt-4 px-5 py-2 bg-gradient-to-r from-teal-500 to-indigo-600 text-white rounded-lg hover:from-teal-600 hover:to-indigo-700 transition-colors shadow-md text-base"
                       >
                         Download File
@@ -588,6 +596,8 @@ export const SubjectsPage = () => {
             </motion.div>
           </motion.div>
         )}
+        {/* --- End Update 6 --- */}
+
 
         {isAnalyzing && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-50">

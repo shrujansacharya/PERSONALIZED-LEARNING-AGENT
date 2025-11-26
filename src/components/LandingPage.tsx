@@ -2,10 +2,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Sun, Moon, Sparkles, Zap, Heart, Star, Trophy, Users, BookOpen, Target, Rocket, Brain, Globe, Palette, Microscope, Crown } from 'lucide-react';
 
+// --- THIS IS THE UPDATED LINE ---
+// (Make sure you have renamed the file to "landing-page-image.jpg" in src/types/)
+import HeroBackgroundImage from '../types/landing-page-image.jpg';
+
 interface NotificationBellProps {
   notifications: any[];
 }
-
+// ... (rest of the file is unchanged) ...
 const NotificationBell: React.FC<NotificationBellProps> = ({ notifications }) => (
   <div className="relative">
     <Bell className="h-6 w-6 text-gray-600 dark:text-gray-300 cursor-pointer hover:text-blue-500 transition-colors" />
@@ -114,15 +118,7 @@ const LandingPage: React.FC = () => {
         * {
             font-family: 'Baloo 2', cursive;
         }
-        .gradient-bg {
-            background: linear-gradient(-45deg, #38BDF8, #9AE6B4, #F6AD55, #D6BCFA);
-            background-size: 400% 400%;
-            animation: gradientShift 8s ease-in-out infinite;
-        }
-        @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
+
         .floating-icon {
             animation: float 6s ease-in-out infinite;
         }
@@ -200,10 +196,6 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3 group cursor-pointer">
-              <div className="relative">
-                <span className="text-4xl group-hover:scale-110 transition-transform duration-300">🚀</span>
-                <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
-              </div>
               <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">
                 LearnMyWay
               </span>
@@ -243,19 +235,15 @@ const LandingPage: React.FC = () => {
         </div>
       </nav>
 
-      <section id="home" className="gradient-bg min-h-screen flex items-center justify-center relative overflow-hidden pt-20">
-        {/* Enhanced floating elements with more variety */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="floating-icon absolute top-20 left-10 text-6xl animate-pulse">📚</div>
-          <div className="floating-icon absolute top-32 right-20 text-5xl animate-bounce">🚀</div>
-          <div className="floating-icon absolute bottom-40 left-20 text-4xl animate-spin">✏</div>
-          <div className="floating-icon absolute bottom-20 right-10 text-6xl animate-ping">✨</div>
-          <div className="floating-icon absolute top-1/2 left-1/3 text-5xl animate-pulse">🌟</div>
-          <div className="floating-icon absolute top-1/4 right-1/4 text-4xl animate-bounce">🎯</div>
-          <div className="floating-icon absolute bottom-1/4 left-1/4 text-5xl animate-spin">🎨</div>
-          <div className="floating-icon absolute top-3/4 right-10 text-4xl animate-ping">🔬</div>
-        </div>
-
+      <section 
+        id="home" 
+        className="min-h-screen flex items-center justify-center relative overflow-hidden pt-20"
+        style={{
+          backgroundImage: `url(${HeroBackgroundImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
         {/* Animated background particles */}
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(20)].map((_, i) => (
@@ -278,8 +266,6 @@ const LandingPage: React.FC = () => {
             <h1 className="text-6xl md:text-8xl font-black text-white mb-6 bounce-in bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-2xl">
               Welcome to LearnMyWay
             </h1>
-            <div className="absolute -top-4 -right-4 text-6xl animate-bounce">🚀</div>
-            <div className="absolute -bottom-4 -left-4 text-4xl animate-spin">✨</div>
           </div>
 
           {/* Enhanced subtitle */}
@@ -331,11 +317,13 @@ const LandingPage: React.FC = () => {
           {/* Scroll indicator */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
             <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
-              <div className="w-1 h-3 bg-white/50 rounded-full mt-2 animate-pulse"></div>
+              <div className="w-1 h-3 bg-white/50 rounded-full mt-2 animate.pulse"></div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* ... (Rest of the file remains the same) ... */}
 
       <section id="modes" className="py-20 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden">
         {/* Animated background elements */}
@@ -1037,7 +1025,7 @@ const LandingPage: React.FC = () => {
       <footer className="bg-gray-800 text-white py-12 dark:bg-gray-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <span className="text-3xl">🚀</span>
+            {/* <span className="text-3xl">🚀</span> */}
             <span className="text-2xl font-bold">LearnMyWay</span>
           </div>
           <p className="text-gray-400 mb-6">Where Learning Feels Like Play!</p>

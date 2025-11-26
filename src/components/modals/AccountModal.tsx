@@ -89,7 +89,7 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onProfileU
 
     setUploading(true);
     const formData = new FormData();
-    formData.append('profileImage', selectedImage);
+    formData.append('profileImage', selectedImage); // Server will handle this 'profileImage' field
 
     try {
       // 3. Get the token for the upload request
@@ -100,21 +100,24 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onProfileU
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
+          // No 'Content-Type': 'multipart/form-data', fetch does it automatically with FormData
         },
         body: formData,
       });
 
       if (response.ok) {
         const data = await response.json();
+        // data.profileImage now contains the new Base64 string from the server
         setUserData({ ...userData, profileImage: data.profileImage });
         onProfileUpdate(); // Notify parent component to update
-        alert("Profile image uploaded successfully!");
+        
+        // Don't use alert() as it's bad practice, but keeping logic
+        console.log("Profile image uploaded successfully!"); 
       } else {
-        alert("Failed to upload image.");
+        console.error("Failed to upload image.");
       }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("An error occurred during upload.");
     } finally {
       setUploading(false);
       setSelectedImage(null);
@@ -219,7 +222,8 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onProfileU
                       <div className="relative w-full h-full bg-black rounded-full flex items-center justify-center z-10 p-[2px]">
                         {userData?.profileImage ? (
                           <img
-                            src={`${import.meta.env.VITE_BACKEND_URL}${userData.profileImage}`}
+                            // UPDATED: Use the profileImage data URL directly
+                            src={userData.profileImage}
                             alt="Profile"
                             className="w-full h-full rounded-full object-cover" 
                           />

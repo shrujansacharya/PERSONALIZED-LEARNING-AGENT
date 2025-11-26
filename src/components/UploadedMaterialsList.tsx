@@ -1,7 +1,7 @@
 // UploadedMaterialsList.tsx - Updated with enhancements
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Trash2, File, Image as ImageIcon, Users, Filter, ChevronRight, FileText } from 'lucide-react';
+import { ArrowLeft, Trash2, File, Image as ImageIcon, Users, Filter, ChevronRight, FileText, Video } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import { subjectDetails } from '../utils/subjects';
 
@@ -9,17 +9,15 @@ interface UploadedMaterialsListProps {
     onBack: () => void;
 }
 
-const isImage = (fileName: string) => {
-    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg'];
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    return extension && imageExtensions.includes(extension);
+// --- UPDATE 1: Use mimeType for checks ---
+const isImage = (mimeType: string) => {
+    return mimeType && mimeType.startsWith('image/');
 };
 
-const isVideo = (fileName: string) => {
-    const videoExtensions = ['mp4', 'avi', 'mov', 'webm'];
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    return extension && videoExtensions.includes(extension);
+const isVideo = (mimeType: string) => {
+    return mimeType && mimeType.startsWith('video/');
 };
+// --- End Update 1 ---
 
 const AssignedStudentsSummary: React.FC<{ students: any[] }> = ({ students }) => {
     if (!students || students.length === 0) {
@@ -42,37 +40,48 @@ const UploadedMaterialsList: React.FC<UploadedMaterialsListProps> = ({ onBack })
     const [selectedSubject, setSelectedSubject] = useState<string>('All');
     const [selectedClass, setSelectedClass] = useState<string>('All');
     const [searchQuery, setSearchQuery] = useState<string>('');
+    const [isAuthLoading, setIsAuthLoading] = useState(true); // Add auth loading state
 
     const availableSubjects = ['All', ...subjectDetails.map(s => s.name)];
     const availableClasses = ['All', '4th std', '5th std', '6th std', '7th std', '8th std', '9th std', '10th std'];
 
-    useEffect(() => {
-        const fetchMaterials = async () => {
-            setLoading(true);
-            try {
-                const auth = getAuth();
-                const user = auth.currentUser;
-                if (!user) return;
-                const idToken = await user.getIdToken();
+    const VITE_BACKEND_URL = 'http://localhost:5001'; // Hardcode from .env
 
-                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/materials`, {
-                    headers: { Authorization: `Bearer ${idToken}` },
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setMaterials(data);
-                } else {
-                    console.error('Failed to fetch materials:', response.statusText);
-                }
-            } catch (error) {
-                console.error('Error fetching materials:', error);
-            } finally {
+    useEffect(() => {
+        const auth = getAuth();
+        const unsubscribe = auth.onAuthStateChanged(user => {
+            if (user) {
+                fetchMaterials(user);
+            } else {
                 setLoading(false);
+                setIsAuthLoading(false);
+                // Handle user not logged in
             }
-        };
-        fetchMaterials();
+        });
+        return () => unsubscribe();
     }, []);
     
+    const fetchMaterials = async (user: any) => {
+        setIsAuthLoading(false); // Auth is checked
+        setLoading(true);
+        try {
+            const idToken = await user.getIdToken();
+            const response = await fetch(`${VITE_BACKEND_URL}/api/materials`, {
+                headers: { Authorization: `Bearer ${idToken}` },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setMaterials(data);
+            } else {
+                console.error('Failed to fetch materials:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error fetching materials:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const filteredMaterials = useMemo(() => {
         return materials.filter(material => {
             const subjectMatch = selectedSubject === 'All' || material.subject === selectedSubject;
@@ -88,32 +97,33 @@ const UploadedMaterialsList: React.FC<UploadedMaterialsListProps> = ({ onBack })
     }, [materials, selectedSubject, selectedClass, searchQuery]);
 
     const handleDelete = async (materialId: string) => {
-        if (window.confirm('Are you sure you want to delete this material?')) {
+        // Use a custom modal/confirm instead of window.confirm
+        console.log('Attempting to delete material:', materialId);
+        // if (window.confirm('Are you sure you want to delete this material?')) {
              try {
                 const auth = getAuth();
                 const user = auth.currentUser;
                 if (!user) return;
                 const idToken = await user.getIdToken();
 
-                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/materials/${materialId}`, {
+                const response = await fetch(`${VITE_BACKEND_URL}/api/materials/${materialId}`, {
                     method: 'DELETE',
                     headers: { Authorization: `Bearer ${idToken}` },
                 });
 
                 if (response.ok) {
-                    alert('Material deleted successfully.');
+                    console.log('Material deleted successfully.');
                     setMaterials(prev => prev.filter(m => m._id !== materialId));
                 } else {
-                    alert('Failed to delete material.');
+                    console.error('Failed to delete material.');
                 }
             } catch (error) {
                 console.error('Error deleting material:', error);
-                alert('An error occurred while deleting the material.');
             }
-        }
+        // }
     };
     
-    if (loading) {
+    if (isAuthLoading || loading) {
         return <div className="p-8 text-center text-lg dark:text-white">Loading materials...</div>;
     }
 
@@ -179,17 +189,19 @@ const UploadedMaterialsList: React.FC<UploadedMaterialsListProps> = ({ onBack })
                         </div>
                         {material.comment && (<p className="text-sm text-gray-600 dark:text-gray-400 mb-2 relative z-10"><strong>Task:</strong> {material.comment}</p>)}
                         <div className="mb-3 relative z-10"><AssignedStudentsSummary students={material.targetStudents} /></div>
+                        
+                        {/* --- UPDATE 2: Use fileData and fileMimeType --- */}
                         <div className="flex-grow flex items-center justify-center p-6 mt-auto border border-gray-100 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 relative overflow-hidden">
-                            {isImage(material.fileName) ? (
+                            {isImage(material.fileMimeType) ? (
                                 <img
-                                    src={`${import.meta.env.VITE_BACKEND_URL}${material.filePath}`}
+                                    src={material.fileData} // Use Base64 data
                                     alt={material.fileName}
                                     className="max-h-32 object-cover w-full group-hover:scale-105 transition-transform duration-300"
                                     loading="lazy"
                                 />
-                            ) : isVideo(material.fileName) ? (
+                            ) : isVideo(material.fileMimeType) ? (
                                 <video
-                                    src={`${import.meta.env.VITE_BACKEND_URL}${material.filePath}`}
+                                    src={material.fileData} // Use Base64 data
                                     className="max-h-32 object-cover w-full"
                                     muted
                                     playsInline
@@ -203,6 +215,8 @@ const UploadedMaterialsList: React.FC<UploadedMaterialsListProps> = ({ onBack })
                                 </div>
                             )}
                         </div>
+                        {/* --- End Update 2 --- */}
+
                         <button className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-white dark:bg-gray-900 rounded-full shadow-lg relative z-10">
                             <ChevronRight size={20} className="text-purple-600" />
                         </button>
@@ -214,10 +228,10 @@ const UploadedMaterialsList: React.FC<UploadedMaterialsListProps> = ({ onBack })
                         className="col-span-full flex flex-col items-center justify-center py-16 text-center"
                     >
                         <FileText className="w-16 h-16 text-gray-400 mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No materials yet</h3>
-                        <p className="text-gray-500 dark:text-gray-400 mb-6">Start by uploading your first teaching resource.</p>
-                        <button onClick={() => {/* Navigate to upload - implement as needed */}} className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 shadow-lg transition-all">
-                            Upload Material
+                        <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No materials found</h3>
+                        <p className="text-gray-500 dark:text-gray-400 mb-6">Try adjusting your filters or upload new material.</p>
+                        <button onClick={onBack} className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 shadow-lg transition-all">
+                            Back to Dashboard
                         </button>
                     </motion.div>
                 )}

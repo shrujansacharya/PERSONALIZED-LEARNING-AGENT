@@ -317,3 +317,55 @@ input[type='range']:focus::-moz-range-thumb {
     @apply px-3 py-1 text-sm;
   }
 }
+
+/*chatbot input box animation */
+/* Add this to your index.css file */
+
+/* Add this to your index.css file (or replace the old one) */
+
+@keyframes animated-glow {
+  0% {
+    box-shadow: 0 0 3px #00e0ff, 0 0 5px #00e0ff, 0 0 8px #00aaff;
+  }
+  50% {
+    box-shadow: 0 0 5px #00e0ff, 0 0 10px #00e0ff, 0 0 15px #00aaff;
+  }
+  100% {
+    box-shadow: 0 0 3px #00e0ff, 0 0 5px #00e0ff, 0 0 8px #00aaff;
+  }
+}
+
+.animated-input-glow {
+  /* Changed from 2px to 1px */
+  border: 1px solid #00e0ff;
+  
+  /* This applies the pulsing animation */
+  animation: animated-glow 3s ease-in-out infinite;
+}
+
+
+/* Add this to your index.css file */
+
+/* Creates the text color gradient */
+.welcome-gradient-text {
+  background: linear-gradient(90deg, #d8b4fe, #a5b4fc, #ffffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Creates the keyframe animation for the glow */
+@keyframes text-glow-pulse {
+  0%, 100% {
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.2), 0 0 10px rgba(165, 180, 252, 0.2);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.4), 0 0 20px rgba(165, 180, 252, 0.4);
+  }
+}
+
+/* Applies the animation to an element */
+.welcome-text-glow {
+  animation: text-glow-pulse 4s ease-in-out infinite;
+}

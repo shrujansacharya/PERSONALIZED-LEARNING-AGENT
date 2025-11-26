@@ -1,4 +1,4 @@
-// ChatInput.tsx - Removed the focus ring
+// ChatInput.tsx - UPDATED with animated glow
 import React, { FormEvent, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Plus, SlidersHorizontal, Mic, Pause, Play } from 'lucide-react';
@@ -59,7 +59,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto w-full max-w-6xl bg-black rounded-3xl p-4 flex flex-col transition-shadow duration-300">
+    // MODIFICATION: 
+    // - Removed 'transition-shadow duration-300'
+    // - Added 'animated-input-glow'
+    <form 
+      onSubmit={onSubmit} 
+      className="mx-auto w-full max-w-6xl bg-black rounded-3xl p-4 flex flex-col animated-input-glow"
+    >
       <div className="flex items-center gap-2">
         <input
           ref={inputRef}
@@ -97,8 +103,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       </div>
       
       <input type="file" ref={fileInputRef} onChange={onFileChange} style={{ display: "none" }} />
-      <div className="flex justify-between items-center mt-3">
-        <div className="flex items-center gap-4">
+      <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-700/50">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button type="button" onClick={onAttachmentClick} className="text-gray-400 hover:text-white transition-colors" title="Attach file">
             <Plus size={24} />
           </button>
@@ -109,10 +115,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             title="Tools"
           >
             <SlidersHorizontal size={22} />
-            <span className="font-medium text-sm">Tools</span>
+            <span className="font-medium text-sm hidden sm:inline">Tools</span>
           </button>
-          <button type="button" onClick={toggleTheme} className="text-gray-400 hover:text-white transition-colors" title="Toggle Theme">
-            🎭 {currentTheme}
+          <button type="button" onClick={toggleTheme} className="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5" title="Toggle Theme">
+            <span>🎭</span>
+            <span className="hidden sm:inline">{currentTheme}</span>
           </button>
         </div>
         <div className="flex items-center">

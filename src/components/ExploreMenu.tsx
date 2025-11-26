@@ -16,6 +16,9 @@ import { useThemeStore, themeConfig } from '../store/theme';
 import AccountModal from './modals/AccountModal';
 import { auth } from '../lib/firebase';
 
+// Use the backend URL from your .env file to fix build warnings
+const VITE_BACKEND_URL = 'http://localhost:5001';
+
 export const ExploreMenu = () => {
   const navigate = useNavigate();
   const theme = useThemeStore((state) => state.getThemeStyles());
@@ -23,7 +26,7 @@ export const ExploreMenu = () => {
   const setDynamicBackgrounds = useThemeStore((state) => state.setDynamicBackgrounds);
 
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
-  const [profileImageUrl, setProfileImageUrl] = useState('');
+  const [profileImageUrl, setProfileImageUrl] = useState(''); // This will store the Base64 string or old path
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -32,26 +35,20 @@ export const ExploreMenu = () => {
     const user = auth.currentUser;
     if (user) {
       try {
-        // Get the token first
         const token = await user.getIdToken();
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/${user.uid}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const response = await fetch(`${VITE_BACKEND_URL}/api/user/${user.uid}`, { // Use constant
+          headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.ok) {
           const data = await response.json();
-          setProfileImageUrl(data.profileImage || '');
-          if (data.interests) {
-            setTheme(data.interests as keyof typeof themeConfig);
-          }
+          setProfileImageUrl(data.profileImage || ''); // Store whatever is in the DB
+          if (data.interests) setTheme(data.interests as keyof typeof themeConfig);
           if (data.generatedThemeImages && data.generatedThemeImages.length > 0) {
-            const baseUrl = import.meta.env.VITE_BACKEND_URL || '';
+            const baseUrl = VITE_BACKEND_URL || ''; // Use constant
             const fullUrls = data.generatedThemeImages.map((img: string) => {
-              if (img.startsWith('http') || img.startsWith('https')) {
-                return img;
-              }
+              // This logic correctly handles already-full URLs
+              if (img.startsWith('http') || img.startsWith('https')) return img;
               return baseUrl + (img.startsWith('/') ? img : '/' + img);
             });
             setDynamicBackgrounds(fullUrls);
@@ -78,62 +75,28 @@ export const ExploreMenu = () => {
   }, [theme.backgrounds]);
 
   const handleProfileUpdate = () => {
+    // This is called when AccountModal closes, re-fetching the user data
     fetchUserProfile();
   };
 
   const menuItems = [
-    {
-      title: 'Subjects',
-      description: 'Explore various subjects and expand your knowledge',
-      icon: Brain,
-      path: '/subjects',
-      color: 'from-indigo-400 to-indigo-600'
-    },
-    {
-      title: 'English Skill Build',
-      description: 'Ask curious questions and explore amazing possibilities',
-      icon: Star,
-      path: '/what-if',
-      color: 'from-green-400 to-green-600'
-    },
-    {
-      title: 'AI Study Planner',
-      description: 'Create personalized study plans with AI assistance',
-      icon: Brain,
-      path: '/ai-study-planner',
-      color: 'from-blue-400 to-blue-600'
-    },
-    {
-      title: 'Progress Adventure',
-      description: 'Track your learning journey on an interactive map',
-      icon: Trophy,
-      path: '/progress',
-      color: 'from-purple-400 to-purple-600'
-    },
-    {
-      title: 'Coding Hub',
-      description: 'Discover exciting future careers and opportunities',
-      icon: Award,
-      path: '/codinghub',
-      color: 'from-red-400 to-red-600'
-    },
-    {
-      title: 'Project Builder',
-      description: 'Create your own amazing learning projects',
-      icon: PenTool,
-      path: '/create',
-      color: 'from-orange-400 to-orange-600'
-    }
+    { title: 'Subjects', description: 'Explore various subjects and expand your knowledge', icon: Brain, path: '/subjects', color: 'from-indigo-400 to-indigo-600' },
+    { title: 'English Skill Build', description: 'Ask curious questions and explore amazing possibilities', icon: Star, path: '/what-if', color: 'from-green-400 to-green-600' },
+    { title: 'AI Study Planner', description: 'Create personalized study plans with AI assistance', icon: Brain, path: '/ai-study-planner', color: 'from-blue-400 to-blue-600' },
+    { title: 'Progress Adventure', description: 'Track your learning journey on an interactive map', icon: Trophy, path: '/progress', color: 'from-purple-400 to-purple-600' },
+    { title: 'Coding Hub', description: 'Discover exciting future careers and opportunities', icon: Award, path: '/codinghub', color: 'from-red-400 to-red-600' },
+    { title: 'Project Builder', description: 'Create your own amazing learning projects', icon: PenTool, path: '/create', color: 'from-orange-400 to-orange-600' }
   ];
 
   const currentBackground = theme.backgrounds?.[currentBackgroundIndex] || '';
 
+  // ✅ UPDATED VERSION - Uses MongoDB image storage
   const handleChangeTheme = useCallback(async (newTheme: string) => {
     setIsThemeSelectorOpen(false);
     setIsGenerating(true);
 
     try {
-      const generateResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/generate-theme-images`, {
+      const generateResponse = await fetch(`${VITE_BACKEND_URL}/api/generate-theme-images`, { // Use constant
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme: newTheme }),
@@ -142,42 +105,41 @@ export const ExploreMenu = () => {
 
       if (generateResponse.ok) {
         setTheme(newTheme as keyof typeof themeConfig);
-        const baseUrl = import.meta.env.VITE_BACKEND_URL || '';
-        const processedBackgrounds = data.backgrounds.map((img: string) => {
-          if (img.startsWith('http') || img.startsWith('https')) {
-            return img;
-          }
-          return baseUrl + (img.startsWith('/') ? img : '/' + img);
-        });
+
+        // Convert MongoDB image IDs to accessible URLs
+        const baseUrl = VITE_BACKEND_URL || ''; // Use constant
+        const processedBackgrounds = data.imageIds.map(
+          (id: string) => `${baseUrl}/api/images/${id}`
+        );
+
+        // Update dynamic theme backgrounds
         setDynamicBackgrounds(processedBackgrounds);
 
+        // Save selected theme and image URLs to user profile
         const user = auth.currentUser;
         if (user) {
-          // Get token for the save request
           const token = await user.getIdToken();
-          const saveResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/${user.uid}/learning-style`, {
+          const saveResponse = await fetch(`${VITE_BACKEND_URL}/api/user/${user.uid}/learning-style`, { // Use constant
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}` // Add token here
+              'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-              learningStyle: 'visual', // You may want to fetch the current learning style instead of hardcoding
+              learningStyle: 'visual',
               interests: newTheme,
               generatedThemeImages: processedBackgrounds,
             }),
           });
-          if (!saveResponse.ok) {
-            console.error('Failed to save theme to database.');
-          }
+          if (!saveResponse.ok) console.error('Failed to save theme to database.');
         }
       } else {
         console.error('Failed to generate new theme images:', data.error);
-        alert('Failed to generate new theme images.');
+        // Don't use alert()
       }
     } catch (error) {
       console.error('Network or API error:', error);
-      alert('An error occurred. Please try again.');
+      // Don't use alert()
     } finally {
       setIsGenerating(false);
     }
@@ -193,6 +155,29 @@ export const ExploreMenu = () => {
       </motion.div>
     </div>
   );
+
+  // --- FIX ---
+  // Create a variable that holds the correct image src, just like in AccountModal
+  const profileImageSrc = (() => {
+    if (!profileImageUrl) {
+      return null; // No image
+    }
+    // NEW: If it's Base64, use it directly.
+    if (profileImageUrl.startsWith('data:image/')) {
+      return profileImageUrl;
+    }
+    // OLD: If it's a file path, build the URL.
+    if (profileImageUrl.startsWith('/uploads/')) {
+      return `${VITE_BACKEND_URL}${profileImageUrl}`; // Use constant
+    }
+    // Fallback for other data (e.g., if it's already a full http URL)
+    if (profileImageUrl.startsWith('http')) {
+      return profileImageUrl;
+    }
+    // If it's none of the above, it's likely invalid
+    return null;
+  })();
+  // --- END FIX ---
 
   return (
     <div 
@@ -210,7 +195,6 @@ export const ExploreMenu = () => {
       
       <div className="relative max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8 relative">
-          {/* START: Back Button - Designed like the image */}
           <button
             onClick={() => navigate(-1)}
             className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center 
@@ -219,11 +203,8 @@ export const ExploreMenu = () => {
           >
             <ArrowLeft size={24} className="text-white" />
           </button>
-          {/* END: Back Button */}
           
           <div className="flex items-center gap-4 ml-auto">
-            
-            {/* START: Change Theme Button - Reverted to Dark Gradient Style */}
             <button
               onClick={() => setIsThemeSelectorOpen(true)}
               className="bg-gradient-to-r from-purple-700 to-indigo-700 text-white px-6 py-3 rounded-full font-semibold flex items-center gap-2 shadow-lg hover:from-purple-800 hover:to-indigo-800 transition-all duration-300 transform hover:scale-[1.02]"
@@ -231,51 +212,46 @@ export const ExploreMenu = () => {
               <Palette size={20} />
               Change Theme
             </button>
-            {/* END: Change Theme Button */}
 
-            {/* START: Account Button with Perfectly Round, Segmented, Rotating Border */}
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsAccountModalOpen(true)}
-              // The main wrapper for size and shape
               className="relative w-14 h-14 rounded-full shadow-lg transition-all flex items-center justify-center overflow-hidden"
               title="My Account"
             >
-              {/* Spinning Segmented Gradient Element */}
               <div 
-                // Using conic-gradient via style for segmented color stops (6 colors / 6 = 60 degrees per color)
                 className="absolute inset-[-100%] w-[300%] h-[300%] animate-spin"
                 style={{ 
                   animationDuration: '8s', 
                   backgroundImage: `conic-gradient(
                     from 0deg, 
-                    #FF0000 0deg 60deg,  /* Red */
-                    #FFFF00 60deg 120deg, /* Yellow */
-                    #00FF00 120deg 180deg, /* Green */
-                    #E0115F 180deg 240deg, /* Ruby */
-                    #0000FF 240deg 300deg, /* Blue */
-                    #800000 300deg 360deg  /* Burgundy */
+                    #FF0000 0deg 60deg, 
+                    #FFFF00 60deg 120deg, 
+                    #00FF00 120deg 180deg, 
+                    #E0115F 180deg 240deg, 
+                    #0000FF 240deg 300deg, 
+                    #800000 300deg 360deg  
                   )`
                 }}
               ></div>
 
-              {/* Inner Circle (Very Dark) for the actual profile picture/icon */}
-              {/* This circle is slightly smaller to create the border effect around it */}
               <div className="relative w-12 h-12 bg-black rounded-full flex items-center justify-center z-10">
-                {profileImageUrl ? (
+                {/* --- FIX ---
+                    Use the new profileImageSrc variable here
+                --- --- */}
+                {profileImageSrc ? (
                   <img
-                    src={`${import.meta.env.VITE_BACKEND_URL}${profileImageUrl}`}
+                    src={profileImageSrc}
                     alt="Profile"
                     className="w-11 h-11 rounded-full object-cover" 
                   />
                 ) : (
-                  // Placeholder icon inside the dark ring
                   <UserCircle size={28} className="text-white w-11 h-11" />
                 )}
+                {/* --- END FIX --- */}
               </div>
             </motion.button>
-            {/* END: Account Button with Perfectly Round, Segmented, Rotating Border */}
           </div>
         </div>
 
@@ -314,10 +290,8 @@ export const ExploreMenu = () => {
         </div>
       </div>
       
-      {/* Account Modal */}
       <AccountModal isOpen={isAccountModalOpen} onClose={() => setIsAccountModalOpen(false)} onProfileUpdate={handleProfileUpdate} />
 
-      {/* Theme Selector Modal */}
       <AnimatePresence>
         {isThemeSelectorOpen && (
           <motion.div

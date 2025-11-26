@@ -1,4 +1,4 @@
-// ChatMessages.tsx - Centered chat container (max-w-6xl mx-auto) for all responses in central area
+// ChatMessages.tsx - MODIFIED FOR RESPONSIVENESS
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
@@ -60,7 +60,8 @@ export const ChatMessages: React.FC<ChatMessagesProps> = (props) => {
   return (
     <div
       ref={messagesContainerRef}
-      className="w-full max-w-6xl mx-auto flex-1 overflow-y-auto pb-32 px-6 space-y-4 h-full" // Added max-w-6xl mx-auto for central chat area
+      // MODIFICATION: Changed px-6 to px-4 md:px-6 for less mobile padding
+      className="w-full max-w-6xl mx-auto flex-1 overflow-y-auto pb-32 px-4 md:px-6 space-y-4 h-full" // Added max-w-6xl mx-auto for central chat area
     >
       {messages.map((msg, idx) => (
         <motion.div

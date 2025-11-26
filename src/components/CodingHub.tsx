@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, useNavigate, useParams, useResolvedPath } from "react-router-dom";
 import codingAcademyData, { ModuleData, Step } from "./codingData";
-import { Award, CheckCircle } from "lucide-react"; 
+import { Award, CheckCircle, ArrowLeft } from "lucide-react"; 
+import { useThemeStore } from '../store/theme'; 
 
 /* -------------------------
    LocalStorage helpers (Unchanged)
@@ -49,7 +50,7 @@ const BadgeSmall: React.FC<{ text: string }> = ({ text }) => (
 );
 
 /* =========================
-   Judge0 Executor (Reading VITE_ keys)
+   Judge0 Executor (Unchanged)
    ========================= */
 
 type ExecResult = {
@@ -82,7 +83,6 @@ async function runWithJudge0(languageId: string, source: string): Promise<ExecRe
     let simulatedOutput = "Simulated run (Demo Mode). Output:\n";
     let status = { id: 3, description: "Simulated Success" };
 
-    // FIX: Require meaningful code content for success to prevent empty code passing.
     if (!source.trim().replace(/#.*|\/\/.*|\/\*[\s\S]*?\*\//g, '').length) {
         return { stdout: "Please write some code to execute.", status: { id: 1, description: "Empty Code" } };
     }
@@ -102,7 +102,6 @@ async function runWithJudge0(languageId: string, source: string): Promise<ExecRe
     return { stdout: simulatedOutput, status };
   }
 
-  // Judge0 real flow: submit and poll for result (remains the same)
   const languageNum = languageToJudge0Id[languageId] || 71;
   try {
     const createUrl = `${JUDGE0_HOST}/submissions?base64_encoded=false&wait=false`;
@@ -146,7 +145,7 @@ async function runWithJudge0(languageId: string, source: string): Promise<ExecRe
 }
 
 /* =========================
-   CodeBuddy (Ensuring context is used)
+   CodeBuddy (Unchanged)
    ========================= */
 
 const CodeBuddy: React.FC<{ moduleId?: string; topicId?: string; currentCode: string }> = ({ moduleId, topicId, currentCode }) => {
@@ -178,7 +177,6 @@ const CodeBuddy: React.FC<{ moduleId?: string; topicId?: string; currentCode: st
     }
 
     try {
-      // Prompt context now includes the current code for better help
       const promptContext = `The user is learning ${module?.name} on topic: "${lesson?.title}" (Analogy: ${lesson?.analogy}). The current code they are running is: \`\`\`${currentCode}\`\`\`. They asked: "${q}". Provide a kid-friendly, concise hint or explanation. If the question is about an error, analyze the code and suggest a fix.`;
 
       const response = await fetch(BACKEND_URL, {
@@ -221,7 +219,7 @@ const CodeBuddy: React.FC<{ moduleId?: string; topicId?: string; currentCode: st
   }
 
   return (
-    <div className="bg-gray-850 rounded-xl p-3 shadow h-56 flex flex-col text-white">
+    <div className="bg-black/70 backdrop-blur-sm rounded-xl p-3 shadow h-56 flex flex-col text-white">
       <div className="font-semibold text-indigo-300 mb-2">🤖 Code Buddy (AI)</div>
       <div className="flex-1 overflow-y-auto text-sm space-y-2 mb-2 bg-gray-900/60 p-2 rounded">
         {messages.map((m, i) => (
@@ -257,7 +255,7 @@ const CodeBuddy: React.FC<{ moduleId?: string; topicId?: string; currentCode: st
 };
 
 /* =========================
-   Module Dashboard & TopicList (Unchanged from last fix)
+   Module Dashboard (Unchanged)
    ========================= */
 
 const ModuleDashboard: React.FC = () => {
@@ -284,20 +282,31 @@ const ModuleDashboard: React.FC = () => {
   const level = Math.floor(xp / 100) + 1;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 p-6 md:p-10 text-white">
-      <h1 className="text-4xl font-extrabold text-center text-indigo-300 mb-4">Code Adventure — Final</h1>
-      <p className="text-center text-gray-300 mb-8">Playful lessons, detailed explanations, real execution, and an interactive Code Buddy.</p>
+    <div className="min-h-screen p-6 md:p-10 text-white">
+      <div className="relative mb-4 flex items-center justify-center">
+        <button
+          onClick={() => navigate('/explore-menu')} 
+          className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-200 hover:text-white transition-colors bg-black/30 backdrop-blur-sm p-2 rounded-lg"
+          title="Back to Explore Menu"
+        >
+          <ArrowLeft size={20} />
+          Back
+        </button>
+        <h1 className="text-4xl font-extrabold text-center text-indigo-300 drop-shadow-md">Code Adventure — Final</h1>
+      </div>
+
+      <p className="text-center text-gray-300 mb-8 drop-shadow-sm">Playful lessons, detailed explanations, real execution, and an interactive Code Buddy.</p>
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gray-850 rounded-xl p-4 shadow-md border-l-4 border-yellow-400">
+        <div className="bg-black/70 backdrop-blur-sm rounded-xl p-4 shadow-md border-l-4 border-yellow-400">
           <div className="text-2xl font-bold text-yellow-400">{xp} XP</div>
           <div className="text-xs text-gray-400">Level {level}</div>
         </div>
-        <div className="bg-gray-850 rounded-xl p-4 shadow-md border-l-4 border-green-400">
+        <div className="bg-black/70 backdrop-blur-sm rounded-xl p-4 shadow-md border-l-4 border-green-400">
           <div className="text-2xl font-bold text-green-400">🔥 {store.streak || 1} Day Streak</div>
           <div className="text-xs text-gray-400">Keep coding every day!</div>
         </div>
-        <div className="bg-gray-850 rounded-xl p-4 shadow-md border-l-4 border-purple-400 flex items-center justify-between">
+        <div className="bg-black/70 backdrop-blur-sm rounded-xl p-4 shadow-md border-l-4 border-purple-400 flex items-center justify-between">
           <div>
             <div className="text-sm text-gray-300">Badges</div>
             <div className="font-semibold text-purple-300">Starter Explorer</div>
@@ -311,7 +320,7 @@ const ModuleDashboard: React.FC = () => {
           const completedCount = (loadProgress().completed[mod.id] || []).length;
           const percent = Math.round((completedCount / mod.topics.length) * 100);
           return (
-            <div key={mod.id} onClick={() => navigate(`./${mod.id}`)} className="bg-gray-850 rounded-2xl p-6 cursor-pointer shadow-lg hover:scale-[1.02] transition transform">
+            <div key={mod.id} onClick={() => navigate(`./${mod.id}`)} className="bg-black/70 backdrop-blur-sm rounded-2xl p-6 cursor-pointer shadow-lg hover:scale-[1.02] transition transform">
               <div className="flex items-center gap-4 mb-3">
                 <div className="rounded-full p-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-xl" style={{ width: 56, height: 56, display: "flex", alignItems: "center", justifyContent: "center" }}>{mod.logo}</div>
                 <div>
@@ -332,6 +341,9 @@ const ModuleDashboard: React.FC = () => {
   );
 };
 
+/* =========================
+   Topic List (Header Updated)
+   ========================= */
 const TopicList: React.FC = () => {
   const { languageId } = useParams<{ languageId: string }>();
   const navigate = useNavigate();
@@ -342,8 +354,19 @@ const TopicList: React.FC = () => {
   if (!module) return <div className="text-center mt-20 text-red-400">Module not found</div>;
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6 md:p-10 text-white">
-      <div className="flex items-center justify-between mb-6">
+    <div className="min-h-screen p-6 md:p-10 text-white">
+      {/* --- UPDATED HEADER --- */}
+      <div className="relative mb-6 flex items-center justify-center">
+        <button
+          onClick={() => navigate('/codinghub')} // Navigate back to the main dashboard
+          className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-200 hover:text-white transition-colors bg-black/30 backdrop-blur-sm p-2 rounded-lg"
+          title="Back to Code Adventure"
+        >
+          <ArrowLeft size={20} />
+          Back
+        </button>
+        
+        {/* Centered Title */}
         <div className="flex items-center gap-4">
           <div style={{ width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="rounded-full bg-indigo-800 text-2xl">{module.logo}</div>
           <div>
@@ -351,10 +374,8 @@ const TopicList: React.FC = () => {
             <div className="text-sm text-gray-400">{module.badge} • {module.difficulty}</div>
           </div>
         </div>
-        <div>
-          <button onClick={() => navigate("/codinghub")} className="bg-indigo-600 text-white px-4 py-2 rounded">← Back</button>
-        </div>
       </div>
+      {/* --- END HEADER --- */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {module.topics.map((t, i) => {
@@ -363,7 +384,7 @@ const TopicList: React.FC = () => {
             <div 
               key={t.id} 
               onClick={() => navigate(t.id)} 
-              className={`bg-gray-850 p-5 rounded-xl shadow hover:shadow-lg cursor-pointer border ${isCompleted ? 'border-green-500/50' : 'border-gray-800'}`}
+              className={`bg-black/70 backdrop-blur-sm p-5 rounded-xl shadow hover:shadow-lg cursor-pointer border ${isCompleted ? 'border-green-500/50' : 'border-gray-800/50'}`}
             >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-3">
@@ -389,7 +410,7 @@ const TopicList: React.FC = () => {
 };
 
 /* =========================
-   Lesson page
+   Lesson page (Unchanged)
    ========================= */
 const LessonPage: React.FC = () => {
   const { languageId, topicId } = useParams<{ languageId: string; topicId: string }>();
@@ -414,7 +435,6 @@ const LessonPage: React.FC = () => {
     setProgressStore(loadProgress());
   }, [languageId, topicId, lesson]); 
 
-  // If data isn't loaded yet, show loading message instead of crashing
   if (!module || !lesson) return <div className="p-10 text-center text-red-400">Loading lesson... or Lesson not found. Please check data files.</div>;
 
   async function runCode() {
@@ -439,12 +459,10 @@ const LessonPage: React.FC = () => {
     const keywordMatch = lesson.goalKeywords.some(k => k && lowered.includes(k.toLowerCase()));
     const outputMatch = lesson.expectedOutput && lowered.includes(lesson.expectedOutput.toLowerCase().slice(0, 20));
 
-    // FIX: Only check for success if the output is NOT the placeholder "Simulated Success"
     const isSimulatedSuccessPlaceholder = out.includes("Program ran (no simple string output found)") || out.includes("Simulated run (Demo Mode). Output:");
 
 
     if (!isSimulatedSuccessPlaceholder && (keywordMatch || outputMatch)) {
-      // success
       setTerminal(`[SUCCESS! 🎉] ${runStatus}\n\nOutput:\n${out}`);
       setGoalMet(true);
       
@@ -455,11 +473,9 @@ const LessonPage: React.FC = () => {
       saveProgress(s);
       setProgressStore(s);
     } else if (isSimulatedSuccessPlaceholder && out.includes("Please write some code to execute.")) {
-        // FIX: Display a clear error for empty code
         setTerminal(`[EMPTY CODE] Please write code in the editor and press RUN.`);
         setGoalMet(false);
     } else {
-      // not matched exactly; still show output and give hint
       setTerminal(`[${runStatus}] Output:\n${out}\n\nTip: The output didn't match the expected result. Try the examples or ask Code Buddy for a hint!`);
       setGoalMet(false);
     }
@@ -469,7 +485,6 @@ const LessonPage: React.FC = () => {
     const idx = module.topics.findIndex(t => t.id === lesson.id);
     if (idx < module.topics.length - 1) {
       const nextId = module.topics[idx + 1].id;
-      // FIX: Navigation to the next sibling topic using a relative path (../)
       navigate(`../${nextId}`, { relative: "path" }); 
     } else {
       alert(`🎉 Congratulations! You finished ${module.name}!`);
@@ -478,10 +493,9 @@ const LessonPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6 md:p-10 text-white">
+    <div className="min-h-screen p-6 md:p-10 text-white">
       <div className="flex items-center justify-between mb-6">
         <div>
-          {/* FIX: Direct navigation to TopicList */}
           <button onClick={() => navigate(`/codinghub/${languageId}`)} className="bg-indigo-600 text-white py-1 px-3 rounded mr-3">← Back to Lessons</button>
           <span className="text-xl font-bold text-indigo-300">{module.name} • </span>
           <span className="text-lg text-gray-300 ml-2">{lesson.title}</span>
@@ -495,9 +509,8 @@ const LessonPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column: explanation, examples */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-gray-850 rounded-xl p-4 shadow">
+          <div className="bg-black/70 backdrop-blur-sm rounded-xl p-4 shadow">
             <h2 className="font-bold text-lg text-yellow-300 mb-2">{lesson.title}</h2>
-            {/* FIX: Display detailed explanation here */}
             <p className="text-gray-300 mb-3">{lesson.explanation}</p> 
             <div className="bg-indigo-950 p-3 rounded text-sm">
               <strong>How to think about this:</strong>
@@ -505,7 +518,7 @@ const LessonPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-gray-850 rounded-xl p-3 shadow space-y-3">
+          <div className="bg-black/70 backdrop-blur-sm rounded-xl p-3 shadow space-y-3">
             <div className="font-semibold text-sm text-gray-200">Examples (copy to IDE)</div>
             {lesson.examples.map((ex) => (
               <div key={ex.id} className="text-sm border rounded p-2 bg-gray-800">
@@ -522,7 +535,7 @@ const LessonPage: React.FC = () => {
 
         {/* Right column: IDE and terminal */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-gray-850 p-3 rounded-xl shadow flex items-center justify-between">
+          <div className="bg-black/70 backdrop-blur-sm p-3 rounded-xl shadow flex items-center justify-between">
             <div className="flex gap-2">
               <button onClick={() => setTab("Examples")} className={`px-3 py-1 rounded ${tab === "Examples" ? "bg-indigo-600 text-white" : "text-gray-300"}`}>Examples</button>
               <button onClick={() => setTab("Challenge")} className={`px-3 py-1 rounded ${tab === "Challenge" ? "bg-indigo-600 text-white" : "text-gray-300"}`}>Challenge</button>
@@ -556,12 +569,12 @@ const LessonPage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
-              <div className="bg-gray-850 p-3 rounded-xl shadow min-h-[140px]">
+              <div className="bg-black/70 backdrop-blur-sm p-3 rounded-xl shadow min-h-[140px]">
                 <div className="font-semibold text-sm text-gray-200 mb-2">Terminal / Output</div>
                 <pre className="font-mono text-sm whitespace-pre-wrap text-gray-200">{terminal}</pre>
               </div>
 
-              <div className="bg-gray-850 p-3 rounded-xl shadow mt-4">
+              <div className="bg-black/70 backdrop-blur-sm p-3 rounded-xl shadow mt-4">
                 <div className="font-semibold text-sm text-gray-200 mb-2">Practice Problems (Use the IDE to solve them!)</div>
                 <ol className="list-decimal ml-4 text-sm space-y-2 text-gray-300">
                   {lesson.problems.slice(0, 8).map((p, idx) => <li key={idx}>{p}</li>)}
@@ -571,7 +584,7 @@ const LessonPage: React.FC = () => {
             </div>
 
             <div>
-              <div className="bg-gray-850 p-3 rounded-xl shadow">
+              <div className="bg-black/70 backdrop-blur-sm p-3 rounded-xl shadow">
                 <div className="font-semibold text-sm text-gray-200 mb-2">Challenge Status</div>
                 <div className="text-sm text-gray-300">{lesson.instructions}</div>
                 <div className="mt-3 text-xs text-gray-400">Hint: achieve the expected output *and* use the required keywords.</div>
@@ -589,17 +602,47 @@ const LessonPage: React.FC = () => {
 };
 
 /* =========================
-   Main CodingHub routes
+   Main CodingHub routes (Unchanged)
    ========================= */
 const CodingHub: React.FC = () => {
+  // --- START: Theme Background Logic ---
+  const theme = useThemeStore((state) => state.getThemeStyles());
+  const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
+
+  useEffect(() => {
+    const backgrounds = theme.backgrounds;
+    if (backgrounds && backgrounds.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [theme.backgrounds]);
+
+  const currentBackground = theme.backgrounds?.[currentBackgroundIndex] || '';
+  // --- END: Theme Background Logic ---
+
   return (
-    <div className="min-h-screen">
-      <Routes>
-        <Route path="/" element={<ModuleDashboard />} /> 
-        <Route path=":languageId" element={<TopicList />} />
-        <Route path=":languageId/:topicId" element={<LessonPage />} />
-        <Route path="*" element={<div className="p-6 text-center text-2xl text-red-600">404: Hub Content Not Found</div>} />
-      </Routes>
+    <div
+      className="min-h-screen relative overflow-y-auto" 
+      style={{
+        backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed', 
+        transition: 'background-image 1s ease-in-out',
+      }}
+    >
+      <div className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"></div>
+      
+      <div className="relative z-10 min-h-screen">
+        <Routes>
+          <Route path="/" element={<ModuleDashboard />} /> 
+          <Route path=":languageId" element={<TopicList />} />
+          <Route path=":languageId/:topicId" element={<LessonPage />} />
+          <Route path="*" element={<div className="p-6 text-center text-2xl text-red-600">404: Hub Content Not Found</div>} />
+        </Routes>
+      </div>
     </div>
   );
 };

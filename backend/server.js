@@ -6,7 +6,7 @@ const cors = require('cors');
 const admin = require('firebase-admin');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs'); // Keep for file existence checks if any, but removing fs.unlink
 const http = require('http');
 const { Server } = require("socket.io");
 const { ExpressPeerServer } = require('peer');
@@ -29,7 +29,8 @@ const app = express();
 app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' http://localhost:5000 http://localhost:5001 http://localhost:5002; font-src 'self';"
+    // Allow 'data:' for img-src (profile pics) and media-src (videos)
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' data:; connect-src 'self' http://localhost:5000 http://localhost:5001 http://localhost:5002; font-src 'self';"
   );
   next();
 });
@@ -40,7 +41,7 @@ app.use(cors({
     if (!origin) return callback(null, true);
     const allowedOrigins = [
       'http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000',
-      'http://127.0.0.1:5173', 'http://127.0.0.1:5174', 'http://127.0.0.1:3000','https://sjkh1qlf-5173.inc1.devtunnels.ms/'
+      'http://127.0.0.1:5173', 'http://127.0.0.1:5174', 'http://127.0.0.1:3000'
     ];
     if (allowedOrigins.includes(origin)) callback(null, true);
     else callback(new Error('Not allowed by CORS'));
@@ -52,7 +53,10 @@ app.use(cors({
 }));
 
 app.options('*', cors());
-app.use(express.json());
+// Increase body parser limit for large Base64 uploads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 
 // -------------------- Firebase Admin Initialization (Safe) --------------------
 try {
@@ -101,29 +105,12 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-// Configure Multer for profile image storage
-const profileStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/profile_images/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${req.params.firebaseUid}-${Date.now()}${path.extname(file.originalname)}`);
-  }
+// --- UPDATE 1: Configure Multer for in-memory storage for ALL uploads ---
+const memoryStorage = multer.memoryStorage();
+const upload = multer({ 
+  storage: memoryStorage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
-
-const uploadProfile = multer({ storage: profileStorage });
-
-// Configure Multer for study material storage
-const materialStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/materials/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${req.body.subject}-${Date.now()}${path.extname(file.originalname)}`);
-  }
-});
-
-const uploadMaterial = multer({ storage: materialStorage });
 
 
 // MongoDB Connection
@@ -141,16 +128,17 @@ const userSchema = new mongoose.Schema({
   learningStyle: { type: String, default: null },
   interests: { type: String, default: null },
   role: { type: String, enum: ['student', 'teacher'], default: 'student' },
-  profileImage: { type: String, default: null },
+  profileImage: { type: String, default: null }, // This will now store a Base64 string
   performanceLevels: { type: Object, default: {} },
   generatedThemeImages: { type: [String], default: [] }
 });
 const User = mongoose.model('User', userSchema);
 
-// MongoDB Material Schema
+// --- UPDATE 2: Modify Material Schema to store Base64 data ---
 const materialSchema = new mongoose.Schema({
   fileName: { type: String, required: true },
-  filePath: { type: String, required: true },
+  fileData: { type: String, required: true }, // Store Base64 Data URL
+  fileMimeType: { type: String, required: true }, // Store MIME type (e.g., 'application/pdf')
   subject: { type: String, required: true },
   comment: { type: String },
   uploadedBy: { type: String, required: true },
@@ -173,9 +161,9 @@ const sessionSchema = new mongoose.Schema({
 });
 const Session = mongoose.model('Session', sessionSchema);
 
-// Serve static files (uploaded images and materials)
-app.use('/uploads/profile_images', express.static('uploads/profile_images'));
-app.use('/uploads/materials', express.static('uploads/materials'));
+// --- UPDATE 3: Remove static file serving for materials ---
+// app.use('/uploads/profile_images', express.static('uploads/profile_images'));
+// app.use('/uploads/materials', express.static('uploads/materials')); // No longer needed
 app.use('/uploads/theme_images', express.static('uploads/theme_images'));
 
 // Google Places API proxy
@@ -275,27 +263,41 @@ app.get('/api/user/:firebaseUid', authenticate, async (req, res) => {
   }
 });
 
-app.put('/api/user/:firebaseUid/upload-image', authenticate, uploadProfile.single('profileImage'), async (req, res) => {
+// This endpoint now saves the image as Base64
+app.put('/api/user/:firebaseUid/upload-image', authenticate, upload.single('profileImage'), async (req, res) => {
   try {
     const firebaseUid = req.params.firebaseUid;
-    const profileImagePath = req.file ? `/uploads/profile_images/${req.file.filename}` : null;
-    if (!profileImagePath) {
+    if (!req.file) {
       return res.status(400).json({ error: 'No image file provided.' });
     }
+
+    // Convert the image buffer (from multer.memoryStorage) to a Base64 Data URL
+    const profileImageBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+    // Optional: Check size to prevent 16MB BSON error
+    if (profileImageBase64.length > 10 * 1024 * 1024) { // 10MB limit
+       return res.status(400).json({ error: 'Image file is too large (Max 10MB).' });
+    }
+
     const updatedUser = await User.findOneAndUpdate(
       { firebaseUid: firebaseUid },
-      { profileImage: profileImagePath },
+      { profileImage: profileImageBase64 }, // Save the Base64 string to MongoDB
       { new: true }
     );
+
     if (!updatedUser) {
       return res.status(404).send('User not found.');
     }
+    
+    // Send back the new Base64 string so the frontend can update immediately
     res.status(200).json({ profileImage: updatedUser.profileImage });
+
   } catch (error) {
     console.error('Error uploading profile image:', error);
     res.status(500).json({ error: 'Server error uploading image.' });
   }
 });
+
 
 app.put('/api/user/:firebaseUid/learning-style', authenticate, async (req, res) => {
   try {
@@ -409,7 +411,8 @@ app.delete('/api/teachers/students/:id', async (req, res) => {
   }
 });
 
-app.post('/api/teachers/upload-material', uploadMaterial.single('material'), async (req, res) => {
+// --- UPDATE 4: Modify Material Upload Endpoint to use Base64 ---
+app.post('/api/teachers/upload-material', authenticate, upload.single('material'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).send('No file uploaded.');
@@ -420,12 +423,21 @@ app.post('/api/teachers/upload-material', uploadMaterial.single('material'), asy
       return res.status(400).send('Subject not specified.');
     }
 
+    // Convert buffer to Base64 Data URL
+    const fileData = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+    // Check size limit (16MB BSON limit, 13.3MB~ is a safe Base64 limit)
+    if (fileData.length > 13 * 1024 * 1024) { // 13MB limit for safety
+      return res.status(400).json({ error: 'File is too large. Max 10MB.' });
+    }
+
     const newMaterial = new Material({
       fileName: req.file.originalname,
-      filePath: `/uploads/materials/${req.file.filename}`,
+      fileData: fileData, // Save Base64 string
+      fileMimeType: req.file.mimetype, // Save MIME type
       subject: subject,
       comment: comment || '',
-      uploadedBy: "teacher",
+      uploadedBy: "teacher", // TODO: Should be req.user.uid or name
       timestamp: new Date(),
       targetStudents: targetStudents ? JSON.parse(targetStudents) : [],
     });
@@ -451,6 +463,7 @@ app.get('/api/materials', authenticate, async (req, res) => {
       filter = { targetStudents: user._id };
     } 
     
+    // Populate student names for the teacher's list
     const materials = await Material.find(filter).populate('targetStudents', 'name class');
     
     res.json(materials);
@@ -460,7 +473,8 @@ app.get('/api/materials', authenticate, async (req, res) => {
   }
 });
 
-app.delete('/api/materials/:id', async (req, res) => {
+// --- UPDATE 5: Modify Material Delete Endpoint ---
+app.delete('/api/materials/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -469,12 +483,9 @@ app.delete('/api/materials/:id', async (req, res) => {
       return res.status(404).send('Material not found.');
     }
 
-    const filePath = path.join(__dirname, 'public', material.filePath);
-    fs.unlink(filePath, (err) => {
-      if (err) {
-        console.error('Error deleting file from disk:', err);
-      }
-    });
+    // No file system unlink needed anymore
+    // const filePath = path.join(__dirname, 'public', material.filePath);
+    // fs.unlink(filePath, ...);
 
     await Material.findByIdAndDelete(id);
     res.status(200).send('Material deleted successfully.');
@@ -484,32 +495,41 @@ app.delete('/api/materials/:id', async (req, res) => {
   }
 });
 
+// --- UPDATE 6: Modify Material Analyze Endpoint ---
 app.post('/api/materials/analyze', authenticate, async (req, res) => {
   try {
-    const { filePath, comment } = req.body;
+    // Expect materialId instead of filePath
+    const { materialId, comment } = req.body;
 
-    if (!filePath) {
-      return res.status(400).json({ error: 'filePath is required.' });
+    if (!materialId) {
+      return res.status(400).json({ error: 'materialId is required.' });
     }
 
-    const fullPath = path.join(__dirname, filePath.substring(1));
-
-    if (!fs.existsSync(fullPath)) {
-      console.error(`File not found at path: ${fullPath}`);
-      return res.status(404).json({ error: 'File not found on server.' });
+    // Fetch material from MongoDB
+    const material = await Material.findById(materialId);
+    if (!material) {
+      return res.status(404).json({ error: 'Material not found.' });
     }
 
-    const fileExtension = path.extname(filePath).toLowerCase();
+    // Decode Base64 string into a buffer
+    if (!material.fileData || !material.fileMimeType) {
+      return res.status(500).json({ error: 'Material data is incomplete.' });
+    }
+    const base64Data = material.fileData.split(';base64,').pop();
+    if (!base64Data) {
+      return res.status(500).json({ error: 'Invalid file data.' });
+    }
+    const buffer = Buffer.from(base64Data, 'base64');
+
     let extractedText = '';
+    console.log(`Analyzing material: ${material.fileName} with type ${material.fileMimeType}`);
 
-    console.log(`Analyzing file: ${fullPath} with extension ${fileExtension}`);
-
-    if (fileExtension === '.pdf') {
-      const dataBuffer = fs.readFileSync(fullPath);
-      const data = await pdf(dataBuffer);
+    // Analyze based on MIME type using the buffer
+    if (material.fileMimeType === 'application/pdf') {
+      const data = await pdf(buffer);
       extractedText = data.text;
-    } else if (['.png', '.jpg', '.jpeg'].includes(fileExtension)) {
-      const { data: { text } } = await Tesseract.recognize(fullPath, 'eng', {
+    } else if (['image/png', 'image/jpeg', 'image/jpg'].includes(material.fileMimeType)) {
+      const { data: { text } } = await Tesseract.recognize(buffer, 'eng', {
         logger: m => console.log(`[Tesseract]: ${m.status} (${(m.progress * 100).toFixed(2)}%)`),
       });
       extractedText = text;
@@ -521,9 +541,11 @@ app.post('/api/materials/analyze', authenticate, async (req, res) => {
       extractedText = "No text could be extracted from this material.";
     }
 
+    // Use the comment from the material document if no new one is provided
+    const contextComment = comment || material.comment;
     let finalContext = extractedText;
-    if (comment && comment.trim()) {
-      finalContext = `The teacher provided the following instruction or task: "${comment.trim()}"\n\n---\n\nHere is the content from the material:\n${extractedText}`;
+    if (contextComment && contextComment.trim()) {
+      finalContext = `The teacher provided the following instruction or task: "${contextComment.trim()}"\n\n---\n\nHere is the content from the material:\n${extractedText}`;
     }
 
     res.status(200).json({ context: finalContext });
@@ -533,6 +555,16 @@ app.post('/api/materials/analyze', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Server error during file analysis.' });
   }
 });
+
+// MongoDB Theme Image Schema
+const themeImageSchema = new mongoose.Schema({
+  theme: String,
+  prompt: String,
+  imageData: String, // base64-encoded PNG
+  createdAt: { type: Date, default: Date.now }
+});
+const ThemeImage = mongoose.model('ThemeImage', themeImageSchema);
+
 
 app.post('/api/teachers/create-session', async (req, res) => {
   try {
@@ -590,35 +622,56 @@ app.post('/api/generate-theme-images', async (req, res) => {
   }
 
   const prompt = THEME_PROMPTS[theme];
-  const publicImageUrls = [];
-  const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
   const PYTHON_API_URL = 'http://localhost:5002/generate';
   const numberOfImages = 5;
+  const imageIds = [];
 
   try {
     for (let i = 0; i < numberOfImages; i++) {
       const response = await fetch(PYTHON_API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: prompt }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
       });
 
-      if (!response.ok) {
-        throw new Error(`Python API failed with status ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Python API failed: ${response.status}`);
 
       const result = await response.json();
-      publicImageUrls.push(`${BACKEND_URL}${result.path}`);
+      if (!result.image_base64) throw new Error('Missing Base64 image data');
+
+      const newImage = await ThemeImage.create({
+        theme,
+        prompt,
+        imageData: result.image_base64
+      });
+      imageIds.push(newImage._id.toString());
     }
 
-    res.status(200).json({ backgrounds: publicImageUrls });
+    res.status(200).json({ imageIds });
   } catch (error) {
-    console.error('Error calling Python generation API:', error);
+    console.error('Error generating theme images:', error);
     res.status(500).json({ error: 'Failed to generate images.' });
   }
 });
+
+
+app.get('/api/images/:id', async (req, res) => {
+  try {
+    const image = await ThemeImage.findById(req.params.id);
+    if (!image) return res.status(404).send('Image not found');
+
+    const imgBuffer = Buffer.from(image.imageData, 'base64');
+    res.writeHead(200, {
+      'Content-Type': 'image/png',
+      'Content-Length': imgBuffer.length
+    });
+    res.end(imgBuffer);
+  } catch (error) {
+    console.error('Error fetching image:', error);
+    res.status(500).send('Server error fetching image');
+  }
+});
+
 
 app.post('/api/generate-topic-image', async (req, res) => {
   const { topic } = req.body;
@@ -830,7 +883,7 @@ ${syllabus}
             );
             questionPaperText = text.trim();
           } else if (fileType === 'text/plain') {
-            questionPaperText = questionPaperFile.buffer.toString('utf8').trim();
+            questionPaperText = questionFile.buffer.toString('utf8').trim();
           }
 
           // Fallback OCR (increased pages)
