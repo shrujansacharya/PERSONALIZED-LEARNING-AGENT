@@ -8,14 +8,39 @@ from flask_cors import CORS
 from diffusers import StableDiffusionPipeline
 import torch
 
-# --- Load the model ONCE at startup ---
+# Optional helper to download from Hugging Face if model folder missing
+from huggingface_hub import snapshot_download
+
 MODEL_PATH = "./stable-diffusion-v1-4"
+# Set HF_REPO_ID env var to your HF repo (e.g. "CompVis/stable-diffusion-v1-4" or "youruser/your-model")
+HF_REPO_ID = os.getenv("HF_REPO_ID", "CompVis/stable-diffusion-v1-4")
+HF_TOKEN = os.getenv("HF_TOKEN", None)  # required for private model repos
+
+def ensure_model():
+    """Download model from HF if MODEL_PATH is missing or empty."""
+    if os.path.exists(MODEL_PATH) and os.listdir(MODEL_PATH):
+        print(f"Model directory found at {MODEL_PATH}. Skipping download.", file=sys.stderr)
+        return
+
+    print(f"Model not found at {MODEL_PATH}. Attempting to download from HF repo '{HF_REPO_ID}'...", file=sys.stderr)
+    try:
+        snapshot_download(repo_id=HF_REPO_ID, local_dir=MODEL_PATH, token=HF_TOKEN, repo_type="model")
+        print("Download complete.", file=sys.stderr)
+    except Exception as e:
+        print(f"❌ Failed to download model from Hugging Face: {e}", file=sys.stderr)
+        print("Make sure HF_REPO_ID is correct and HF_TOKEN is set for private repos.", file=sys.stderr)
+        sys.exit(1)
+
+# --- Ensure model is present, then load ---
+ensure_model()
 
 try:
     dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+    # Use local_files_only=True to avoid trying to fetch from HF at load time
     pipe = StableDiffusionPipeline.from_pretrained(MODEL_PATH, torch_dtype=dtype, local_files_only=True)
-    pipe = pipe.to("cuda" if torch.cuda.is_available() else "cpu")
-    print("✅ Model loaded successfully.", file=sys.stderr)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    pipe = pipe.to(device)
+    print(f"✅ Model loaded successfully on {device}.", file=sys.stderr)
 except Exception as e:
     print(f"❌ Error loading model: {e}", file=sys.stderr)
     sys.exit(1)

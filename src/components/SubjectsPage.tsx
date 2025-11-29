@@ -1,7 +1,7 @@
-// SubjectsPage.tsx (Updated)
+// SubjectsPage.tsx (Updated with 60% black glassmorphic cards and neon blue shadows)
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Book, Calculator, FlaskRound as Flask, Globe, MessageSquare, Languages, Atom, ArrowLeft, Search, Code, Laptop, Database, Beaker, Landmark, FileText, X, File, MessageCircle, Eye, Bot, Download, Calendar, Clock, Filter, Grid, List, Star, CheckCircle, AlertCircle, PlayCircle, Image, Video, FileType, FileText as FileTextIcon } from 'lucide-react';
+import { Book, Calculator, FlaskRound as Flask, Globe, MessageSquare, Languages, Atom, ArrowLeft, Search, Code, Laptop, Database, Beaker, Landmark, FileText, X, File, MessageCircle, Eye, Bot, Download, Calendar, Clock, Filter, Grid, List, Star, CheckCircle, AlertCircle, PlayCircle, Image as ImageIcon, Video as VideoIcon, FileType, FileText as FileTextIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { subjectDetails, categories } from '../utils/subjects';
 import { useThemeStore } from '../store/theme';
@@ -33,8 +33,8 @@ const isVideo = (mimeType: string) => {
 };
 
 const getFileTypeIcon = (mimeType: string) => {
-  if (isImage(mimeType)) return Image;
-  if (isVideo(mimeType)) return Video;
+  if (isImage(mimeType)) return ImageIcon;
+  if (isVideo(mimeType)) return VideoIcon;
   return FileTextIcon;
 };
 // --- End Update 1 ---
@@ -57,7 +57,6 @@ export const SubjectsPage = () => {
   const { setTheme, getThemeStyles, setDynamicBackgrounds } = useThemeStore();
   const { answers, setAnswer } = useQuizStore();
   const theme = getThemeStyles();
-  const currentBackground = theme.backgrounds?.[currentBackgroundIndex] || '';
   
   const VITE_BACKEND_URL = 'http://localhost:5001'; // Hardcode from .env
 
@@ -117,13 +116,24 @@ export const SubjectsPage = () => {
     } else setSuggestions([]);
   }, [searchTerm]);
 
+  // 🔥 PRELOAD ALL BACKGROUND IMAGES — FIXES THE FLICKER
+  useEffect(() => {
+    if (theme.backgrounds) {
+      theme.backgrounds.forEach((src) => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+  }, [theme.backgrounds]);
+
+  // 🎯 CAROUSEL INTERVAL - 30 SECONDS
   useEffect(() => {
     const backgrounds = theme.backgrounds;
     if (backgrounds && backgrounds.length > 1) {
       const interval = setInterval(() => {
         setCurrentBackgroundIndex((prev) => (prev + 1) % backgrounds.length);
-      }, 5000);
-      return () => clearTimeout(interval);
+      }, 30000); // 30 SECONDS - MATCHING EXPLOREMENU
+      return () => clearInterval(interval);
     }
   }, [theme.backgrounds]);
 
@@ -193,13 +203,34 @@ export const SubjectsPage = () => {
   };
 
   return (
-    <div
-      className="subjects-page-container min-h-screen p-6 md:p-10 relative font-poppins text-gray-800"
-      style={{ backgroundImage: `url(${currentBackground})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'background-image 1s ease-in-out' }}
-    >
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div className="min-h-screen p-6 md:p-10 relative font-poppins text-gray-800 overflow-hidden">
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      {/* 🔥 SEAMLESS CROSSFADE - NO BLACK SCREEN */}
+      <div className="absolute inset-0 overflow-hidden">
+        {theme.backgrounds?.map((bg, index) => (
+          <motion.div
+            key={bg}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ 
+              backgroundImage: `url(${bg})`,
+              zIndex: index === currentBackgroundIndex ? 10 : 0
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: index === currentBackgroundIndex ? 1 : 0 
+            }}
+            transition={{ 
+              duration: 1.2, 
+              ease: "easeInOut" 
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Black overlay - z-20 to stay above backgrounds */}
+      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-20"></div>
+
+      <div className="relative max-w-7xl mx-auto z-30">
         {!selectedSubject && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -296,18 +327,31 @@ export const SubjectsPage = () => {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1, duration: 0.5 }}
-                        whileHover={{ scale: 1.03, y: -5 }}
-                        className={`relative p-6 rounded-3xl bg-white/80 text-gray-800 shadow-xl overflow-hidden cursor-pointer group backdrop-blur-md border border-teal-500/20`}
+                        whileHover={{ 
+                          scale: 1.03, 
+                          y: -5,
+                          boxShadow: `0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(59, 130, 246, 0.8)`
+                        }}
+                        className="relative p-6 rounded-3xl overflow-hidden cursor-pointer group transition-all duration-300 border border-cyan-500/30"
+                        style={{
+                          background: 'rgba(0, 0, 0, 0.6)',
+                          backdropFilter: 'blur(20px)',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), 0 0 20px rgba(59, 130, 246, 0.3)'
+                        }}
                         onClick={() => handleSubjectClick(subject)}
                       >
                         <div className="flex items-center gap-5">
-                          <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.8 }} className={`p-3 rounded-full bg-gradient-to-br ${subject.color} text-white shadow-md`}>
+                          <motion.div 
+                            whileHover={{ rotate: 360 }} 
+                            transition={{ duration: 0.8 }} 
+                            className={`p-3 rounded-full bg-gradient-to-br ${subject.color} text-white shadow-md`}
+                          >
                             {IconComponent && <IconComponent size={40} />}
                           </motion.div>
                           <div className="text-left">
-                            <h3 className="text-xl font-bold">{subject.name}</h3>
-                            <p className="text-sm text-gray-600">{subject.description}</p>
-                            <p className="text-xs mt-1 text-gray-500">{subject.category}</p>
+                            <h3 className="text-xl font-bold text-white">{subject.name}</h3>
+                            <p className="text-sm text-white/90">{subject.description}</p>
+                            <p className="text-xs mt-1 text-white/70">{subject.category}</p>
                           </div>
                         </div>
                         <motion.button
@@ -405,7 +449,7 @@ export const SubjectsPage = () => {
                         </h3>
                         <div className="flex gap-2">
                           {['All', 'Image', 'Video', 'Document'].map(type => {
-                            const IconComponent = type === 'Image' ? Image : type === 'Video' ? Video : FileTextIcon;
+                            const IconComponent = type === 'Image' ? ImageIcon : type === 'Video' ? VideoIcon : FileTextIcon;
                             return (
                               <motion.button
                                 key={type}
@@ -465,7 +509,7 @@ export const SubjectsPage = () => {
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center h-48 text-gray-400">
-                          <FileText size={60} className="mb-3" />
+                          <FileTextIcon size={60} className="mb-3" />
                           <p className="text-lg font-medium">No materials uploaded for this subject/filter.</p>
                         </div>
                       )}

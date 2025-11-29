@@ -63,7 +63,7 @@ try {
   // Initialize Firebase Admin only if not already initialized
   if (!admin.apps.length) {
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      const serviceAccount = require('./firebase-service-account.json');
+      const serviceAccount = require('./vertex-service-account.json');
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });
@@ -724,7 +724,7 @@ app.post('/api/generate-topic-image', async (req, res) => {
 let generativeModel;
 try {
   const vertex_ai = new VertexAI({
-    project: process.env.GCP_PROJECT_ID || 'fir-ai-app-7a45e',
+    project: process.env.GCP_PROJECT_ID,
     location: 'us-central1',
   });
   generativeModel = vertex_ai.getGenerativeModel({ model: 'gemini-2.5-flash' });

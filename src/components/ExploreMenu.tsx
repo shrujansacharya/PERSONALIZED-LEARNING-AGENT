@@ -1,3 +1,4 @@
+// ExploreMenu.tsx (Updated with 60% black glassmorphic cards and neon blue shadows)
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -16,7 +17,7 @@ import { useThemeStore, themeConfig } from '../store/theme';
 import AccountModal from './modals/AccountModal';
 import { auth } from '../lib/firebase';
 
-// Use the backend URL from your .env file to fix build warnings
+// Use backend URL
 const VITE_BACKEND_URL = 'http://localhost:5001';
 
 export const ExploreMenu = () => {
@@ -26,36 +27,37 @@ export const ExploreMenu = () => {
   const setDynamicBackgrounds = useThemeStore((state) => state.setDynamicBackgrounds);
 
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
-  const [profileImageUrl, setProfileImageUrl] = useState(''); // This will store the Base64 string or old path
+  const [profileImageUrl, setProfileImageUrl] = useState('');
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Fetch user profile
   const fetchUserProfile = async () => {
     const user = auth.currentUser;
     if (user) {
       try {
         const token = await user.getIdToken();
-        const response = await fetch(`${VITE_BACKEND_URL}/api/user/${user.uid}`, { // Use constant
+        const response = await fetch(`${VITE_BACKEND_URL}/api/user/${user.uid}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.ok) {
           const data = await response.json();
-          setProfileImageUrl(data.profileImage || ''); // Store whatever is in the DB
-          if (data.interests) setTheme(data.interests as keyof typeof themeConfig);
-          if (data.generatedThemeImages && data.generatedThemeImages.length > 0) {
-            const baseUrl = VITE_BACKEND_URL || ''; // Use constant
-            const fullUrls = data.generatedThemeImages.map((img: string) => {
-              // This logic correctly handles already-full URLs
-              if (img.startsWith('http') || img.startsWith('https')) return img;
+          setProfileImageUrl(data.profileImage || '');
+
+          if (data.interests) setTheme(data.interests);
+          if (data.generatedThemeImages?.length > 0) {
+            const baseUrl = VITE_BACKEND_URL || '';
+            const fullUrls = data.generatedThemeImages.map((img) => {
+              if (img.startsWith('http')) return img;
               return baseUrl + (img.startsWith('/') ? img : '/' + img);
             });
             setDynamicBackgrounds(fullUrls);
           }
         }
       } catch (error) {
-        console.error("Failed to fetch user profile for menu icon:", error);
+        console.error("Profile load failed:", error);
       }
     }
   };
@@ -63,21 +65,29 @@ export const ExploreMenu = () => {
   useEffect(() => {
     fetchUserProfile();
   }, []);
-  
+
+  // 🔥 PRELOAD ALL BACKGROUND IMAGES — FIXES THE FLICKER
+  useEffect(() => {
+    if (theme.backgrounds) {
+      theme.backgrounds.forEach((src) => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+  }, [theme.backgrounds]);
+
+  // 🎯 CAROUSEL INTERVAL - 30 SECONDS
   useEffect(() => {
     const backgrounds = theme.backgrounds;
     if (backgrounds && backgrounds.length > 1) {
       const interval = setInterval(() => {
-        setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
-      }, 5000);
+        setCurrentBackgroundIndex((prev) => (prev + 1) % backgrounds.length);
+      }, 30000); // ✅ LINE 77: 30 SECONDS - CHANGE THIS NUMBER FOR DIFFERENT TIMING
       return () => clearInterval(interval);
     }
   }, [theme.backgrounds]);
 
-  const handleProfileUpdate = () => {
-    // This is called when AccountModal closes, re-fetching the user data
-    fetchUserProfile();
-  };
+  const handleProfileUpdate = () => fetchUserProfile();
 
   const menuItems = [
     { title: 'Subjects', description: 'Explore various subjects and expand your knowledge', icon: Brain, path: '/subjects', color: 'from-indigo-400 to-indigo-600' },
@@ -88,38 +98,29 @@ export const ExploreMenu = () => {
     { title: 'Project Builder', description: 'Create your own amazing learning projects', icon: PenTool, path: '/create', color: 'from-orange-400 to-orange-600' }
   ];
 
-  const currentBackground = theme.backgrounds?.[currentBackgroundIndex] || '';
-
-  // ✅ UPDATED VERSION - Uses MongoDB image storage
-  const handleChangeTheme = useCallback(async (newTheme: string) => {
+  const handleChangeTheme = useCallback(async (newTheme) => {
     setIsThemeSelectorOpen(false);
     setIsGenerating(true);
 
     try {
-      const generateResponse = await fetch(`${VITE_BACKEND_URL}/api/generate-theme-images`, { // Use constant
+      const genRes = await fetch(`${VITE_BACKEND_URL}/api/generate-theme-images`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme: newTheme }),
       });
-      const data = await generateResponse.json();
+      const data = await genRes.json();
 
-      if (generateResponse.ok) {
-        setTheme(newTheme as keyof typeof themeConfig);
+      if (genRes.ok) {
+        setTheme(newTheme);
+        const baseUrl = VITE_BACKEND_URL || '';
+        const processed = data.imageIds.map((id) => `${baseUrl}/api/images/${id}`);
 
-        // Convert MongoDB image IDs to accessible URLs
-        const baseUrl = VITE_BACKEND_URL || ''; // Use constant
-        const processedBackgrounds = data.imageIds.map(
-          (id: string) => `${baseUrl}/api/images/${id}`
-        );
+        setDynamicBackgrounds(processed);
 
-        // Update dynamic theme backgrounds
-        setDynamicBackgrounds(processedBackgrounds);
-
-        // Save selected theme and image URLs to user profile
         const user = auth.currentUser;
         if (user) {
           const token = await user.getIdToken();
-          const saveResponse = await fetch(`${VITE_BACKEND_URL}/api/user/${user.uid}/learning-style`, { // Use constant
+          await fetch(`${VITE_BACKEND_URL}/api/user/${user.uid}/learning-style`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -128,22 +129,17 @@ export const ExploreMenu = () => {
             body: JSON.stringify({
               learningStyle: 'visual',
               interests: newTheme,
-              generatedThemeImages: processedBackgrounds,
+              generatedThemeImages: processed,
             }),
           });
-          if (!saveResponse.ok) console.error('Failed to save theme to database.');
         }
-      } else {
-        console.error('Failed to generate new theme images:', data.error);
-        // Don't use alert()
       }
-    } catch (error) {
-      console.error('Network or API error:', error);
-      // Don't use alert()
+    } catch (err) {
+      console.error("Theme gen error:", err);
     } finally {
       setIsGenerating(false);
     }
-  }, [setTheme, setDynamicBackgrounds]);
+  }, []);
 
   const LoadingSpinner = () => (
     <div className="absolute inset-0 z-50 bg-black/50 flex items-center justify-center">
@@ -156,58 +152,60 @@ export const ExploreMenu = () => {
     </div>
   );
 
-  // --- FIX ---
-  // Create a variable that holds the correct image src, just like in AccountModal
   const profileImageSrc = (() => {
-    if (!profileImageUrl) {
-      return null; // No image
-    }
-    // NEW: If it's Base64, use it directly.
-    if (profileImageUrl.startsWith('data:image/')) {
-      return profileImageUrl;
-    }
-    // OLD: If it's a file path, build the URL.
-    if (profileImageUrl.startsWith('/uploads/')) {
-      return `${VITE_BACKEND_URL}${profileImageUrl}`; // Use constant
-    }
-    // Fallback for other data (e.g., if it's already a full http URL)
-    if (profileImageUrl.startsWith('http')) {
-      return profileImageUrl;
-    }
-    // If it's none of the above, it's likely invalid
+    if (!profileImageUrl) return null;
+    if (profileImageUrl.startsWith('data:image/')) return profileImageUrl;
+    if (profileImageUrl.startsWith('/uploads/')) return `${VITE_BACKEND_URL}${profileImageUrl}`;
+    if (profileImageUrl.startsWith('http')) return profileImageUrl;
     return null;
   })();
-  // --- END FIX ---
 
   return (
-    <div 
-      className="min-h-screen p-8 relative overflow-hidden"
-      style={{
-        backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        transition: 'background-image 1s ease-in-out',
-      }}
-    >
-      <div className="absolute inset-0 bg-black bg-opacity-20 backdrop-blur-sm"></div>
-      
+    <div className="min-h-screen p-8 relative overflow-hidden">
+
+      {/* 🔥 SEAMLESS CROSSFADE - NO BLACK SCREEN */}
+      <div className="absolute inset-0 overflow-hidden">
+        {theme.backgrounds?.map((bg, index) => (
+          <motion.div
+            key={bg}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ 
+              backgroundImage: `url(${bg})`,
+              zIndex: index === currentBackgroundIndex ? 10 : 0
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: index === currentBackgroundIndex ? 1 : 0 
+            }}
+            transition={{ 
+              duration: 1.2, 
+              ease: "easeInOut" 
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Black overlay - z-20 to stay above backgrounds */}
+      <div className="absolute inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-20"></div>
+
       {isGenerating && <LoadingSpinner />}
-      
-      <div className="relative max-w-6xl mx-auto">
+
+      <div className="relative max-w-6xl mx-auto z-30">
         <div className="flex justify-between items-center mb-8 relative">
+
           <button
             onClick={() => navigate(-1)}
             className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center 
-                       shadow-md hover:bg-indigo-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75"
-            title="Go Back"
+                       shadow-md hover:bg-indigo-700 transition-colors duration-200"
           >
             <ArrowLeft size={24} className="text-white" />
           </button>
-          
+
           <div className="flex items-center gap-4 ml-auto">
+
             <button
               onClick={() => setIsThemeSelectorOpen(true)}
-              className="bg-gradient-to-r from-purple-700 to-indigo-700 text-white px-6 py-3 rounded-full font-semibold flex items-center gap-2 shadow-lg hover:from-purple-800 hover:to-indigo-800 transition-all duration-300 transform hover:scale-[1.02]"
+              className="bg-gradient-to-r from-purple-700 to-indigo-700 text-white px-6 py-3 rounded-full font-semibold flex items-center gap-2 shadow-lg hover:from-purple-800 hover:to-indigo-800 transition-all duration-300 hover:scale-[1.02]"
             >
               <Palette size={20} />
               Change Theme
@@ -218,12 +216,11 @@ export const ExploreMenu = () => {
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsAccountModalOpen(true)}
               className="relative w-14 h-14 rounded-full shadow-lg transition-all flex items-center justify-center overflow-hidden"
-              title="My Account"
             >
-              <div 
+              <div
                 className="absolute inset-[-100%] w-[300%] h-[300%] animate-spin"
-                style={{ 
-                  animationDuration: '8s', 
+                style={{
+                  animationDuration: '8s',
                   backgroundImage: `conic-gradient(
                     from 0deg, 
                     #FF0000 0deg 60deg, 
@@ -237,21 +234,14 @@ export const ExploreMenu = () => {
               ></div>
 
               <div className="relative w-12 h-12 bg-black rounded-full flex items-center justify-center z-10">
-                {/* --- FIX ---
-                    Use the new profileImageSrc variable here
-                --- --- */}
                 {profileImageSrc ? (
-                  <img
-                    src={profileImageSrc}
-                    alt="Profile"
-                    className="w-11 h-11 rounded-full object-cover" 
-                  />
+                  <img src={profileImageSrc} className="w-11 h-11 rounded-full object-cover" />
                 ) : (
                   <UserCircle size={28} className="text-white w-11 h-11" />
                 )}
-                {/* --- END FIX --- */}
               </div>
             </motion.button>
+
           </div>
         </div>
 
@@ -266,13 +256,25 @@ export const ExploreMenu = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {menuItems.map((item) => (
-            <button
+            <motion.button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className="group relative overflow-hidden rounded-2xl transition-all duration-300 transform hover:scale-105 hover:-rotate-1"
+              whileHover={{ 
+                scale: 1.05, 
+                y: -5,
+                rotate: -1,
+                boxShadow: `0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(59, 130, 246, 0.8)`
+              }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative overflow-hidden rounded-2xl p-8 transition-all duration-300 cursor-pointer border border-cyan-500/30"
+              style={{
+                background: 'rgba(0, 0, 0, 0.6)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), 0 0 20px rgba(59, 130, 246, 0.3)'
+              }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/40 group-hover:from-black/70 group-hover:to-black/50 transition-all duration-300"></div>
-              <div className="relative p-8">
+              <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-black/10 group-hover:from-black/30 group-hover:to-black/20 transition-all duration-300"></div>
+              <div className="relative">
                 <div className="bg-white/20 backdrop-blur rounded-full p-4 w-fit mb-6 group-hover:scale-110 transition-transform">
                   <item.icon className="w-10 h-10 text-white" />
                 </div>
@@ -281,17 +283,22 @@ export const ExploreMenu = () => {
                 
                 <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="bg-white/20 backdrop-blur rounded-full p-2">
-                    <ArrowLeft className="w-6 h-6 text-white transform rotate-180" />
+                    <ArrowLeft className="w-6 h-6 text-white rotate-180" />
                   </div>
                 </div>
               </div>
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>
-      
-      <AccountModal isOpen={isAccountModalOpen} onClose={() => setIsAccountModalOpen(false)} onProfileUpdate={handleProfileUpdate} />
 
+      <AccountModal 
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        onProfileUpdate={handleProfileUpdate}
+      />
+
+      {/* Theme Selector Modal */}
       <AnimatePresence>
         {isThemeSelectorOpen && (
           <motion.div
@@ -308,11 +315,15 @@ export const ExploreMenu = () => {
               className="bg-white/95 rounded-2xl p-8 shadow-2xl w-full max-w-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-3xl font-bold text-gray-900 mb-4 text-center">Change Theme</h3>
-              <p className="text-gray-600 text-center mb-6">Select a new interest to explore new worlds!</p>
-              
+              <h3 className="text-3xl font-bold text-gray-900 mb-4 text-center">
+                Change Theme
+              </h3>
+              <p className="text-gray-600 text-center mb-6">
+                Select a new interest to explore new worlds!
+              </p>
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                {Object.keys(themeConfig).map((themeName, index) => {
+                {Object.keys(themeConfig).map((themeName, i) => {
                   const isActive = themeName === useThemeStore.getState().theme;
                   const gradients = [
                     "from-indigo-500 via-purple-500 to-pink-500",
@@ -322,7 +333,8 @@ export const ExploreMenu = () => {
                     "from-yellow-400 via-amber-500 to-orange-400",
                     "from-fuchsia-500 via-purple-500 to-indigo-500"
                   ];
-                  const gradient = gradients[index % gradients.length];
+                  const gradient = gradients[i % gradients.length];
+
                   return (
                     <motion.button
                       key={themeName}
@@ -347,7 +359,7 @@ export const ExploreMenu = () => {
                   );
                 })}
               </div>
-              
+
               <div className="text-center mt-6">
                 <button
                   onClick={() => setIsThemeSelectorOpen(false)}
@@ -360,6 +372,7 @@ export const ExploreMenu = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
     </div>
   );
 };
