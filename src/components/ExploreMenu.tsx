@@ -82,7 +82,7 @@ export const ExploreMenu = () => {
     if (backgrounds && backgrounds.length > 1) {
       const interval = setInterval(() => {
         setCurrentBackgroundIndex((prev) => (prev + 1) % backgrounds.length);
-      }, 30000); // ✅ LINE 77: 30 SECONDS - CHANGE THIS NUMBER FOR DIFFERENT TIMING
+      }, 20000); // ✅ LINE 77: 30 SECONDS - CHANGE THIS NUMBER FOR DIFFERENT TIMING
       return () => clearInterval(interval);
     }
   }, [theme.backgrounds]);

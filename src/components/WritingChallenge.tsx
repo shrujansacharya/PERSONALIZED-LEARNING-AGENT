@@ -74,9 +74,10 @@ export const WritingChallenge = () => {
   useEffect(() => {
     const backgrounds = theme.backgrounds;
     if (backgrounds && backgrounds.length > 1) {
+      // UPDATED: Slower transition for cosmic feel (10 seconds)
       const interval = setInterval(() => {
         setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
-      }, 5000);
+      }, 10000);
       return () => clearInterval(interval);
     }
   }, [theme.backgrounds]);
@@ -294,7 +295,7 @@ export const WritingChallenge = () => {
       }
     } catch (error) {
       // Fallback evaluation
-      const wordCount = writingInput.trim().split(/\s+/).length;
+      const wordCount = writingInput.trim().split(/\s+/).filter(word => word.length > 0).length;
       const score = Math.min(wordCount / 10, 10); // Simple scoring based on word count
       const newProgress = Math.min(progress + (score / 2), 100);
       setProgress(newProgress);
@@ -451,19 +452,27 @@ export const WritingChallenge = () => {
           transition: 'background-image 1s ease-in-out',
         }}
       >
-        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
-        <div className="bg-black/75 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-lg">
+        {/* UPDATED: Deep Cosmic Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-0"></div>
+        <motion.div
+          // UPDATED: Glassmorphic locked screen
+          className="bg-black/75 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-red-500/30 border border-red-500/50 text-center max-w-lg relative z-10"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className="text-6xl mb-4 text-red-400">🔒</div>
           <h2 className="text-3xl font-bold text-white mb-4">Activity Locked</h2>
           <p className="text-white mb-6">
             You have reached the maximum of 2 attempts for today. Please come back tomorrow to try again.
           </p>
-          <button
+          <motion.button
             onClick={() => navigate(-1)}
-            className="bg-gradient-to-r from-blue-500 to-teal-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:from-blue-600 hover:to-teal-600 transition"
+            className="bg-gradient-to-r from-blue-500 to-teal-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg shadow-blue-500/40 hover:from-blue-600 hover:to-teal-600 transition"
+            whileHover={{ scale: 1.05 }}
           >
             Previous Page
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       </div>
     );
   }
@@ -479,30 +488,38 @@ export const WritingChallenge = () => {
           transition: 'background-image 1s ease-in-out',
         }}
       >
-        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
-        <div className="bg-black/75 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 max-w-4xl w-full text-white">
-          <h2 className="text-4xl font-extrabold mb-6 flex items-center gap-4">
-            <Trophy className="text-yellow-400" size={48} />
+        {/* UPDATED: Deep Cosmic Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-0"></div>
+        <motion.div 
+          // UPDATED: Glassmorphic completion screen
+          className="bg-black/75 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-teal-500/30 border border-teal-500/50 max-w-4xl w-full text-white relative z-10"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <h2 className="text-4xl font-extrabold mb-6 flex items-center gap-4 text-cyan-400">
+            <Trophy className="text-yellow-400 drop-shadow-lg" size={48} />
             Congratulations! Writing Activity Completed!
           </h2>
-          <div className="whitespace-pre-line mb-6">{writingFeedback}</div>
+          <div className="whitespace-pre-line bg-black/60 p-6 rounded-xl border border-white/10 mb-6">{writingFeedback}</div>
           <div className="flex justify-center gap-6">
             {attempts < 2 && (
-              <button
+              <motion.button
                 onClick={handleReattempt}
-                className="bg-gradient-to-r from-blue-500 to-teal-500 px-6 py-3 rounded-lg font-semibold shadow-lg hover:from-blue-600 hover:to-teal-600 transition"
+                className="bg-gradient-to-r from-blue-500 to-teal-500 px-6 py-3 rounded-lg font-semibold shadow-lg shadow-blue-500/40 hover:from-blue-600 hover:to-teal-600 transition"
+                whileHover={{ scale: 1.05 }}
               >
                 Reattempt Acivity
-              </button>
+              </motion.button>
             )}
-            <button
+            <motion.button
               onClick={() => navigate(-1)}
-              className="bg-white text-teal-600 px-6 py-3 rounded-lg font-semibold shadow-lg hover:bg-gray-100 transition"
+              className="bg-white/90 text-teal-600 px-6 py-3 rounded-lg font-semibold shadow-lg hover:bg-gray-100 transition"
+              whileHover={{ scale: 1.05 }}
             >
               Previous Page
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -517,11 +534,13 @@ export const WritingChallenge = () => {
         transition: 'background-image 1s ease-in-out',
       }}
     >
-      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+      {/* UPDATED: Deep Cosmic Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-0"></div>
       <div className="max-w-4xl mx-auto space-y-8 relative z-10">
         {/* Header */}
         <motion.div
-          className="bg-black/75 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+          // UPDATED: Glassmorphic header panel
+          className="bg-black/75 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-cyan-500/30 border border-cyan-500/50"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -529,7 +548,8 @@ export const WritingChallenge = () => {
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 bg-black/75 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition"
+              // UPDATED: Glassmorphic button
+              className="flex items-center gap-2 bg-black/40 text-white px-4 py-2 rounded-lg hover:bg-white/10 transition border border-white/20"
             >
               <ArrowLeft size={20} />
               Previous Page
@@ -539,7 +559,8 @@ export const WritingChallenge = () => {
               <select
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value)}
-                className="px-4 py-2 rounded-xl bg-black/75 text-white border border-white/20"
+                // UPDATED: Glassmorphic select
+                className="px-4 py-2 rounded-xl bg-black/40 text-white border border-white/20 focus:ring-teal-400 focus:border-teal-400"
               >
                 <option value="4-6">4-6 (Beginner)</option>
                 <option value="7-9">7-9 (Intermediate)</option>
@@ -549,7 +570,7 @@ export const WritingChallenge = () => {
           </div>
 
           <h1 className="text-4xl font-extrabold text-white mb-4 flex items-center gap-4">
-            <PenTool className="text-teal-400" size={48} />
+            <PenTool className="text-teal-400 drop-shadow-lg" size={48} />
             Writing Practice
           </h1>
           <p className="text-lg text-white/80 mb-6">Express yourself through creative writing!</p>
@@ -562,7 +583,7 @@ export const WritingChallenge = () => {
             </div>
             <div className="bg-white/10 rounded-full h-4">
               <motion.div
-                className="bg-gradient-to-r from-blue-500 to-teal-500 h-full rounded-full"
+                className="bg-gradient-to-r from-blue-500 to-teal-500 h-full rounded-full shadow-lg shadow-teal-500/50"
                 initial={{ width: 0 }}
                 animate={{ width: submitted ? '100%' : '50%' }}
                 transition={{ duration: 0.5 }}
@@ -574,32 +595,35 @@ export const WritingChallenge = () => {
         {/* Writing Content */}
         <AnimatePresence mode="wait">
           <motion.div
-            className="bg-black/75 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
-            style={{ perspective: '1000px' }}
-            initial={{ opacity: 0, rotateX: -20 }}
+            // UPDATED: Glassmorphic card container
+            className="bg-black/75 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-blue-500/30 border border-blue-500/50"
+            initial={{ opacity: 0, rotateX: -10 }}
             animate={{ opacity: 1, rotateX: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 0.6 }}
           >
             <div className="space-y-8">
               {/* Writing Prompt */}
               <motion.div
-                className="bg-black/75 p-6 rounded-2xl"
-                whileHover={{ rotateY: 2, rotateX: 1 }}
+                // UPDATED: Glassmorphic inner card
+                className="bg-black/40 p-6 rounded-2xl border border-white/10 shadow-lg"
+                whileHover={{ scale: 1.01 }}
               >
-                <h2 className="text-2xl font-bold text-white mb-4">Writing Prompt</h2>
+                <h2 className="text-2xl font-bold text-cyan-400 mb-4">Writing Prompt</h2>
                 <p className="text-white/90 text-lg leading-relaxed">{writingPrompt}</p>
               </motion.div>
 
               {/* Writing Input */}
               <motion.div
-                className="bg-black/75 p-6 rounded-2xl"
-                whileHover={{ rotateY: 2, rotateX: 1 }}
+                // UPDATED: Glassmorphic inner card
+                className="bg-black/40 p-6 rounded-2xl border border-white/10 shadow-lg"
+                whileHover={{ scale: 1.01 }}
               >
                 <h2 className="text-xl font-semibold text-white mb-4">Your Response</h2>
                 <textarea
                   value={writingInput}
                   onChange={(e) => setWritingInput(e.target.value)}
                   placeholder="Start writing your response here..."
+                  // UPDATED: Neon input style
                   className="w-full h-64 p-4 rounded-xl bg-black/75 text-white border border-white/20 resize-none focus:outline-none focus:ring-2 focus:ring-teal-400"
                   disabled={submitted}
                 />
@@ -610,7 +634,7 @@ export const WritingChallenge = () => {
                   {!submitted && (
                     <motion.button
                       onClick={handleWritingSubmit}
-                      className="bg-gradient-to-r from-blue-500 to-teal-500 text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:from-blue-600 hover:to-teal-600 transition-all duration-300"
+                      className="bg-gradient-to-r from-blue-500 to-teal-500 text-white px-6 py-2 rounded-lg font-medium shadow-lg shadow-blue-500/40 hover:from-blue-600 hover:to-teal-600 transition-all duration-300"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -623,7 +647,7 @@ export const WritingChallenge = () => {
               {/* Feedback */}
               {submitted && writingFeedback && (
                 <motion.div
-                  className="bg-black/75 p-6 rounded-2xl"
+                  className="bg-black/70 p-6 rounded-2xl border border-white/20"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >

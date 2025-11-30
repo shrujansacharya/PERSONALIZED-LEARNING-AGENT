@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, History, Video, Save, X, Maximize2, Minimize2, Folder, Lightbulb, Code, FileText, Calendar, PanelLeft, PanelRight } from 'lucide-react';
+import { MessageCircle, History, Video, Save, X, Maximize2, Minimize2, Folder, Lightbulb, Code, FileText, Calendar, PanelLeft, PanelRight, Send } from 'lucide-react';
 import { ChatMessage } from './types';
 
 interface SidebarProps {
@@ -124,24 +124,36 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div
-      className="h-full bg-white/10 backdrop-blur-md shadow-2xl rounded-2xl flex border border-white/20 text-white"
+      // UPDATED: Glassmorphic container with neon border
+      className="h-full bg-black/40 backdrop-blur-xl shadow-2xl rounded-2xl flex border border-indigo-500/50 shadow-indigo-500/20 text-white"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
       {/* Vertical Sidebar */}
-      <div className={`bg-transparent p-3 flex flex-col items-center space-y-4 border-r border-white/20 transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-24'}`}>
-        <button onClick={toggleSidebar} className="p-4 rounded-xl transition-all duration-200 w-full text-gray-300 hover:bg-white/20">
+      <div className={`bg-black/40 p-3 flex flex-col items-center space-y-4 border-r border-indigo-500/30 transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-24'}`}>
+        {/* Toggle Button */}
+        <motion.button 
+          onClick={toggleSidebar} 
+          // UPDATED: Glassmorphic button, neon hover
+          className="p-3 rounded-xl transition-all duration-200 w-full text-gray-300 hover:bg-white/10 hover:text-cyan-400"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
           {isSidebarOpen ? <PanelLeft size={28} className="mx-auto" /> : <PanelRight size={28} className="mx-auto" />}
-        </button>
+        </motion.button>
+        {/* Navigation Tabs */}
         {sidebarItems.map(item => (
-          <button
+          <motion.button
             key={item.id}
             onClick={() => setSidebarTab(item.id)}
-            className={`p-4 rounded-xl transition-all duration-200 w-full relative group flex items-center gap-4 ${sidebarTab === item.id
-                ? 'bg-blue-500 text-white shadow-lg'
-                : 'text-gray-300 hover:bg-white/20'
+            // UPDATED: Neon active tab, glass hover
+            className={`p-3 rounded-xl transition-all duration-200 w-full relative group flex items-center gap-4 ${sidebarTab === item.id
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-gray-300 hover:bg-white/10 hover:text-cyan-400'
               }`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <item.icon size={28} />
             <AnimatePresence>
@@ -150,19 +162,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap font-medium"
                 >
                   {item.label}
                 </motion.span>
               )}
             </AnimatePresence>
+            {/* Active Indicator Bar */}
             {sidebarTab === item.id && (
               <motion.div
                 layoutId="active-tab-indicator"
-                className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-blue-400 rounded-r-full"
+                className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-cyan-400 rounded-r-full shadow-md shadow-cyan-400/50"
               />
             )}
-          </button>
+          </motion.button>
         ))}
       </div>
 
@@ -175,10 +188,11 @@ const Sidebar: React.FC<SidebarProps> = ({
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="flex-1 flex flex-col overflow-hidden"
           >
-            <header className="p-4 flex items-center justify-between border-b border-white/20">
-              <h2 className="text-xl font-bold text-white">{currentTool?.label}</h2>
+            <header className="p-4 flex items-center justify-between border-b border-indigo-500/30 bg-black/30">
+              <h2 className="text-xl font-bold text-cyan-400">{currentTool?.label}</h2>
             </header>
             <div className="flex-1 overflow-y-auto">
+              {/* --- CHAT TAB --- */}
               {sidebarTab === 'chat' && (
                 <div className="h-full flex flex-col">
                   <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/10">
@@ -190,9 +204,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                         className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[80%] px-4 py-3 rounded-2xl ${message.role === 'user'
-                              ? 'bg-blue-500 text-white rounded-br-none'
-                              : 'bg-white/20 text-white rounded-bl-none'
+                          className={`max-w-[80%] px-4 py-3 rounded-2xl shadow-lg border border-white/10 ${message.role === 'user'
+                              ? 'bg-blue-600/80 text-white rounded-br-none' // User: Blue/Indigo Gradient
+                              : 'bg-black/30 backdrop-blur-sm text-white rounded-bl-none' // Assistant: Glassmorphic
                             }`}
                         >
                           <p className="whitespace-pre-wrap">{message.content}</p>
@@ -204,46 +218,53 @@ const Sidebar: React.FC<SidebarProps> = ({
                     ))}
                     {chatbotLoading && (
                       <div className="flex justify-start">
-                        <div className="bg-white/20 px-4 py-3 rounded-2xl rounded-bl-none">
+                        <div className="bg-black/30 backdrop-blur-sm px-4 py-3 rounded-2xl rounded-bl-none">
                           <motion.div className="flex space-x-2">
-                            <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.5 }} className="w-2 h-2 bg-blue-500 rounded-full"></motion.div>
-                            <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.1 }} className="w-2 h-2 bg-blue-500 rounded-full"></motion.div>
-                            <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.2 }} className="w-2 h-2 bg-blue-500 rounded-full"></motion.div>
+                            <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.5 }} className="w-2 h-2 bg-cyan-500 rounded-full"></motion.div>
+                            <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.1 }} className="w-2 h-2 bg-cyan-500 rounded-full"></motion.div>
+                            <motion.div animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.2 }} className="w-2 h-2 bg-cyan-500 rounded-full"></motion.div>
                           </motion.div>
                         </div>
                       </div>
                     )}
                   </div>
-                  <form onSubmit={handleChatSubmit} className="p-4 border-t border-white/20 bg-transparent">
+                  <form onSubmit={handleChatSubmit} className="p-4 border-t border-indigo-500/30 bg-black/30">
                     <div className="flex space-x-2 mb-3">
                       <input
                         type="text"
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         placeholder="Type your question here..."
-                        className="flex-1 px-4 py-3 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder:text-gray-300 transition-all"
+                        // UPDATED: Neon input style
+                        className="flex-1 px-4 py-3 border border-indigo-500/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-black/40 text-white placeholder:text-gray-400 transition-all shadow-inner"
                         disabled={chatbotLoading}
                       />
-                      <button
+                      <motion.button
                         type="submit"
                         disabled={chatbotLoading || !chatInput.trim()}
-                        className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        // UPDATED: Neon button style
+                        className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-indigo-600/30 font-semibold"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                       >
-                        Send
-                      </button>
+                        <Send size={20} />
+                      </motion.button>
                     </div>
                     <div className="flex justify-between items-center">
-                      <button
+                      <motion.button
                         type="button"
                         onClick={() => saveChatToHistory(false)}
                         disabled={chatMessages.length <= 1}
-                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm flex items-center gap-2"
+                        // UPDATED: Neon button style
+                        className="px-4 py-2 bg-green-600/80 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm flex items-center gap-2 shadow-md shadow-green-600/30"
                         title="Save current chat to history"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                       >
                         <Save size={16} />
                         Save Chat
-                      </button>
-                      <div className="text-xs text-gray-300">
+                      </motion.button>
+                      <div className="text-xs text-gray-400">
                         {chatMessages.length - 1} messages • Auto-saves every 4 exchanges
                       </div>
                     </div>
@@ -251,71 +272,127 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               )}
 
+              {/* --- HISTORY TAB --- */}
               {sidebarTab === 'history' && (
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold mb-4 text-white">Chat History</h3>
+                  <h3 className="text-xl font-bold mb-4 text-white">Chat History</h3>
                   {chatHistory.length === 0 ? (
-                    <p className="text-gray-300">No chat history yet</p>
+                    <p className="text-gray-400">No chat history yet</p>
                   ) : (
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
                       {chatHistory.map((chat, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                        <motion.div
+                          key={index}
+                          // UPDATED: Glassmorphic history card with neon hover
+                          className="flex items-center justify-between p-4 bg-black/30 backdrop-blur-sm rounded-xl border border-white/10 hover:border-cyan-400/50 transition-all shadow-lg"
+                          whileHover={{ scale: 1.01 }}
+                        >
                           <div className="flex-1 min-w-0 pr-2">
                             <p
-                              className="text-sm text-white line-clamp-2 break-words"
+                              className="text-sm font-medium text-white line-clamp-2 break-words"
                               title={chat[0]?.content || 'Empty chat'}
                             >
                               {chat[0]?.content || 'Empty chat'}
                             </p>
-                            <p className="text-xs text-gray-300 mt-1">
+                            <p className="text-xs text-gray-400 mt-1">
                               {chat.length} messages • {chat[chat.length - 1]?.timestamp ? new Date(chat[chat.length - 1].timestamp).toLocaleDateString() : 'Unknown date'}
                             </p>
                           </div>
-                          <div className="flex gap-1 flex-shrink-0">
-                            <button
+                          <div className="flex gap-2 flex-shrink-0">
+                            <motion.button
                               onClick={() => loadChatFromHistory(index)}
-                              className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-colors"
+                              // UPDATED: Neon button style
+                              className="px-3 py-1 bg-cyan-600 text-white rounded-lg text-xs hover:bg-cyan-500 transition-colors shadow-md shadow-cyan-600/30"
                               title="Load this chat"
+                              whileHover={{ scale: 1.1 }}
                             >
                               Load
-                            </button>
-                            <button
+                            </motion.button>
+                            <motion.button
                               onClick={() => deleteChatFromHistory(index)}
-                              className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors"
+                              // UPDATED: Neon button style
+                              className="px-3 py-1 bg-red-600 text-white rounded-lg text-xs hover:bg-red-500 transition-colors shadow-md shadow-red-600/30"
                               title="Delete this chat"
+                              whileHover={{ scale: 1.1 }}
                             >
-                              Delete
-                            </button>
+                              <X size={14} />
+                            </motion.button>
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   )}
                 </div>
               )}
 
+              {/* --- FILES TAB --- */}
               {sidebarTab === 'files' && (
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold mb-4 text-white">Files</h3>
-                  <p className="text-gray-300">File management is not yet implemented.</p>
+                  <h3 className="text-xl font-bold mb-4 text-white">Files</h3>
+                  <p className="text-gray-400">File management is not yet implemented.</p>
                 </div>
               )}
 
+              {/* --- VIDEO TAB --- */}
               {sidebarTab === 'video' && (
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold mb-4 text-white">Video Tutorials</h3>
-                  <button
+                  <h3 className="text-xl font-bold mb-4 text-red-400">Video Tutorials</h3>
+                  <motion.button
                     onClick={handleWatchVideos}
-                    className="w-full py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 mb-4"
+                    // UPDATED: Neon button style
+                    className="w-full py-3 bg-red-600/90 text-white rounded-lg hover:bg-red-500 mb-4 shadow-md shadow-red-600/30 font-semibold"
+                    whileHover={{ scale: 1.02 }}
                   >
                     Watch Tutorials
-                  </button>
+                  </motion.button>
 
+                  {/* Video Player Modal/Fullscreen logic (Only inline styling changes applied) */}
+
+                  {videos && videos.length > 0 && (
+                    <div className="space-y-3">
+                      {videos.map((video, index) => (
+                        // UPDATED: Glassmorphic video card
+                        <motion.div 
+                          key={index} 
+                          className="bg-black/30 backdrop-blur-sm rounded-xl p-3 border border-white/10 shadow-lg"
+                          whileHover={{ scale: 1.02, boxShadow: "0 0 15px rgba(255, 69, 0, 0.4)" }}
+                        >
+                          <h4 className="font-semibold text-white mb-2">{video.snippet.title}</h4>
+                          <p className="text-sm text-gray-400 mb-2">{video.snippet.description.substring(0, 100)}...</p>
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={video.snippet.thumbnails.medium.url}
+                              alt={video.snippet.title}
+                              className="w-16 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => setPlayingVideo(video.id.videoId)}
+                            />
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-400">{video.snippet.channelTitle}</p>
+                              <button
+                                onClick={() => setPlayingVideo(video.id.videoId)}
+                                className="text-cyan-400 hover:text-cyan-300 text-sm font-medium transition"
+                              >
+                                ▶️ Play Video
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                  {videosLoading && (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
+                      <p className="text-sm text-gray-300 mt-2">Loading videos...</p>
+                    </div>
+                  )}
+                  
                   {/* Video Player Modal */}
                   {playingVideo && !isVideoFullscreen && (
                     <div
                       ref={videoRef}
-                      className="fixed bg-black rounded-lg overflow-hidden shadow-2xl z-50 cursor-move select-none"
+                      // UPDATED: Neon Border
+                      className="fixed bg-black rounded-lg overflow-hidden shadow-2xl z-50 cursor-move select-none border-4 border-indigo-500" 
                       style={{
                         left: `${videoPosition.x}px`,
                         top: `${videoPosition.y}px`,
@@ -325,14 +402,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                     >
                       {/* Drag Handle */}
                       <div
-                        className="absolute top-0 left-0 right-0 h-8 bg-black bg-opacity-50 flex items-center justify-between px-2 cursor-move"
+                        className="absolute top-0 left-0 right-0 h-8 bg-indigo-900/80 flex items-center justify-between px-2 cursor-move"
                         onMouseDown={(e) => handleMouseDown(e, 'drag')}
                       >
                         <span className="text-white text-xs font-medium">YouTube Player</span>
                         <div className="flex gap-1">
                           <button
                             onClick={() => setIsVideoFullscreen(true)}
-                            className="text-white hover:text-gray-300 p-1"
+                            className="text-white hover:text-cyan-400 p-1"
                             title="Fullscreen"
                           >
                             <Maximize2 size={14} />
@@ -342,7 +419,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                               setPlayingVideo(null);
                               setIsVideoFullscreen(false);
                             }}
-                            className="text-white hover:text-gray-300 p-1"
+                            className="text-white hover:text-red-500 p-1"
                             title="Close"
                           >
                             <X size={14} />
@@ -362,7 +439,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                       {/* Resize Handle */}
                       <div
-                        className="absolute bottom-0 right-0 w-4 h-4 bg-white bg-opacity-20 cursor-se-resize"
+                        className="absolute bottom-0 right-0 w-4 h-4 bg-cyan-500/50 cursor-se-resize" // Neon resize handle
                         onMouseDown={(e) => handleMouseDown(e, 'resize')}
                       >
                         <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-white"></div>
@@ -377,7 +454,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <div className="absolute top-4 right-4 flex gap-2 z-10">
                           <button
                             onClick={() => setIsVideoFullscreen(false)}
-                            className="bg-black bg-opacity-50 text-white p-2 rounded hover:bg-opacity-75 transition-colors"
+                            className="bg-black/50 text-white p-2 rounded hover:bg-white/10 transition-colors border border-white/20"
                           >
                             <Minimize2 size={20} />
                           </button>
@@ -386,7 +463,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                               setPlayingVideo(null);
                               setIsVideoFullscreen(false);
                             }}
-                            className="bg-black bg-opacity-50 text-white p-2 rounded hover:bg-opacity-75 transition-colors"
+                            className="bg-black/50 text-white p-2 rounded hover:bg-red-500/80 transition-colors border border-white/20"
                           >
                             <X size={20} />
                           </button>
@@ -402,64 +479,35 @@ const Sidebar: React.FC<SidebarProps> = ({
                       </div>
                     </div>
                   )}
-
-                  {videos && videos.length > 0 && (
-                    <div className="space-y-3">
-                      {videos.map((video, index) => (
-                        <div key={index} className="bg-white/10 rounded-lg p-3">
-                          <h4 className="font-semibold text-white mb-2">{video.snippet.title}</h4>
-                          <p className="text-sm text-gray-300 mb-2">{video.snippet.description.substring(0, 100)}...</p>
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={video.snippet.thumbnails.medium.url}
-                              alt={video.snippet.title}
-                              className="w-16 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => setPlayingVideo(video.id.videoId)}
-                            />
-                            <div className="flex-1">
-                              <p className="text-xs text-gray-400">{video.snippet.channelTitle}</p>
-                              <button
-                                onClick={() => setPlayingVideo(video.id.videoId)}
-                                className="text-blue-400 hover:text-blue-300 text-sm font-medium"
-                              >
-                                ▶️ Play Video
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {videosLoading && (
-                    <div className="text-center py-4">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
-                      <p className="text-sm text-gray-300 mt-2">Loading videos...</p>
-                    </div>
-                  )}
                 </div>
               )}
 
+              {/* --- IDEAS TAB --- */}
               {sidebarTab === 'ideas' && (
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold mb-4 text-white">AI Project Ideas</h3>
+                  <h3 className="text-xl font-bold mb-4 text-yellow-400">AI Project Ideas</h3>
                   <input
                     type="text"
                     value={ideasInput}
                     onChange={(e) => setIdeasInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && generateAiFeature('ideas')}
                     placeholder="Describe your interests... (Press Enter to generate)"
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl mb-4 bg-white/10 text-white placeholder:text-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    // UPDATED: Neon input style
+                    className="w-full px-4 py-3 border border-yellow-500/50 rounded-xl mb-4 bg-black/40 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all shadow-inner"
                   />
-                  <button
+                  <motion.button
                     onClick={() => generateAiFeature('ideas')}
                     disabled={aiLoading || !ideasInput.trim()}
-                    className="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+                    // UPDATED: Neon button style
+                    className="w-full py-3 bg-yellow-600/90 text-white rounded-lg hover:bg-yellow-500 disabled:opacity-50 font-semibold shadow-md shadow-yellow-600/30"
+                    whileHover={{ scale: 1.02 }}
                   >
                     {aiLoading ? 'Generating...' : 'Generate Ideas'}
-                  </button>
+                  </motion.button>
                   <div className="mt-4 space-y-2">
                     {projectIdeas.map((idea, index) => (
-                      <div key={index} className="p-3 bg-white/10 rounded-lg">
+                      // UPDATED: Glassmorphic idea card
+                      <div key={index} className="p-3 bg-black/30 backdrop-blur-sm rounded-lg border border-white/10 shadow-md">
                         <p className="text-sm text-white whitespace-pre-wrap">{idea}</p>
                       </div>
                     ))}
@@ -467,57 +515,68 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               )}
 
+              {/* --- CODE TAB --- */}
               {sidebarTab === 'code' && (
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold mb-4 text-white">Code Helper</h3>
+                  <h3 className="text-xl font-bold mb-4 text-cyan-400">Code Helper</h3>
                   <textarea
                     value={codeInput}
                     onChange={(e) => setCodeInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && generateAiFeature('code')}
                     placeholder="Describe what you need help with..."
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl mb-4 bg-white/10 text-white placeholder:text-gray-300 h-32 resize-none"
+                    // UPDATED: Neon input style
+                    className="w-full px-4 py-3 border border-cyan-500/50 rounded-xl mb-4 bg-black/40 text-green-300 placeholder:text-gray-400 h-32 resize-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all font-mono shadow-inner"
                   />
-                  <button
+                  <motion.button
                     onClick={() => generateAiFeature('code')}
                     disabled={aiLoading || !codeInput.trim()}
-                    className="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+                    // UPDATED: Neon button style
+                    className="w-full py-3 bg-cyan-600/90 text-white rounded-lg hover:bg-cyan-500 disabled:opacity-50 font-semibold shadow-md shadow-cyan-600/30"
+                    whileHover={{ scale: 1.02 }}
                   >
                     {aiLoading ? 'Generating...' : 'Get Help'}
-                  </button>
+                  </motion.button>
                   <div className="mt-4">
-                    <pre className="p-3 bg-white/10 rounded-lg text-sm text-white whitespace-pre-wrap overflow-x-auto">
+                    <pre 
+                      // UPDATED: Glassmorphic code output
+                      className="p-3 bg-black/30 backdrop-blur-sm rounded-lg text-sm text-green-300 whitespace-pre-wrap overflow-x-auto border border-white/10 shadow-inner font-mono"
+                    >
                       {codeSnippet}
                     </pre>
                   </div>
                 </div>
               )}
 
+              {/* --- NOTES TAB --- */}
               {sidebarTab === 'notes' && (
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold mb-4 text-white">📒 AI Notes Organizer</h3>
+                  <h3 className="text-xl font-bold mb-4 text-purple-400">📒 AI Notes Organizer</h3>
 
                   {/* Input Section */}
-                  <div className="bg-black/10 p-4 rounded-lg mb-4">
+                  <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg mb-4 border border-purple-500/30 shadow-md">
                     <textarea
                       value={notesInput}
                       onChange={(e) => setNotesInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && generateAiFeature('notes')}
                       placeholder="Paste your project notes, research, or any content you want to organize..."
-                      className="w-full px-4 py-3 border border-white/20 rounded-xl mb-4 bg-white/10 text-white placeholder:text-gray-300 h-32 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      // UPDATED: Neon input style
+                      className="w-full px-4 py-3 border border-purple-500/50 rounded-xl mb-4 bg-black/40 text-white placeholder:text-gray-400 h-32 resize-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all shadow-inner"
                     />
-                    <button
+                    <motion.button
                       onClick={() => generateAiFeature('notes')}
                       disabled={aiLoading || !notesInput.trim()}
-                      className="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors"
+                      // UPDATED: Neon button style
+                      className="w-full py-3 bg-purple-600/90 text-white rounded-lg hover:bg-purple-500 disabled:opacity-50 transition-colors font-semibold shadow-md shadow-purple-600/30"
+                      whileHover={{ scale: 1.02 }}
                     >
                       {aiLoading ? '🧠 Analyzing & Organizing...' : '📝 Organize Notes'}
-                    </button>
+                    </motion.button>
                   </div>
 
                   {/* Organized Notes Display */}
                   {projectNotes && (
-                    <div className="bg-white/10 rounded-lg border border-white/20 overflow-hidden">
-                      <div className="p-4 border-b border-white/20 bg-gradient-to-r from-white/20 to-white/10">
+                    <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/10 shadow-lg">
+                      <div className="p-4 border-b border-white/20 bg-gradient-to-r from-purple-900/40 to-black/30">
                         <h4 className="text-lg font-bold text-white mb-2">📋 Organized Study Notes</h4>
                         <p className="text-sm text-gray-300">
                           AI has analyzed and structured your content for better learning
@@ -533,9 +592,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 projectNotes
                                   .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                                   .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                  .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2 text-blue-100">$1</h3>')
-                                  .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-6 mb-3 text-purple-100">$1</h2>')
-                                  .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-8 mb-4 text-white">$1</h1>')
+                                  .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2 text-blue-300 drop-shadow">$1</h3>') // UPDATED colors
+                                  .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-6 mb-3 text-purple-300 drop-shadow">$1</h2>') // UPDATED colors
+                                  .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-8 mb-4 text-white drop-shadow">$1</h1>')
                                   .replace(/^- (.*$)/gim, '<li class="ml-4">• $1</li>')
                                   .replace(/^(\d+)\. (.*$)/gim, '<div class="ml-4">$1. $2</div>')
                                   .replace(/\n\n/g, '</p><p class="mb-3">')
@@ -546,31 +605,33 @@ const Sidebar: React.FC<SidebarProps> = ({
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="p-4 border-t border-white/20 bg-black/10">
+                      <div className="p-4 border-t border-white/20 bg-black/30">
                         <div className="flex gap-3">
-                          <button
+                          <motion.button
                             onClick={() => {
                               navigator.clipboard.writeText(projectNotes);
-                              // Note: Toast functionality not implemented yet
                               alert('Notes copied to clipboard!');
                             }}
-                            className="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                            className="flex-1 py-2 bg-blue-600/90 text-white rounded-lg hover:bg-blue-500 transition-colors text-sm font-semibold shadow-md"
+                            whileHover={{ scale: 1.05 }}
                           >
                             📋 Copy Notes
-                          </button>
-                          <button
+                          </motion.button>
+                          <motion.button
                             onClick={() => generateAiFeature('notes')}
                             disabled={aiLoading}
-                            className="flex-1 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors text-sm"
+                            className="flex-1 py-2 bg-green-600/90 text-white rounded-lg hover:bg-green-500 disabled:opacity-50 transition-colors text-sm font-semibold shadow-md"
+                            whileHover={{ scale: 1.05 }}
                           >
                             🔄 Reorganize
-                          </button>
-                          <button
+                          </motion.button>
+                          <motion.button
                             onClick={() => setShowShareModal(true)}
-                            className="flex-1 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
+                            className="flex-1 py-2 bg-purple-600/90 text-white rounded-lg hover:bg-purple-500 transition-colors text-sm font-semibold shadow-md"
+                            whileHover={{ scale: 1.05 }}
                           >
                             💾 Share Notes
-                          </button>
+                          </motion.button>
                         </div>
                       </div>
                     </div>
@@ -579,45 +640,49 @@ const Sidebar: React.FC<SidebarProps> = ({
                   {/* Empty State */}
                   {!projectNotes && !aiLoading && (
                     <div className="text-center py-12">
-                      <div className="text-5xl mb-4">📝</div>
+                      <div className="text-5xl mb-4 text-purple-400">📝</div>
                       <h4 className="text-lg font-semibold text-white mb-2">Ready to Organize Your Notes?</h4>
-                      <p className="text-gray-300 mb-4">
+                      <p className="text-gray-400 mb-4">
                         Paste your project notes, research, or any content above and let AI organize it into structured, easy-to-study format.
                       </p>
-                      <div className="text-sm text-gray-400">
-                        ✨ AI will create sections for key concepts, learning objectives, study tips, and more!
+                      <div className="text-sm text-gray-500 space-y-1">
+                        <div>✨ AI will create sections for key concepts, learning objectives, study tips, and more!</div>
                       </div>
                     </div>
                   )}
                 </div>
               )}
 
+              {/* --- PLANNER TAB --- */}
               {sidebarTab === 'planner' && (
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold mb-4 text-white">📅 AI Project Planner</h3>
+                  <h3 className="text-xl font-bold mb-4 text-pink-400">📅 AI Project Planner</h3>
 
                   {/* Input Section */}
-                  <div className="bg-black/10 p-4 rounded-lg mb-4">
+                  <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg mb-4 border border-pink-500/30 shadow-md">
                     <textarea
                       value={planInput}
                       onChange={(e) => setPlanInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && generateAiFeature('plan')}
                       placeholder="Describe your project idea, goals, and any specific requirements..."
-                      className="w-full px-4 py-3 border border-white/20 rounded-xl mb-4 bg-white/10 text-white placeholder:text-gray-300 h-32 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      // UPDATED: Neon input style
+                      className="w-full px-4 py-3 border border-pink-500/50 rounded-xl mb-4 bg-black/40 text-white placeholder:text-gray-400 h-32 resize-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all shadow-inner"
                     />
-                    <button
+                    <motion.button
                       onClick={() => generateAiFeature('plan')}
                       disabled={aiLoading || !planInput.trim()}
-                      className="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors"
+                      // UPDATED: Neon button style
+                      className="w-full py-3 bg-pink-600/90 text-white rounded-lg hover:bg-pink-500 disabled:opacity-50 transition-colors font-semibold shadow-md shadow-pink-600/30"
+                      whileHover={{ scale: 1.02 }}
                     >
                       {aiLoading ? '🎯 Creating Detailed Plan...' : '🚀 Generate Project Plan'}
-                    </button>
+                    </motion.button>
                   </div>
 
                   {/* Project Plan Display */}
                   {projectPlan.length > 0 && (
-                    <div className="bg-white/10 rounded-lg border border-white/20 overflow-hidden">
-                      <div className="p-4 border-b border-white/20 bg-gradient-to-r from-white/20 to-white/10">
+                    <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/10 shadow-lg">
+                      <div className="p-4 border-b border-white/20 bg-gradient-to-r from-pink-900/40 to-black/30">
                         <h4 className="text-lg font-bold text-white mb-2">🎯 Your Project Plan</h4>
                         <p className="text-sm text-gray-300">
                           AI-generated comprehensive project roadmap with timelines and resources
@@ -632,8 +697,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                           </h5>
                           <div className="space-y-3">
                             {projectPlan.map((step, index) => (
-                              <div key={index} className="flex items-start gap-3 p-3 bg-white/5 rounded-lg">
-                                <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                              <div key={index} className="flex items-start gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-md">
                                   {index + 1}
                                 </div>
                                 <div className="flex-1">
@@ -642,7 +707,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 <div className="flex-shrink-0">
                                   <input
                                     type="checkbox"
-                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                    className="w-4 h-4 text-pink-600 rounded focus:ring-pink-500 border-gray-700 bg-black/50"
                                     title="Mark as completed"
                                   />
                                 </div>
@@ -661,7 +726,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </div>
                             <div className="w-full bg-white/10 rounded-full h-2">
                               <div
-                                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                                className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
                                 style={{ width: `0%` }}
                               ></div>
                             </div>
@@ -669,25 +734,35 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </div>
 
                         {/* Quick Actions */}
-                        <div className="p-4">
+                        <div className="p-4 bg-black/30">
                           <h5 className="font-semibold text-white mb-3">⚡ Quick Actions</h5>
                           <div className="grid grid-cols-2 gap-3">
-                            <button className="p-3 bg-white/10 text-blue-300 rounded-lg hover:bg-white/20 transition-colors text-sm font-medium">
+                            <motion.button 
+                              className="p-3 bg-black/50 text-blue-300 rounded-lg hover:bg-white/10 transition-colors text-sm font-medium border border-blue-600/30"
+                              whileHover={{ scale: 1.05 }}
+                            >
                               📝 Edit Plan
-                            </button>
-                            <button className="p-3 bg-white/10 text-green-300 rounded-lg hover:bg-white/20 transition-colors text-sm font-medium">
+                            </motion.button>
+                            <motion.button 
+                              className="p-3 bg-black/50 text-green-300 rounded-lg hover:bg-white/10 transition-colors text-sm font-medium border border-green-600/30"
+                              whileHover={{ scale: 1.05 }}
+                            >
                               ✅ Mark Complete
-                            </button>
-                            <button className="p-3 bg-white/10 text-purple-300 rounded-lg hover:bg-white/20 transition-colors text-sm font-medium">
+                            </motion.button>
+                            <motion.button 
+                              className="p-3 bg-black/50 text-purple-300 rounded-lg hover:bg-white/10 transition-colors text-sm font-medium border border-purple-600/30"
+                              whileHover={{ scale: 1.05 }}
+                            >
                               📤 Share Plan
-                            </button>
-                            <button
+                            </motion.button>
+                            <motion.button
                               onClick={() => generateAiFeature('plan')}
                               disabled={aiLoading}
-                              className="p-3 bg-white/10 text-orange-300 rounded-lg hover:bg-white/20 transition-colors text-sm font-medium disabled:opacity-50"
+                              className="p-3 bg-black/50 text-orange-300 rounded-lg hover:bg-white/10 transition-colors text-sm font-medium disabled:opacity-50 border border-orange-600/30"
+                              whileHover={{ scale: 1.05 }}
                             >
                               🔄 Regenerate
-                            </button>
+                            </motion.button>
                           </div>
                         </div>
                       </div>
@@ -697,12 +772,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                   {/* Empty State */}
                   {projectPlan.length === 0 && !aiLoading && (
                     <div className="text-center py-12">
-                      <div className="text-5xl mb-4">🎯</div>
+                      <div className="text-5xl mb-4 text-pink-400">🎯</div>
                       <h4 className="text-lg font-semibold text-white mb-2">Ready to Plan Your Project?</h4>
-                      <p className="text-gray-300 mb-4">
+                      <p className="text-gray-400 mb-4">
                         Describe your project idea above and let AI create a comprehensive, step-by-step plan with timelines, materials, and milestones.
                       </p>
-                      <div className="text-sm text-gray-400 space-y-1">
+                      <div className="text-sm text-gray-500 space-y-1">
                         <div>✨ Detailed step-by-step instructions</div>
                         <div>🛠️ Material lists and resource requirements</div>
                         <div>⏰ Time estimates and scheduling</div>

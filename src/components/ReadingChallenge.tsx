@@ -69,9 +69,10 @@ export const ReadingChallenge = () => {
   useEffect(() => {
     const backgrounds = theme.backgrounds;
     if (backgrounds && backgrounds.length > 1) {
+      // UPDATED: Slower transition for cosmic feel (10 seconds)
       const interval = setInterval(() => {
         setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
-      }, 5000);
+      }, 10000);
       return () => clearInterval(interval);
     }
   }, [theme.backgrounds]);
@@ -141,6 +142,7 @@ export const ReadingChallenge = () => {
     setCanReattempt(false);
     setFeedback('');
     generateReadingChallenge();
+    clearProgress();
   };
 
   const handleReattempt = () => {
@@ -483,23 +485,26 @@ export const ReadingChallenge = () => {
           transition: 'background-image 1s ease-in-out',
         }}
       >
-        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+        {/* UPDATED: Deep Cosmic Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-0"></div>
         <motion.div
-          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-md"
+          // UPDATED: Glassmorphic locked screen
+          className="bg-black/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-red-500/30 border border-red-500/50 text-center max-w-md relative z-10"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <div className="text-6xl mb-4">🔒</div>
+          <div className="text-6xl mb-4 text-red-400">🔒</div>
           <h2 className="text-2xl font-bold text-white mb-4">Challenge Locked</h2>
           <p className="text-white/80 mb-6">
             You've reached the maximum attempts (2) for today. Come back tomorrow for a fresh challenge!
           </p>
-          <button
+          <motion.button
             onClick={() => navigate(-1)}
-            className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:from-green-600 hover:to-teal-600 transition-all duration-300"
+            className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg font-medium shadow-lg shadow-green-500/40 hover:from-green-600 hover:to-teal-600 transition-all duration-300"
+            whileHover={{ scale: 1.05 }}
           >
             Previous Page
-          </button>
+          </motion.button>
         </motion.div>
       </div>
     );
@@ -518,13 +523,15 @@ export const ReadingChallenge = () => {
           transition: 'background-image 1s ease-in-out',
         }}
       >
-        <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+        {/* UPDATED: Deep Cosmic Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-0"></div>
         <motion.div
-          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-lg"
+          // UPDATED: Glassmorphic completion screen
+          className="bg-black/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-green-500/30 border border-green-500/50 text-center max-w-lg relative z-10"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <div className="text-6xl mb-4">🎉</div>
+          <div className="text-6xl mb-4 text-yellow-400">🎉</div>
           <h2 className="text-3xl font-bold text-white mb-4">Reading Challenge Completed!</h2>
           <p className="text-white/80 mb-6">
             Great job! You've successfully completed the Reading Challenge.
@@ -533,7 +540,8 @@ export const ReadingChallenge = () => {
           {/* Feedback Display */}
           {feedback && (
             <motion.div
-              className="bg-black/80 p-4 rounded-2xl mb-6 text-left"
+              // UPDATED: Glassmorphic feedback box
+              className="bg-black/60 p-4 rounded-2xl mb-6 text-left border border-white/10"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -546,7 +554,7 @@ export const ReadingChallenge = () => {
             {canReattempt && (
               <motion.button
                 onClick={handleReattempt}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:from-blue-600 hover:to-purple-600 transition-all duration-300"
+                className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-medium shadow-lg shadow-blue-500/40 hover:from-blue-600 hover:to-purple-600 transition-all duration-300"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -555,7 +563,7 @@ export const ReadingChallenge = () => {
             )}
             <motion.button
               onClick={() => navigate(-1)}
-              className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:from-green-600 hover:to-teal-600 transition-all duration-300"
+              className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg font-medium shadow-lg shadow-green-500/40 hover:from-green-600 hover:to-teal-600 transition-all duration-300"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -578,11 +586,13 @@ export const ReadingChallenge = () => {
         transition: 'background-image 1s ease-in-out',
       }}
     >
-      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+      {/* UPDATED: Deep Cosmic Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-0"></div>
       <div className="max-w-4xl mx-auto space-y-8 relative z-10">
         {/* Header */}
         <motion.div
-          className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+          // UPDATED: Glassmorphic header panel
+          className="bg-black/70 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-teal-500/30 border border-teal-500/50"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -590,7 +600,8 @@ export const ReadingChallenge = () => {
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 bg-black/80 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition"
+              // UPDATED: Glassmorphic button
+              className="flex items-center gap-2 bg-black/40 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition border border-white/20"
             >
               <ArrowLeft size={20} />
               Previous Page
@@ -600,7 +611,8 @@ export const ReadingChallenge = () => {
               <select
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value)}
-                className="px-4 py-2 rounded-xl bg-black/80 text-white border border-white/20"
+                // UPDATED: Glassmorphic select
+                className="px-4 py-2 rounded-xl bg-black/40 text-white border border-white/20 focus:ring-green-400 focus:border-green-400"
               >
                 <option value="4-6">4-6 (Beginner)</option>
                 <option value="7-9">7-9 (Intermediate)</option>
@@ -610,7 +622,7 @@ export const ReadingChallenge = () => {
           </div>
 
           <h1 className="text-4xl font-extrabold text-white mb-4 flex items-center gap-4">
-            <Book className="text-green-400" size={48} />
+            <Book className="text-green-400 drop-shadow-lg" size={48} />
             Reading Challenge
           </h1>
           <p className="text-lg text-white/80 mb-6">Test your reading comprehension skills!</p>
@@ -623,7 +635,7 @@ export const ReadingChallenge = () => {
             </div>
             <div className="bg-white/10 rounded-full h-4">
               <motion.div
-                className="bg-gradient-to-r from-green-500 to-teal-500 h-full rounded-full"
+                className="bg-gradient-to-r from-green-500 to-teal-500 h-full rounded-full shadow-lg shadow-green-500/50"
                 initial={{ width: 0 }}
                 animate={{ width: readingSubmitted ? '100%' : '50%' }}
                 transition={{ duration: 0.5 }}
@@ -635,20 +647,21 @@ export const ReadingChallenge = () => {
         {/* Reading Content */}
         <AnimatePresence mode="wait">
           <motion.div
-            className="bg-black/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
-            style={{ perspective: '1000px' }}
-            initial={{ opacity: 0, rotateX: -20 }}
+            // UPDATED: Glassmorphic card container
+            className="bg-black/70 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-green-500/30 border border-green-500/50"
+            initial={{ opacity: 0, rotateX: -10 }}
             animate={{ opacity: 1, rotateX: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 0.6 }}
           >
             {readingPassage && (
               <div className="space-y-8">
                 {/* Passage */}
                 <motion.div
-                  className="bg-black/80 p-6 rounded-2xl"
-                  whileHover={{ rotateY: 2, rotateX: 1 }}
+                  // UPDATED: Glassmorphic inner card
+                  className="bg-black/40 p-6 rounded-2xl border border-white/10 shadow-lg"
+                  whileHover={{ scale: 1.01 }}
                 >
-                  <h2 className="text-2xl font-bold text-white mb-4">Reading Passage</h2>
+                  <h2 className="text-2xl font-bold text-teal-400 mb-4">Reading Passage</h2>
                   <p className="text-white/90 leading-relaxed">{readingPassage.passage}</p>
                 </motion.div>
 
@@ -658,8 +671,9 @@ export const ReadingChallenge = () => {
                   {readingPassage.questions.map((q: any, index: number) => (
                     <motion.div
                       key={q.id}
-                      className="bg-black/80 p-6 rounded-2xl"
-                      whileHover={{ rotateY: 2, rotateX: 1 }}
+                      // UPDATED: Glassmorphic inner card
+                      className="bg-black/40 p-6 rounded-2xl border border-white/10 shadow-lg"
+                      whileHover={{ scale: 1.01 }}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
@@ -667,7 +681,12 @@ export const ReadingChallenge = () => {
                       <h3 className="text-lg font-semibold text-white mb-4">{q.question}</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {q.options.map((option: string) => (
-                          <label key={option} className="flex items-center gap-3 text-white/80">
+                          <label 
+                            key={option} 
+                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${readingSubmitted 
+                              ? (readingAnswers[q.id] === option.charAt(0) && readingAnswers[q.id] === q.correctAnswer ? 'bg-green-600/50' : readingAnswers[q.id] === option.charAt(0) ? 'bg-red-600/50' : 'bg-black/30') 
+                              : 'bg-black/30 hover:bg-white/10'}`}
+                          >
                             <input
                               type="radio"
                               name={`question-${q.id}`}
@@ -675,7 +694,7 @@ export const ReadingChallenge = () => {
                               checked={readingAnswers[q.id] === option.charAt(0)}
                               onChange={(e) => handleAnswerChange(q.id, e.target.value)}
                               disabled={readingSubmitted}
-                              className="accent-green-400"
+                              className="accent-green-400 w-4 h-4"
                             />
                             {option}
                           </label>
@@ -690,7 +709,7 @@ export const ReadingChallenge = () => {
                   <div className="flex justify-center">
                     <motion.button
                       onClick={submitReading}
-                      className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-8 py-3 rounded-lg font-medium shadow-lg hover:from-green-600 hover:to-teal-600 transition-all duration-300"
+                      className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-8 py-3 rounded-lg font-medium shadow-lg shadow-green-500/40 hover:from-green-600 hover:to-teal-600 transition-all duration-300"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -702,7 +721,7 @@ export const ReadingChallenge = () => {
                 {/* Feedback */}
                 {readingSubmitted && feedback && (
                   <motion.div
-                    className="bg-black/80 p-6 rounded-2xl"
+                    className="bg-black/70 p-6 rounded-2xl border border-white/20"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                   >

@@ -1,6 +1,6 @@
 // Updated ProgressMap.tsx
 import { useState, useEffect } from 'react';
-import { MapPin, Trophy, Star, X, Target, Award, RefreshCw, CheckCircle, Circle, Code, BookOpen } from 'lucide-react';
+import { MapPin, Trophy, Star, X, Target, Award, RefreshCw, CheckCircle, Circle, Code, BookOpen, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../store/theme';
@@ -94,13 +94,46 @@ export const ProgressMap = () => {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [imagesPreloaded, setImagesPreloaded] = useState(false); 
   const navigate = useNavigate();
 
   const { getThemeStyles } = useThemeStore();
   const theme = getThemeStyles();
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
 
-  const currentBackground = theme.backgrounds?.[currentBackgroundIndex] || theme.background;
+  // Background Preloading and Cycling Logic
+  
+  // 🔥 PRELOAD ALL BACKGROUND IMAGES — FIXES THE FLICKER
+  useEffect(() => {
+    const backgrounds = theme.backgrounds;
+    if (backgrounds && backgrounds.length > 0) {
+        let loadedCount = 0;
+        const total = backgrounds.length;
+
+        backgrounds.forEach((src) => {
+            const img = new Image();
+            img.onload = () => {
+                loadedCount++;
+                if (loadedCount === total) {
+                    setImagesPreloaded(true);
+                }
+            };
+            img.onerror = () => {
+                // Treat failed loads as loaded to prevent indefinite waiting
+                loadedCount++;
+                if (loadedCount === total) {
+                    setImagesPreloaded(true);
+                }
+            };
+            img.src = src;
+        });
+
+        if (total === 0) setImagesPreloaded(true);
+    } else {
+        // If no backgrounds, proceed immediately
+        setImagesPreloaded(true); 
+    }
+  }, [theme.backgrounds]);
 
   useEffect(() => {
     // Replaced Supabase calls with a local data fetch
@@ -115,7 +148,7 @@ export const ProgressMap = () => {
     if (backgrounds && backgrounds.length > 1) {
       const interval = setInterval(() => {
         setCurrentBackgroundIndex((prev) => (prev + 1) % backgrounds.length);
-      }, 5000);
+      }, 20000); // Updated interval to 20 seconds (20000ms)
       return () => clearInterval(interval);
     }
   }, [theme.backgrounds]);
@@ -154,10 +187,10 @@ export const ProgressMap = () => {
   ];
 
   const getProgressColor = (progress: number) => {
-    if (progress >= 80) return 'from-green-500 to-emerald-500';
-    if (progress >= 60) return 'from-blue-500 to-cyan-500';
-    if (progress >= 40) return 'from-yellow-500 to-orange-500';
-    if (progress >= 20) return 'from-orange-500 to-red-500';
+    if (progress >= 80) return 'from-green-400 to-cyan-500'; // Neon green/cyan
+    if (progress >= 60) return 'from-blue-500 to-indigo-500'; // Neon blue/indigo
+    if (progress >= 40) return 'from-yellow-400 to-orange-500'; // Neon yellow/orange
+    if (progress >= 20) return 'from-red-500 to-pink-500'; // Neon red/pink
     return 'from-gray-500 to-gray-600';
   };
 
@@ -169,22 +202,58 @@ export const ProgressMap = () => {
     return 'Starting';
   };
 
-  if (loading) {
+  const BackgroundLayers: React.FC = () => (
+    <>
+      {/* 🔥 SEAMLESS CROSSFADE - z-0/z-10 */}
+      <div className="absolute inset-0 overflow-hidden">
+        {theme.backgrounds?.map((bg, index) => (
+          <motion.div
+            key={bg}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ 
+              backgroundImage: `url(${bg})`,
+              zIndex: index === currentBackgroundIndex ? 10 : 0, // Active: z-10, Inactive: z-0
+              backgroundAttachment: 'fixed',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: index === currentBackgroundIndex ? 1 : 0 
+            }}
+            transition={{ 
+              duration: 1.2, 
+              ease: "easeInOut" 
+            }}
+          />
+        ))}
+      </div>
+      {/* Black Overlay (UPDATED: Deep Cosmic Gradient Overlay) - z-20 to stay above backgrounds */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-20"></div>
+    </>
+  );
+
+
+  if (loading || !imagesPreloaded) { // Check both profile loading and image preloading
     return (
       <div 
-        className="min-h-screen bg-cover bg-center relative overflow-hidden"
-        style={{ backgroundImage: `url(${currentBackground})` }}
+        className="min-h-screen relative overflow-hidden"
       >
-        <div className="absolute inset-0 bg-black/70" />
-        <div className="relative z-10 flex flex-col items-center justify-center h-screen text-white">
+        {/* Render background layers even while loading data to prevent black screen */}
+        <BackgroundLayers /> 
+        
+        {/* Overlay the loading spinner and text on top of the background layers */}
+        <div className="absolute inset-0 bg-black/90 z-40" /> 
+        
+        <div className="relative z-50 flex flex-col items-center justify-center h-screen text-white">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             className="mb-4"
           >
-            <Trophy className="w-16 h-16 text-yellow-400" />
+            <Trophy className="w-16 h-16 text-yellow-400 drop-shadow-lg" />
           </motion.div>
-          <p className="text-xl font-semibold" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>Mapping your progress...</p>
+          <p className="text-xl font-semibold" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+            {loading ? 'Mapping your progress...' : 'Loading assets...'}
+          </p>
         </div>
       </div>
     );
@@ -192,26 +261,29 @@ export const ProgressMap = () => {
 
   return (
     <div 
-      className="min-h-screen bg-cover bg-center relative overflow-hidden"
-      style={{ backgroundImage: `url(${currentBackground})` }}
+      className="min-h-screen relative overflow-hidden"
     >
-      <div className="absolute inset-0 bg-black/70" />
-      <div className="relative z-10 p-6 sm:p-8 max-w-7xl mx-auto text-white">
+      <BackgroundLayers />
+      <div className="relative z-30 p-6 sm:p-8 max-w-7xl mx-auto text-white">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 sm:mb-12 gap-4"
         >
-          <h1 className="text-3xl sm:text-4xl font-bold" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>Your Learning Adventure Map</h1>
-          <button 
+          <h1 className="text-4xl sm:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-indigo-400 drop-shadow-lg" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+            Your Learning Adventure Map
+          </h1>
+          <motion.button 
             onClick={refreshProgress}
             disabled={refreshing}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors disabled:opacity-50"
+            // UPDATED: Neon button style
+            className="bg-indigo-600/80 hover:bg-indigo-700/80 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 transition-all disabled:opacity-50 border border-indigo-400/50 shadow-lg shadow-indigo-500/30"
+            whileHover={{ scale: 1.05 }}
           >
             <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh Progress
-          </button>
+          </motion.button>
         </motion.div>
 
         {/* Daily Tasks Section */}
@@ -219,13 +291,14 @@ export const ProgressMap = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="p-6 rounded-xl border border-white/20 backdrop-blur-sm bg-black/70 mb-8"
+          // UPDATED: Glassmorphic panel
+          className="p-6 rounded-2xl border border-yellow-400/30 backdrop-blur-xl bg-black/40 mb-8 shadow-2xl shadow-yellow-500/20"
         >
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-            <Star className="text-yellow-300 w-6 h-6" />
+          <h3 className="text-2xl font-bold text-yellow-300 mb-4 flex items-center gap-2" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+            <Star className="text-yellow-300 w-6 h-6 fill-yellow-300 drop-shadow-lg" />
             Daily Tasks Progress
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {dailyChallenges.map((challenge, idx) => {
               const progress = (profile.daily_challenges_progress || {})[challenge.id] || 0;
               return (
@@ -234,29 +307,36 @@ export const ProgressMap = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 * idx }}
-                  className="bg-black/70 p-4 rounded-lg shadow-sm backdrop-blur-sm border border-white/20"
+                  // UPDATED: Glassmorphic progress card
+                  className="bg-black/50 p-4 rounded-xl shadow-lg backdrop-blur-sm border border-white/10"
+                  whileHover={{ scale: 1.05, boxShadow: '0 10px 20px rgba(0,0,0,0.4), 0 0 15px rgba(255,255,0,0.3)' }}
                 >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-2xl">{challenge.icon}</span>
-                    <h4 className="font-semibold text-white" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>{challenge.name}</h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                       <span className="text-2xl">{challenge.icon}</span>
+                       <h4 className="font-semibold text-white">{challenge.name}</h4>
+                    </div>
+                    <ChevronRight className='w-4 h-4 text-gray-400' />
                   </div>
                   <div className="relative pt-1">
+                    {/* Progress Bar */}
                     <div className="overflow-hidden h-3 mb-2 text-xs flex rounded bg-white/10">
                       <motion.div 
                         style={{ width: `${progress}%` }}
-                        className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r ${getProgressColor(progress)}`}
+                        // UPDATED: Neon gradient color
+                        className={`shadow-lg shadow-cyan-400/30 flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r ${getProgressColor(progress)}`}
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
                         transition={{ duration: 1.5, ease: 'easeOut' }}
                       />
                     </div>
-                    <div className="flex justify-between text-xs text-gray-200" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>
+                    <div className="flex justify-between text-xs text-gray-300">
                       <span>0%</span>
                       <span>{progress}%</span>
                       <span>100%</span>
                     </div>
                   </div>
-                  <p className="text-sm mt-2 text-gray-200" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>{getProgressStatus(progress)}</p>
+                  <p className="text-sm mt-2 text-gray-200 font-medium">{getProgressStatus(progress)}</p>
                 </motion.div>
               );
             })}
@@ -268,13 +348,14 @@ export const ProgressMap = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="p-6 rounded-xl border border-white/20 backdrop-blur-sm bg-black/70 mb-8"
+          // UPDATED: Glassmorphic panel
+          className="p-6 rounded-2xl border border-cyan-400/30 backdrop-blur-xl bg-black/40 mb-8 shadow-2xl shadow-cyan-500/20"
         >
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-            <BookOpen className="text-yellow-300 w-6 h-6" />
+          <h3 className="text-2xl font-bold text-cyan-300 mb-4 flex items-center gap-2" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+            <BookOpen className="text-cyan-300 w-6 h-6 drop-shadow-lg" />
             Skill Activities Progress
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {skillChallenges.map((challenge, idx) => {
               const progress = (profile.progress || {})[challenge.id] || 0;
               return (
@@ -283,29 +364,35 @@ export const ProgressMap = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 * idx }}
-                  className="bg-black/70 p-4 rounded-lg shadow-sm backdrop-blur-sm border border-white/20"
+                  // UPDATED: Glassmorphic progress card
+                  className="bg-black/50 p-4 rounded-xl shadow-lg backdrop-blur-sm border border-white/10"
+                  whileHover={{ scale: 1.05, boxShadow: '0 10px 20px rgba(0,0,0,0.4), 0 0 15px rgba(0,255,255,0.3)' }}
                 >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-2xl">{challenge.icon}</span>
-                    <h4 className="font-semibold text-white" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>{challenge.name}</h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                       <span className="text-2xl">{challenge.icon}</span>
+                       <h4 className="font-semibold text-white">{challenge.name}</h4>
+                    </div>
+                    <ChevronRight className='w-4 h-4 text-gray-400' />
                   </div>
                   <div className="relative pt-1">
                     <div className="overflow-hidden h-3 mb-2 text-xs flex rounded bg-white/10">
                       <motion.div 
                         style={{ width: `${progress}%` }}
-                        className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r ${getProgressColor(progress)}`}
+                        // UPDATED: Neon gradient color
+                        className={`shadow-lg shadow-cyan-400/30 flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r ${getProgressColor(progress)}`}
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
                         transition={{ duration: 1.5, ease: 'easeOut' }}
                       />
                     </div>
-                    <div className="flex justify-between text-xs text-gray-200" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>
+                    <div className="flex justify-between text-xs text-gray-300">
                       <span>0%</span>
                       <span>{progress}%</span>
                       <span>100%</span>
                     </div>
                   </div>
-                  <p className="text-sm mt-2 text-gray-200" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>{getProgressStatus(progress)}</p>
+                  <p className="text-sm mt-2 text-gray-200 font-medium">{getProgressStatus(progress)}</p>
                 </motion.div>
               );
             })}
@@ -314,8 +401,8 @@ export const ProgressMap = () => {
 
         {/* Badges Section */}
         <div className="mt-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-2" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
-            <Award className="text-yellow-300 w-6 h-6" />
+          <h2 className="text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-2" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.7)' }}>
+            <Award className="text-yellow-300 w-6 h-6 fill-yellow-300 drop-shadow-lg" />
             Your Achievements & Badges
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
@@ -325,8 +412,9 @@ export const ProgressMap = () => {
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                className="bg-black/70 p-3 sm:p-4 rounded-xl shadow-lg border border-white/20 flex flex-col items-center text-center backdrop-blur-sm" 
-                whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
+                // UPDATED: Glassmorphic badge card
+                className="bg-black/50 p-3 sm:p-4 rounded-xl shadow-lg border border-purple-400/30 flex flex-col items-center text-center backdrop-blur-sm" 
+                whileHover={{ scale: 1.08, boxShadow: '0 10px 25px rgba(0,0,0,0.3), 0 0 15px rgba(168,85,247,0.4)' }}
               >
                 <img src={badge.badge_icon} alt={badge.badge_name} className="w-12 h-12 rounded-full mb-2" />
                 <span className="text-sm font-semibold text-white" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>{badge.badge_name}</span>

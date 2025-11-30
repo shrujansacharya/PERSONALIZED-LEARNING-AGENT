@@ -1,7 +1,7 @@
 // SubjectsPage.tsx (Updated with 60% black glassmorphic cards and neon blue shadows)
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Book, Calculator, FlaskRound as Flask, Globe, MessageSquare, Languages, Atom, ArrowLeft, Search, Code, Laptop, Database, Beaker, Landmark, FileText, X, File, MessageCircle, Eye, Bot, Download, Calendar, Clock, Filter, Grid, List, Star, CheckCircle, AlertCircle, PlayCircle, Image as ImageIcon, Video as VideoIcon, FileType, FileText as FileTextIcon } from 'lucide-react';
+import { Book, Calculator, FlaskRound as Flask, Globe, MessageSquare, Languages, Atom, ArrowLeft, Search, Code, Laptop, Database, Beaker, Landmark, FileText, X, File, MessageCircle, Eye, Bot, Download, Calendar, Clock, Filter, Grid, List, Star, CheckCircle, AlertCircle, PlayCircle, Image as ImageIcon, Video as VideoIcon, FileType, FileText as FileTextIcon, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { subjectDetails, categories } from '../utils/subjects';
 import { useThemeStore } from '../store/theme';
@@ -203,7 +203,7 @@ export const SubjectsPage = () => {
   };
 
   return (
-    <div className="min-h-screen p-6 md:p-10 relative font-poppins text-gray-800 overflow-hidden">
+    <div className="min-h-screen p-6 md:p-10 relative font-poppins text-white overflow-hidden">
 
       {/* 🔥 SEAMLESS CROSSFADE - NO BLACK SCREEN */}
       <div className="absolute inset-0 overflow-hidden">
@@ -227,8 +227,8 @@ export const SubjectsPage = () => {
         ))}
       </div>
 
-      {/* Black overlay - z-20 to stay above backgrounds */}
-      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-20"></div>
+      {/* Black overlay (UPDATED: Deeper, cosmic gradient overlay + blur) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-20"></div>
 
       <div className="relative max-w-7xl mx-auto z-30">
         {!selectedSubject && (
@@ -243,11 +243,11 @@ export const SubjectsPage = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/explore-menu')}
-                className="p-3 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-all"
+                className="p-3 bg-indigo-600/80 text-white rounded-full shadow-lg hover:bg-indigo-700/80 transition-all border border-indigo-400/50"
               >
                 <ArrowLeft size={20} />
               </motion.button>
-              <h1 className="text-4xl md:text-5xl font-extrabold text-white bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-indigo-600">
+              <h1 className="text-4xl md:text-5xl font-extrabold text-white bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-indigo-400 drop-shadow-lg">
                 Learn Smarter
               </h1>
             </div>
@@ -256,10 +256,11 @@ export const SubjectsPage = () => {
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="p-3 bg-white/30 text-white rounded-full font-semibold flex items-center justify-center gap-2"
+                  // UPDATED: Glassmorphic badge
+                  className="p-3 bg-black/40 backdrop-blur-lg text-white rounded-full font-semibold flex items-center justify-center gap-2 border border-white/20"
                 >
                   <span>Learning Style:</span>
-                  <span className="capitalize font-bold">{answers.learningStyle}</span>
+                  <span className="capitalize font-bold text-teal-300">{answers.learningStyle}</span>
                 </motion.div>
               )}
               <div className="relative w-full sm:w-72">
@@ -269,19 +270,21 @@ export const SubjectsPage = () => {
                   placeholder="Find a subject..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-md transition-all bg-white/80"
+                  // UPDATED: Neon input style
+                  className="w-full pl-12 pr-4 py-3 border border-cyan-500/50 rounded-full focus:outline-none focus:ring-2 focus:ring-teal-400 shadow-md transition-all bg-black/40 text-white placeholder:text-gray-400"
                 />
                 {suggestions.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="absolute w-full mt-2 bg-white/90 rounded-lg shadow-lg z-20 backdrop-blur-sm"
+                    // UPDATED: Glassmorphic suggestions box
+                    className="absolute w-full mt-2 bg-black/80 rounded-lg shadow-lg z-20 backdrop-blur-md border border-white/10"
                   >
                     {suggestions.map((suggestion, idx) => (
                       <div
                         key={idx}
                         onClick={() => setSearchTerm(suggestion)}
-                        className="px-4 py-2 text-gray-700 hover:bg-teal-100 cursor-pointer"
+                        className="px-4 py-2 text-white hover:bg-teal-600/30 cursor-pointer transition-colors"
                       >
                         {suggestion}
                       </div>
@@ -310,7 +313,10 @@ export const SubjectsPage = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setSelectedCategory(category)}
-                    className={`px-4 py-2 rounded-full shadow-md text-sm font-medium transition-all ${selectedCategory === category ? 'bg-gradient-to-r from-teal-500 to-indigo-600 text-white' : 'bg-white/80 text-gray-700 hover:bg-teal-100'}`}
+                    // UPDATED: Neon filter buttons
+                    className={`px-4 py-2 rounded-full shadow-md text-sm font-medium transition-all ${selectedCategory === category 
+                      ? 'bg-gradient-to-r from-teal-500 to-indigo-600 text-white shadow-teal-500/50' 
+                      : 'bg-black/40 text-gray-200 hover:bg-white/10 border border-white/20'}`}
                   >
                     {category}
                   </motion.button>
@@ -330,10 +336,12 @@ export const SubjectsPage = () => {
                         whileHover={{ 
                           scale: 1.03, 
                           y: -5,
+                          // UPDATED: Stronger neon blue/indigo shadow
                           boxShadow: `0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(59, 130, 246, 0.8)`
                         }}
                         className="relative p-6 rounded-3xl overflow-hidden cursor-pointer group transition-all duration-300 border border-cyan-500/30"
                         style={{
+                          // UPDATED: Exact glassmorphic background
                           background: 'rgba(0, 0, 0, 0.6)',
                           backdropFilter: 'blur(20px)',
                           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), 0 0 20px rgba(59, 130, 246, 0.3)'
@@ -344,7 +352,7 @@ export const SubjectsPage = () => {
                           <motion.div 
                             whileHover={{ rotate: 360 }} 
                             transition={{ duration: 0.8 }} 
-                            className={`p-3 rounded-full bg-gradient-to-br ${subject.color} text-white shadow-md`}
+                            className={`p-3 rounded-full bg-gradient-to-br ${subject.color} text-white shadow-lg shadow-black/50`}
                           >
                             {IconComponent && <IconComponent size={40} />}
                           </motion.div>
@@ -361,7 +369,8 @@ export const SubjectsPage = () => {
                             e.stopPropagation();
                             navigate(`/subjects/${subject.id}/chat`);
                           }}
-                          className="absolute bottom-4 right-4 p-2 bg-gradient-to-r from-teal-500 to-indigo-600 text-white rounded-full shadow-md hover:from-teal-600 hover:to-indigo-700 transition-all"
+                          // UPDATED: Neon chat button
+                          className="absolute bottom-4 right-4 p-3 bg-gradient-to-r from-teal-500 to-indigo-600 text-white rounded-full shadow-xl shadow-teal-500/40 hover:from-teal-600 hover:to-indigo-700 transition-all"
                         >
                           <MessageSquare size={20} />
                         </motion.button>
@@ -389,6 +398,7 @@ export const SubjectsPage = () => {
               className="fixed inset-0 flex items-center justify-center z-20"
             >
               <div className="relative w-screen h-screen p-6 md:p-8">
+                {/* Back/Chat Header - UPDATED: Glassmorphic with neon border */}
                 <div className="absolute inset-0 bg-black/75 backdrop-blur-sm rounded-none shadow-2xl"></div>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -396,41 +406,41 @@ export const SubjectsPage = () => {
                   transition={{ duration: 0.4 }}
                   className="relative z-10 text-white p-6 md:p-8 rounded-none"
                 >
-                  <div className="flex items-center justify-between mb-8 bg-gradient-to-r from-indigo-900/80 via-purple-900/80 to-teal-900/80 p-4 rounded-lg shadow-lg backdrop-blur-md border-b-2 border-gold-500/30">
+                  <div className="flex items-center justify-between mb-8 bg-black/60 p-4 rounded-xl shadow-lg backdrop-blur-md border-2 border-indigo-400/50">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={handleBackToSubjects}
-                      className="p-2 bg-white/20 text-white rounded-full shadow-md hover:bg-teal-100/20 transition-all"
+                      className="p-3 bg-black/40 text-white rounded-full shadow-md hover:bg-white/10 transition-all border border-white/20"
                     >
                       <ArrowLeft size={20} />
                     </motion.button>
-                    {/* New container for the message and bot icon */}
                     <div className="flex items-center gap-4">
-                      {/* The new message with the active dot */}
-                      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md text-white font-medium">
+                      {/* Status Message */}
+                      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 backdrop-blur-md text-white font-medium border border-green-500/50 shadow-md shadow-green-500/30">
                         <span className="relative flex h-3 w-3">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                         </span>
                         <span>Hi! How can I help you?</span>
                       </div>
+                      {/* Chat Button */}
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => navigate(`/subjects/${selectedSubject.id}/chat`)}
-                        className="w-16 h-16 bg-gradient-to-br from-teal-600 via-indigo-700 to-purple-800 text-white rounded-full shadow-xl hover:from-teal-700 hover:via-indigo-800 hover:to-purple-900 transition-all duration-300 flex items-center justify-center"
+                        className="w-16 h-16 bg-gradient-to-br from-teal-600 via-indigo-700 to-purple-800 text-white rounded-full shadow-xl shadow-purple-600/50 hover:from-teal-700 hover:via-indigo-800 hover:to-purple-900 transition-all duration-300 flex items-center justify-center border border-white/10"
                       >
                         <Bot size={28} className="mx-auto" />
                       </motion.button>
                     </div>
                   </div>
                   <div className="flex items-center gap-6 mb-8">
-                    <div className="p-6 bg-white/20 rounded-full shadow-xl backdrop-blur-md border-2 border-gold-500/20">
-                      {SubjectIcon && <SubjectIcon size={64} />}
+                    <div className="p-6 bg-black/40 rounded-full shadow-xl backdrop-blur-md border-2 border-cyan-400/50">
+                      {SubjectIcon && <SubjectIcon size={64} className="text-cyan-400" />}
                     </div>
                     <div>
-                      <h2 className="text-3xl md:text-4xl font-bold tracking-tight leading-snug text-gold-300">{selectedSubject.name}</h2>
+                      <h2 className="text-3xl md:text-4xl font-bold tracking-tight leading-snug text-teal-300 drop-shadow-lg">{selectedSubject.name}</h2>
                       <p className="text-base md:text-lg text-gray-200 mt-1 font-medium">{selectedSubject.description}</p>
                     </div>
                   </div>
@@ -440,11 +450,12 @@ export const SubjectsPage = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4 }}
-                      className="bg-white/10 p-6 rounded-xl shadow-2xl border border-teal-500/30 backdrop-blur-md min-h-full"
+                      // UPDATED: Glassmorphic uploads panel
+                      className="bg-black/40 p-6 rounded-xl shadow-2xl border border-teal-500/30 backdrop-blur-xl"
                     >
                       <div className="flex justify-between items-center mb-6">
                         <h3 className="text-2xl font-semibold flex items-center gap-3 text-white">
-                          <FileText size={28} className="text-gold-400" />
+                          <FileText size={28} className="text-teal-400" />
                           Teacher's Uploads
                         </h3>
                         <div className="flex gap-2">
@@ -456,7 +467,8 @@ export const SubjectsPage = () => {
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => setFileTypeFilter(type)}
-                                className={`flex items-center gap-2 p-2 rounded-full font-medium transition-all ${fileTypeFilter === type ? 'bg-gradient-to-r from-teal-500 to-indigo-600 text-white' : 'bg-gray-700/80 text-gray-200 hover:bg-gray-600'}`}
+                                // UPDATED: Neon filter buttons
+                                className={`flex items-center gap-2 p-3 rounded-full font-medium transition-all shadow-md ${fileTypeFilter === type ? 'bg-gradient-to-r from-teal-500 to-indigo-600 text-white shadow-teal-500/50' : 'bg-black/50 text-gray-200 hover:bg-white/10 border border-white/20'}`}
                               >
                                 <IconComponent size={18} />
                                 <span className="hidden sm:inline">{type}</span>
@@ -474,17 +486,23 @@ export const SubjectsPage = () => {
                             return (
                               <motion.div
                                 key={index}
-                                whileHover={{ scale: 1.05, y: -5, boxShadow: "0 0 30px rgba(59, 130, 246, 0.5)" }}
+                                whileHover={{ 
+                                  scale: 1.05, 
+                                  y: -5, 
+                                  // UPDATED: Neon shadow on hover
+                                  boxShadow: "0 0 30px rgba(59, 130, 246, 0.5), 0 10px 20px rgba(0,0,0,0.4)" 
+                                }}
                                 onClick={() => setActionableMaterial(material)}
-                                className="bg-gray-900 rounded-2xl shadow-xl border border-teal-500/30 transition-all duration-300 hover:bg-gray-800 cursor-pointer p-6 relative"
+                                // UPDATED: Glassmorphic file card
+                                className="bg-black/50 rounded-2xl shadow-xl border border-white/10 transition-all duration-300 hover:bg-black/40 cursor-pointer p-6 relative backdrop-blur-md"
                               >
                                 {material.comment && (
-                                  <div className="bg-purple-900/40 text-purple-200 p-3 rounded-xl mb-4 border-l-4 border-gold-400">
+                                  <div className="bg-purple-900/40 text-purple-200 p-3 rounded-xl mb-4 border-l-4 border-pink-400 shadow-inner">
                                     <h4 className="font-bold text-sm">Task:</h4>
                                     <p className="text-xs italic mt-1">{material.comment}</p>
                                   </div>
                                 )}
-                                <div className="relative flex items-center justify-center h-40 mb-4 rounded-xl overflow-hidden bg-gray-700">
+                                <div className="relative flex items-center justify-center h-40 mb-4 rounded-xl overflow-hidden bg-black/60 border border-white/10">
                                   {/* --- UPDATE 5: Use fileData and fileMimeType --- */}
                                   {isImage(material.fileMimeType) ? (
                                     <img src={material.fileData} alt={material.fileName} className="w-full h-full object-cover" />
@@ -492,11 +510,11 @@ export const SubjectsPage = () => {
                                     <>
                                       <video src={material.fileData} className="w-full h-full object-cover" controls={false} />
                                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-lg font-bold">
-                                        <PlayCircle size={48} className="text-gold-400" />
+                                        <PlayCircle size={48} className="text-teal-400 drop-shadow-lg" />
                                       </div>
                                     </>
                                   ) : (
-                                    <FileIcon size={60} className="text-gold-300" />
+                                    <FileIcon size={60} className="text-teal-300 drop-shadow-lg" />
                                   )}
                                   {/* --- End Update 5 --- */}
                                 </div>
@@ -535,27 +553,31 @@ export const SubjectsPage = () => {
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.8, opacity: 0, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-md relative border border-teal-500/30 text-white p-6 text-center"
+                // UPDATED: Glassmorphic Action Modal
+                className="bg-black/70 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-md relative border border-teal-500/30 text-white p-6 text-center shadow-teal-500/30"
               >
-                <h3 className="font-bold text-xl mb-2 text-gold-300">Choose an Action</h3>
+                <h3 className="font-bold text-2xl mb-2 text-teal-300">Choose an Action</h3>
                 <p className="text-sm text-gray-300 mb-6 truncate" title={actionableMaterial.fileName}>
                   For file: <strong>{actionableMaterial.fileName}</strong>
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button
+                  <motion.button
                     onClick={() => {
                       setSelectedFile(actionableMaterial);
                       setActionableMaterial(null);
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gray-700 hover:bg-gray-600 transition-colors rounded-lg font-semibold"
+                    className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gray-700/80 hover:bg-gray-600 transition-colors rounded-lg font-semibold border border-white/20 shadow-md"
+                    whileHover={{ scale: 1.05 }}
                   >
                     <Eye size={20} />
                     View File
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
                     onClick={() => handleAnalyzeAndChat(actionableMaterial)}
                     disabled={isAnalyzing}
-                    className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-600 hover:to-indigo-700 transition-all rounded-lg font-semibold disabled:opacity-50 disabled:cursor-wait"
+                    // UPDATED: Neon Gradient Analyze Button
+                    className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-600 hover:to-indigo-700 transition-all rounded-lg font-semibold disabled:opacity-50 disabled:cursor-wait shadow-xl shadow-teal-500/40"
+                    whileHover={{ scale: 1.05 }}
                   >
                     {isAnalyzing ? (
                       <>Analyzing...</>
@@ -565,11 +587,11 @@ export const SubjectsPage = () => {
                         Analyze with Chatbot
                       </>
                     )}
-                  </button>
+                  </motion.button>
                 </div>
                 <button
                   onClick={() => setActionableMaterial(null)}
-                  className="absolute top-3 right-3 text-gray-400 bg-gray-900/50 rounded-full p-2 hover:bg-red-500/50 transition-colors"
+                  className="absolute top-3 right-3 text-gray-400 bg-black/50 rounded-full p-2 hover:bg-red-500/50 transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -591,24 +613,25 @@ export const SubjectsPage = () => {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white/10 rounded-xl shadow-2xl max-w-4xl max-h-[90vh] overflow-hidden relative border border-teal-500/30 backdrop-blur-md"
+              // UPDATED: Glassmorphic File View Modal
+              className="bg-black/70 backdrop-blur-xl rounded-xl shadow-2xl max-w-4xl max-h-[90vh] overflow-hidden relative border border-teal-500/30"
             >
               <button
                 onClick={() => setSelectedFile(null)}
-                className="absolute top-4 right-4 text-gray-300 bg-black/20 rounded-full p-2 hover:bg-teal-600/20 transition-colors z-10"
+                className="absolute top-4 right-4 text-gray-300 bg-black/50 rounded-full p-3 hover:bg-red-600/50 transition-colors z-10 border border-white/10"
               >
                 <X size={28} />
               </button>
 
               <div className="p-6">
-                <h3 className="text-xl font-bold mb-2 text-gold-300">{selectedFile.fileName}</h3>
+                <h3 className="text-2xl font-bold mb-2 text-teal-300">{selectedFile.fileName}</h3>
                 {selectedFile.comment && (
-                  <div className="bg-purple-900/20 text-purple-200 p-4 rounded-lg w-full text-base font-medium mb-4 border-l-4 border-gold-400 shadow-inner">
+                  <div className="bg-purple-900/30 text-purple-200 p-4 rounded-lg w-full text-base font-medium mb-4 border-l-4 border-pink-400 shadow-inner">
                     <p><strong>Task:</strong> {selectedFile.comment}</p>
                   </div>
                 )}
 
-                <div className="flex items-center justify-center max-h-[70vh] w-full bg-black/30 rounded-xl p-5 shadow-lg">
+                <div className="flex items-center justify-center max-h-[70vh] w-full bg-black/40 rounded-xl p-5 shadow-lg border border-white/10">
                   {isImage(selectedFile.fileMimeType) ? (
                     <img
                       src={selectedFile.fileData} // Use Base64 data
@@ -623,7 +646,7 @@ export const SubjectsPage = () => {
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center">
-                      <File size={72} className="text-gold-300 mb-4" />
+                      <File size={72} className="text-teal-300 mb-4" />
                       <p className="text-base text-gray-300 font-medium">File preview not available.</p>
                       {/* Make the download link use Base64 data */}
                       <a

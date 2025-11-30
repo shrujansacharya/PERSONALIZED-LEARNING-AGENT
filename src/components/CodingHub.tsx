@@ -1,9 +1,10 @@
 // src/components/CodingHub.tsx
-import React, { useEffect, useState } from "react";
-import { Routes, Route, useNavigate, useParams, useResolvedPath } from "react-router-dom";
+import React, { useEffect, useState, useCallback } from "react";
+import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 import codingAcademyData, { ModuleData, Step } from "./codingData";
-import { Award, CheckCircle, ArrowLeft } from "lucide-react"; 
+import { Award, CheckCircle, ArrowLeft, Zap } from "lucide-react"; 
 import { useThemeStore } from '../store/theme'; 
+import { motion } from 'framer-motion'; 
 
 /* -------------------------
    LocalStorage helpers (Unchanged)
@@ -41,11 +42,11 @@ function saveProgress(store: ProgressStore) {
 }
 
 /* -------------------------
-   Small UI pieces (Unchanged)
+   Small UI pieces (UPDATED: Added a glow for a neon look)
    ------------------------- */
 const BadgeSmall: React.FC<{ text: string }> = ({ text }) => (
-  <div className="inline-flex items-center gap-2 bg-white/8 px-3 py-1 rounded-full text-xs font-semibold text-white/90">
-    <Award size={14} className="text-yellow-400" /> <span>{text}</span>
+  <div className="inline-flex items-center gap-2 bg-indigo-900/50 border border-indigo-400/50 px-3 py-1 rounded-full text-xs font-semibold text-white/90 shadow-md shadow-indigo-500/30">
+    <Award size={14} className="text-yellow-300" /> <span>{text}</span>
   </div>
 );
 
@@ -145,7 +146,7 @@ async function runWithJudge0(languageId: string, source: string): Promise<ExecRe
 }
 
 /* =========================
-   CodeBuddy (Unchanged)
+   CodeBuddy (UPDATED: Glassmorphic and Neon Look)
    ========================= */
 
 const CodeBuddy: React.FC<{ moduleId?: string; topicId?: string; currentCode: string }> = ({ moduleId, topicId, currentCode }) => {
@@ -219,15 +220,15 @@ const CodeBuddy: React.FC<{ moduleId?: string; topicId?: string; currentCode: st
   }
 
   return (
-    <div className="bg-black/70 backdrop-blur-sm rounded-xl p-3 shadow h-56 flex flex-col text-white">
-      <div className="font-semibold text-indigo-300 mb-2">🤖 Code Buddy (AI)</div>
-      <div className="flex-1 overflow-y-auto text-sm space-y-2 mb-2 bg-gray-900/60 p-2 rounded">
+    <div className="bg-black/40 backdrop-blur-md rounded-xl p-4 shadow-xl border border-indigo-500/30 h-56 flex flex-col text-white transform transition hover:scale-[1.01] hover:shadow-indigo-500/40">
+      <div className="font-semibold text-cyan-400 mb-2 flex items-center gap-2">🤖 Code Buddy <Zap size={16} className="text-yellow-400" /></div>
+      <div className="flex-1 overflow-y-auto text-sm space-y-2 mb-2 bg-black/50 p-2 rounded-lg border border-gray-700/50">
         {messages.map((m, i) => (
-          <div key={i} className={m.startsWith("You:") ? "text-right text-gray-200" : "text-left text-indigo-200"}>
+          <div key={i} className={m.startsWith("You:") ? "text-right text-gray-100" : "text-left text-cyan-200"}>
             {m}
           </div>
         ))}
-        {isLoading && <div className="text-left text-indigo-200">🤖 ...</div>}
+        {isLoading && <div className="text-left text-cyan-200">🤖 ...</div>}
       </div>
       <div className="flex gap-2">
         <input 
@@ -239,12 +240,12 @@ const CodeBuddy: React.FC<{ moduleId?: string; topicId?: string; currentCode: st
             } 
           }} 
           placeholder="Ask about the concept or errors..." 
-          className="flex-1 rounded-l px-3 py-1 text-sm bg-gray-800 text-white border border-gray-700" 
+          className="flex-1 rounded-lg px-3 py-1 text-sm bg-gray-900/80 text-white border border-indigo-600/50 placeholder-gray-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400" 
           disabled={isLoading}
         />
         <button 
           onClick={() => { if (input.trim() && !isLoading) { reply(input); } }} 
-          className="bg-indigo-600 text-white px-3 py-1 rounded-r"
+          className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg font-semibold shadow-md shadow-indigo-600/50 transition transform hover:scale-[1.05]"
           disabled={isLoading}
         >
           {isLoading ? "Wait..." : "Ask"}
@@ -255,7 +256,7 @@ const CodeBuddy: React.FC<{ moduleId?: string; topicId?: string; currentCode: st
 };
 
 /* =========================
-   Module Dashboard (Unchanged)
+   Module Dashboard (UPDATED: Glassmorphic and Neon Look)
    ========================= */
 
 const ModuleDashboard: React.FC = () => {
@@ -281,34 +282,38 @@ const ModuleDashboard: React.FC = () => {
   const xp = store.xp || 0;
   const level = Math.floor(xp / 100) + 1;
 
+  // New Card Style: Glassmorphic, neon border, glowing shadow
+  const StatCard: React.FC<{ color: string; title: string; value: string; sub: string }> = ({ color, title, value, sub }) => (
+    <div className={`bg-black/40 backdrop-blur-md rounded-xl p-4 shadow-xl border-l-4 border-${color}-400 shadow-${color}-600/30 transition transform hover:scale-[1.03] cursor-default`}>
+        <div className={`text-2xl font-extrabold text-${color}-300 drop-shadow-lg`}>{value}</div>
+        <div className="text-sm text-gray-400">{title}</div>
+        <div className="text-xs text-gray-500 mt-1">{sub}</div>
+    </div>
+  );
+
+
   return (
     <div className="min-h-screen p-6 md:p-10 text-white">
-      <div className="relative mb-4 flex items-center justify-center">
+      <div className="relative mb-6 flex items-center justify-center">
         <button
           onClick={() => navigate('/explore-menu')} 
-          className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-200 hover:text-white transition-colors bg-black/30 backdrop-blur-sm p-2 rounded-lg"
+          className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-200 hover:text-cyan-400 transition-colors bg-black/50 backdrop-blur-sm p-2 rounded-lg border border-gray-700/50 hover:border-cyan-400/50"
           title="Back to Explore Menu"
         >
           <ArrowLeft size={20} />
           Back
         </button>
-        <h1 className="text-4xl font-extrabold text-center text-indigo-300 drop-shadow-md">Code Adventure — Final</h1>
+        <h1 className="text-4xl font-extrabold text-center text-cyan-300 drop-shadow-lg">Code Adventure — Final</h1>
       </div>
 
       <p className="text-center text-gray-300 mb-8 drop-shadow-sm">Playful lessons, detailed explanations, real execution, and an interactive Code Buddy.</p>
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-black/70 backdrop-blur-sm rounded-xl p-4 shadow-md border-l-4 border-yellow-400">
-          <div className="text-2xl font-bold text-yellow-400">{xp} XP</div>
-          <div className="text-xs text-gray-400">Level {level}</div>
-        </div>
-        <div className="bg-black/70 backdrop-blur-sm rounded-xl p-4 shadow-md border-l-4 border-green-400">
-          <div className="text-2xl font-bold text-green-400">🔥 {store.streak || 1} Day Streak</div>
-          <div className="text-xs text-gray-400">Keep coding every day!</div>
-        </div>
-        <div className="bg-black/70 backdrop-blur-sm rounded-xl p-4 shadow-md border-l-4 border-purple-400 flex items-center justify-between">
+        <StatCard color="yellow" title={`Level ${level}`} value={`${xp} XP`} sub="Unlock new ranks and features!" />
+        <StatCard color="pink" title="Keep coding every day!" value={`🔥 ${store.streak || 1} Day Streak`} sub="Your cosmic coding journey continues." />
+        <div className="bg-black/40 backdrop-blur-md rounded-xl p-4 shadow-xl border-l-4 border-purple-400 shadow-purple-600/30 flex items-center justify-between transition transform hover:scale-[1.03]">
           <div>
-            <div className="text-sm text-gray-300">Badges</div>
+            <div className="text-sm text-gray-400">Badges</div>
             <div className="font-semibold text-purple-300">Starter Explorer</div>
           </div>
           <BadgeSmall text="First Steps" />
@@ -320,20 +325,27 @@ const ModuleDashboard: React.FC = () => {
           const completedCount = (loadProgress().completed[mod.id] || []).length;
           const percent = Math.round((completedCount / mod.topics.length) * 100);
           return (
-            <div key={mod.id} onClick={() => navigate(`./${mod.id}`)} className="bg-black/70 backdrop-blur-sm rounded-2xl p-6 cursor-pointer shadow-lg hover:scale-[1.02] transition transform">
+            // Module Card: Glassmorphism, subtle 3D lift, neon glow on hover
+            <motion.div 
+              key={mod.id} 
+              onClick={() => navigate(`./${mod.id}`)} 
+              className="bg-black/40 backdrop-blur-md rounded-2xl p-6 cursor-pointer shadow-xl border border-indigo-600/50 hover:border-cyan-400 transition transform hover:scale-[1.02] hover:shadow-cyan-500/40"
+              whileHover={{ scale: 1.02 }} 
+              whileTap={{ scale: 0.98 }}
+            >
               <div className="flex items-center gap-4 mb-3">
-                <div className="rounded-full p-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-xl" style={{ width: 56, height: 56, display: "flex", alignItems: "center", justifyContent: "center" }}>{mod.logo}</div>
+                <div className="rounded-full p-3 bg-gradient-to-r from-indigo-700 to-cyan-700 text-white text-xl shadow-lg shadow-indigo-500/50" style={{ width: 56, height: 56, display: "flex", alignItems: "center", justifyContent: "center" }}>{mod.logo}</div>
                 <div>
-                  <div className="text-xl font-bold">{mod.name}</div>
-                  <div className="text-xs text-gray-400">{mod.badge} • {mod.difficulty}</div>
+                  <div className="text-xl font-bold text-white">{mod.name}</div>
+                  <div className="text-xs text-gray-400">{mod.badge} • <span className="text-yellow-400">{mod.difficulty}</span></div>
                 </div>
               </div>
               <div className="text-sm text-gray-300 mb-3">{mod.topics.length} lessons • deep kid-friendly explanations & many problems</div>
               <div className="w-full bg-gray-800 h-2 rounded-full">
-                <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${percent}%` }} />
+                <div className="bg-cyan-500 h-2 rounded-full shadow-lg shadow-cyan-500/50" style={{ width: `${percent}%` }} />
               </div>
               <div className="text-xs text-gray-400 mt-2">{percent}% completed • {completedCount} / {mod.topics.length}</div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
@@ -342,7 +354,7 @@ const ModuleDashboard: React.FC = () => {
 };
 
 /* =========================
-   Topic List (Header Updated)
+   Topic List (UPDATED: Glassmorphic and Neon Look)
    ========================= */
 const TopicList: React.FC = () => {
   const { languageId } = useParams<{ languageId: string }>();
@@ -356,10 +368,10 @@ const TopicList: React.FC = () => {
   return (
     <div className="min-h-screen p-6 md:p-10 text-white">
       {/* --- UPDATED HEADER --- */}
-      <div className="relative mb-6 flex items-center justify-center">
+      <div className="relative mb-8 flex items-center justify-center">
         <button
-          onClick={() => navigate('/codinghub')} // Navigate back to the main dashboard
-          className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-200 hover:text-white transition-colors bg-black/30 backdrop-blur-sm p-2 rounded-lg"
+          onClick={() => navigate('/codinghub')} 
+          className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-200 hover:text-cyan-400 transition-colors bg-black/50 backdrop-blur-sm p-2 rounded-lg border border-gray-700/50 hover:border-cyan-400/50"
           title="Back to Code Adventure"
         >
           <ArrowLeft size={20} />
@@ -368,10 +380,10 @@ const TopicList: React.FC = () => {
         
         {/* Centered Title */}
         <div className="flex items-center gap-4">
-          <div style={{ width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="rounded-full bg-indigo-800 text-2xl">{module.logo}</div>
+          <div style={{ width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="rounded-full bg-indigo-800 text-3xl shadow-lg shadow-indigo-500/50">{module.logo}</div>
           <div>
-            <h1 className="text-3xl font-bold text-indigo-300">{module.name}</h1>
-            <div className="text-sm text-gray-400">{module.badge} • {module.difficulty}</div>
+            <h1 className="text-3xl font-extrabold text-cyan-300 drop-shadow-lg">{module.name} Lessons</h1>
+            <div className="text-sm text-gray-400">{module.badge} • <span className="text-yellow-400">{module.difficulty}</span></div>
           </div>
         </div>
       </div>
@@ -380,28 +392,33 @@ const TopicList: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {module.topics.map((t, i) => {
           const isCompleted = completedTopics.includes(t.id);
+          const baseClasses = "bg-black/40 backdrop-blur-md p-5 rounded-xl shadow-xl hover:shadow-cyan-500/40 cursor-pointer transition transform hover:scale-[1.02] border";
+          const borderClasses = isCompleted ? 'border-green-500/50 shadow-green-500/20' : 'border-indigo-600/50 hover:border-cyan-400/50';
+
           return (
-            <div 
+            <motion.div 
               key={t.id} 
               onClick={() => navigate(t.id)} 
-              className={`bg-black/70 backdrop-blur-sm p-5 rounded-xl shadow hover:shadow-lg cursor-pointer border ${isCompleted ? 'border-green-500/50' : 'border-gray-800/50'}`}
+              className={`${baseClasses} ${borderClasses}`}
+              whileHover={{ scale: 1.02 }} 
+              whileTap={{ scale: 0.98 }}
             >
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-3">
-                  <div className="text-lg font-bold text-white">{t.title}</div>
-                  {isCompleted && <CheckCircle size={18} className="text-green-500" />}
+                  <div className="text-xl font-bold text-white drop-shadow-md">{t.title}</div>
+                  {isCompleted && <CheckCircle size={20} className="text-green-400 drop-shadow-lg" />}
                 </div>
-                <div className="text-sm text-gray-400">Lesson {i + 1}</div>
+                <div className="text-sm text-gray-400 font-mono">L{i + 1}</div>
               </div>
-              <div className="text-xs text-gray-400">{t.analogy}</div>
+              <div className="text-xs text-cyan-400 mb-2 italic">"{t.analogy}"</div>
               <div className="text-sm text-gray-300 mt-2">
                 {t.instructions.slice(0, 140)}{t.instructions.length > 140 ? "..." : ""}
               </div>
-              <div className="flex justify-between items-center mt-4 text-xs text-gray-400">
-                <div>Examples: {t.examples.length}</div>
-                <div>Problems: {t.problems.length}</div>
+              <div className="flex justify-between items-center mt-4 text-xs text-gray-400 border-t border-gray-700/50 pt-2">
+                <div>Examples: <span className="font-semibold text-white">{t.examples.length}</span></div>
+                <div>Problems: <span className="font-semibold text-white">{t.problems.length}</span></div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
@@ -410,7 +427,7 @@ const TopicList: React.FC = () => {
 };
 
 /* =========================
-   Lesson page (Unchanged)
+   Lesson page (UPDATED: Glassmorphic and Neon Look)
    ========================= */
 const LessonPage: React.FC = () => {
   const { languageId, topicId } = useParams<{ languageId: string; topicId: string }>();
@@ -420,7 +437,7 @@ const LessonPage: React.FC = () => {
   const lesson = module?.topics.find((t) => t.id === topicId) || null;
 
   const [code, setCode] = useState<string>(lesson?.starterCode || "");
-  const [tab, setTab] = useState<"Examples" | "Challenge" | "Ask">("Examples");
+  const [tab, setTab] = useState<"Examples" | "Challenge" | "Ask">("Challenge"); // Default to Challenge
   const [terminal, setTerminal] = useState<string>("Ready. Press RUN to execute your code.");
   const [goalMet, setGoalMet] = useState<boolean>(false);
   const [progressStore, setProgressStore] = useState<ProgressStore>(loadProgress());
@@ -496,36 +513,38 @@ const LessonPage: React.FC = () => {
     <div className="min-h-screen p-6 md:p-10 text-white">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <button onClick={() => navigate(`/codinghub/${languageId}`)} className="bg-indigo-600 text-white py-1 px-3 rounded mr-3">← Back to Lessons</button>
-          <span className="text-xl font-bold text-indigo-300">{module.name} • </span>
-          <span className="text-lg text-gray-300 ml-2">{lesson.title}</span>
+          <button onClick={() => navigate(`/codinghub/${languageId}`)} className="bg-indigo-600 hover:bg-indigo-500 text-white py-2 px-4 rounded-lg mr-3 shadow-md shadow-indigo-600/50 transition transform hover:scale-[1.05]">← Back to Lessons</button>
+          <span className="text-xl font-bold text-cyan-300">{module.name} • </span>
+          <span className="text-lg text-white ml-2">{lesson.title}</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-sm text-gray-300">XP: {(progressStore.xp || 0)}</div>
+          <div className="text-sm text-gray-300 font-semibold">XP: <span className="text-yellow-400">{(progressStore.xp || 0)}</span></div>
           <BadgeSmall text={`${(progressStore.completed[module.id] || []).length} done`} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column: explanation, examples */}
+        {/* Left column: explanation, examples, CodeBuddy */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-black/70 backdrop-blur-sm rounded-xl p-4 shadow">
-            <h2 className="font-bold text-lg text-yellow-300 mb-2">{lesson.title}</h2>
+          {/* Explanation Card */}
+          <div className="bg-black/40 backdrop-blur-md rounded-xl p-4 shadow-xl border border-indigo-500/30 transform transition hover:scale-[1.01] hover:shadow-indigo-500/40">
+            <h2 className="font-bold text-xl text-yellow-300 mb-2">{lesson.title}</h2>
             <p className="text-gray-300 mb-3">{lesson.explanation}</p> 
-            <div className="bg-indigo-950 p-3 rounded text-sm">
-              <strong>How to think about this:</strong>
+            <div className="bg-indigo-950/70 p-3 rounded-lg text-sm border border-indigo-700/50">
+              <strong className="text-indigo-300">How to think about this:</strong>
               <div className="mt-1 text-gray-200">{lesson.analogy}</div>
             </div>
           </div>
 
-          <div className="bg-black/70 backdrop-blur-sm rounded-xl p-3 shadow space-y-3">
-            <div className="font-semibold text-sm text-gray-200">Examples (copy to IDE)</div>
+          {/* Examples Card */}
+          <div className="bg-black/40 backdrop-blur-md rounded-xl p-3 shadow-xl border border-indigo-500/30 space-y-3 transform transition hover:scale-[1.01] hover:shadow-indigo-500/40">
+            <div className="font-semibold text-sm text-cyan-400 border-b border-gray-700/50 pb-2">Examples (copy to IDE)</div>
             {lesson.examples.map((ex) => (
-              <div key={ex.id} className="text-sm border rounded p-2 bg-gray-800">
+              <div key={ex.id} className="text-sm border rounded-lg p-3 bg-gray-900/50 border-gray-700/50">
                 <div className="font-semibold text-white">{ex.title}</div>
-                <pre className="text-sm font-mono text-green-300 whitespace-pre-wrap bg-transparent p-1 rounded">{ex.code}</pre>
-                <div className="text-xs text-gray-300">{ex.explanation}</div>
-                <button onClick={() => setCode(ex.code)} className="mt-2 text-xs bg-indigo-600 text-white px-2 py-1 rounded">Copy to IDE</button>
+                <pre className="text-sm font-mono text-green-300 whitespace-pre-wrap bg-gray-950/80 p-2 rounded mt-1 border border-green-600/30">{ex.code}</pre>
+                <div className="text-xs text-gray-400 mt-2">{ex.explanation}</div>
+                <button onClick={() => setCode(ex.code)} className="mt-2 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg transition">Copy to IDE</button>
               </div>
             ))}
           </div>
@@ -535,61 +554,72 @@ const LessonPage: React.FC = () => {
 
         {/* Right column: IDE and terminal */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-black/70 backdrop-blur-sm p-3 rounded-xl shadow flex items-center justify-between">
+          {/* Tabs and Expected Output */}
+          <div className="bg-black/40 backdrop-blur-md p-3 rounded-xl shadow-xl flex items-center justify-between border border-pink-600/30">
             <div className="flex gap-2">
-              <button onClick={() => setTab("Examples")} className={`px-3 py-1 rounded ${tab === "Examples" ? "bg-indigo-600 text-white" : "text-gray-300"}`}>Examples</button>
-              <button onClick={() => setTab("Challenge")} className={`px-3 py-1 rounded ${tab === "Challenge" ? "bg-indigo-600 text-white" : "text-gray-300"}`}>Challenge</button>
-              <button onClick={() => setTab("Ask")} className={`px-3 py-1 rounded ${tab === "Ask" ? "bg-indigo-600 text-white" : "text-gray-300"}`}>Ask Buddy</button>
+              <button onClick={() => setTab("Examples")} className={`px-4 py-2 rounded-lg font-semibold transition ${tab === "Examples" ? "bg-cyan-600 text-white shadow-md shadow-cyan-600/50" : "text-gray-300 hover:text-cyan-400"}`}>Examples</button>
+              <button onClick={() => setTab("Challenge")} className={`px-4 py-2 rounded-lg font-semibold transition ${tab === "Challenge" ? "bg-cyan-600 text-white shadow-md shadow-cyan-600/50" : "text-gray-300 hover:text-cyan-400"}`}>Challenge</button>
+              <button onClick={() => setTab("Ask")} className={`px-4 py-2 rounded-lg font-semibold transition ${tab === "Ask" ? "bg-cyan-600 text-white shadow-md shadow-cyan-600/50" : "text-gray-300 hover:text-cyan-400"}`}>Ask Buddy</button>
             </div>
-            <div className="text-sm text-gray-400">Expected: <span className="font-mono text-yellow-300 ml-2">{lesson.expectedOutput}</span></div>
+            <div className="text-sm text-gray-400">Expected: <span className="font-mono text-pink-300 ml-2">{lesson.expectedOutput}</span></div>
           </div>
 
-          <div className="bg-black rounded-xl p-3 shadow-inner border border-pink-600">
+          {/* Code Editor */}
+          <div className="bg-gray-950 rounded-xl p-4 shadow-2xl shadow-pink-600/40 border-2 border-pink-600/70">
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full h-48 bg-black text-green-300 p-3 rounded font-mono text-lg leading-relaxed resize-none focus:outline-none border-0"
+              // Enhanced Code Editor Look
+              className="w-full h-64 bg-transparent text-green-300 p-3 rounded-lg font-mono text-base leading-relaxed resize-none focus:outline-none border-0 caret-green-400"
             />
-            <div className="flex items-center justify-between mt-3">
-              <div className="flex gap-2">
-                <button onClick={runCode} disabled={isRunning} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-                  {isRunning ? "Running..." : "▶ RUN"}
+            <div className="flex items-center justify-between mt-3 border-t border-gray-800 pt-3">
+              <div className="flex gap-3">
+                <button onClick={runCode} disabled={isRunning} className="bg-green-600 hover:bg-green-500 text-white px-5 py-2 rounded-lg font-bold shadow-lg shadow-green-600/50 transition transform hover:scale-[1.05]">
+                  {isRunning ? "Running..." : "▶ RUN CODE"}
                 </button>
-                <button onClick={() => setCode(lesson.starterCode)} className="bg-gray-700 text-white px-3 py-2 rounded">Reset</button>
-                <button onClick={() => { navigator.clipboard?.writeText(code); alert("Copied to clipboard"); }} className="bg-indigo-600 text-white px-3 py-2 rounded">Copy</button>
+                <button onClick={() => setCode(lesson.starterCode)} className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg transition">Reset</button>
+                <button onClick={() => { navigator.clipboard?.writeText(code); alert("Copied to clipboard"); }} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg transition">Copy</button>
               </div>
               <div>
                 <button onClick={() => {
                   if (!JUDGE0_HOST || !JUDGE0_KEY) alert("Judge0 not fully configured. Running in fast simulation mode.");
                   else alert("Real execution enabled via Judge0.");
-                }} className="text-xs text-gray-400">Run mode</button>
+                }} className="text-xs text-gray-500 hover:text-white transition">Run mode</button>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
-              <div className="bg-black/70 backdrop-blur-sm p-3 rounded-xl shadow min-h-[140px]">
-                <div className="font-semibold text-sm text-gray-200 mb-2">Terminal / Output</div>
+              {/* Terminal */}
+              <div className="bg-black/50 backdrop-blur-sm p-4 rounded-xl shadow-xl min-h-[160px] border border-cyan-500/30">
+                <div className="font-semibold text-sm text-cyan-400 mb-2 border-b border-gray-700/50 pb-1">Terminal / Output</div>
                 <pre className="font-mono text-sm whitespace-pre-wrap text-gray-200">{terminal}</pre>
               </div>
 
-              <div className="bg-black/70 backdrop-blur-sm p-3 rounded-xl shadow mt-4">
-                <div className="font-semibold text-sm text-gray-200 mb-2">Practice Problems (Use the IDE to solve them!)</div>
-                <ol className="list-decimal ml-4 text-sm space-y-2 text-gray-300">
+              {/* Practice Problems */}
+              <div className="bg-black/40 backdrop-blur-md p-4 rounded-xl shadow-xl mt-4 border border-indigo-500/30">
+                <div className="font-semibold text-sm text-purple-400 mb-2 border-b border-gray-700/50 pb-1">Practice Problems</div>
+                <ol className="list-decimal ml-5 text-sm space-y-2 text-gray-300">
                   {lesson.problems.slice(0, 8).map((p, idx) => <li key={idx}>{p}</li>)}
                 </ol>
-                <div className="text-xs text-gray-400 mt-2">Type your solution in the editor, press RUN, and ask Code Buddy if you get stuck.</div>
+                <div className="text-xs text-gray-400 mt-3 border-t border-gray-800 pt-2">Type your solution in the editor, press RUN, and ask Code Buddy if you get stuck.</div>
               </div>
             </div>
 
+            {/* Challenge Status / Next Button */}
             <div>
-              <div className="bg-black/70 backdrop-blur-sm p-3 rounded-xl shadow">
-                <div className="font-semibold text-sm text-gray-200 mb-2">Challenge Status</div>
-                <div className="text-sm text-gray-300">{lesson.instructions}</div>
-                <div className="mt-3 text-xs text-gray-400">Hint: achieve the expected output *and* use the required keywords.</div>
-                <div className="mt-3">
-                  <button onClick={() => { if (goalMet) goNext(); else alert("Complete the challenge first (pass the run check)."); }} className={`w-full px-3 py-2 rounded ${goalMet ? "bg-pink-600 text-white" : "bg-gray-700 text-gray-400"}`}>{goalMet ? "Next Lesson →" : "Complete Challenge First"}</button>
+              <div className="bg-black/40 backdrop-blur-md p-4 rounded-xl shadow-xl border border-yellow-500/30 min-h-[160px] flex flex-col justify-between transform transition hover:scale-[1.01] hover:shadow-yellow-500/40">
+                <div>
+                    <div className="font-semibold text-sm text-yellow-400 mb-2 border-b border-gray-700/50 pb-1">Challenge Status</div>
+                    <div className="text-sm text-gray-300">{lesson.instructions}</div>
+                    <div className="mt-3 text-xs text-gray-400">Hint: achieve the expected output *and* use the required keywords.</div>
+                </div>
+                
+                <div className="mt-4">
+                  <button onClick={() => { if (goalMet) goNext(); else alert("Complete the challenge first (pass the run check)."); }} className={`w-full px-4 py-2 rounded-lg font-bold transition transform hover:scale-[1.03] ${goalMet ? "bg-pink-600 hover:bg-pink-500 text-white shadow-lg shadow-pink-600/50" : "bg-gray-700 text-gray-400 cursor-not-allowed"}`}>
+                    {goalMet ? "Next Lesson →" : "Complete Challenge First"}
+                  </button>
                 </div>
               </div>
             </div>
@@ -602,19 +632,30 @@ const LessonPage: React.FC = () => {
 };
 
 /* =========================
-   Main CodingHub routes (Unchanged)
+   Main CodingHub routes (No change needed here, styles are applied via child components)
    ========================= */
 const CodingHub: React.FC = () => {
   // --- START: Theme Background Logic ---
   const theme = useThemeStore((state) => state.getThemeStyles());
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
 
+  // 🔥 PRELOAD ALL BACKGROUND IMAGES — FIXES THE FLICKER (Copied from ExploreMenu)
+  useEffect(() => {
+    if (theme.backgrounds) {
+      theme.backgrounds.forEach((src) => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+  }, [theme.backgrounds]);
+
+  // 🎯 CAROUSEL INTERVAL - 20 SECONDS (Matching ExploreMenu)
   useEffect(() => {
     const backgrounds = theme.backgrounds;
     if (backgrounds && backgrounds.length > 1) {
       const interval = setInterval(() => {
         setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
-      }, 5000);
+      }, 20000); // 20 SECONDS
       return () => clearInterval(interval);
     }
   }, [theme.backgrounds]);
@@ -623,19 +664,29 @@ const CodingHub: React.FC = () => {
   // --- END: Theme Background Logic ---
 
   return (
-    <div
-      className="min-h-screen relative overflow-y-auto" 
-      style={{
-        backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed', 
-        transition: 'background-image 1s ease-in-out',
-      }}
-    >
-      <div className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"></div>
+    <div className="min-h-screen relative overflow-hidden">
       
-      <div className="relative z-10 min-h-screen">
+      {/* 🔥 SEAMLESS CROSSFADE - NO BLACK SCREEN (Copied logic from ExploreMenu) */}
+      <div className="absolute inset-0 overflow-hidden">
+        {theme.backgrounds?.map((bg, index) => (
+          <div
+            key={bg}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ 
+              backgroundImage: `url(${bg})`,
+              zIndex: index === currentBackgroundIndex ? 10 : 0, 
+              opacity: index === currentBackgroundIndex ? 1 : 0, 
+              transition: 'opacity 1.2s ease-in-out', 
+              backgroundAttachment: 'fixed', 
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Black overlay - z-20 to stay above backgrounds (UPDATED: Deeper, cosmic gradient overlay) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-sm z-20"></div>
+      
+      <div className="relative z-30 min-h-screen">
         <Routes>
           <Route path="/" element={<ModuleDashboard />} /> 
           <Route path=":languageId" element={<TopicList />} />

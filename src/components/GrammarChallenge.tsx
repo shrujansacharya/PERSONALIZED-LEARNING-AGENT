@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, ArrowLeft, Star, Trophy, Rotate3D } from 'lucide-react';
+import { BookOpen, ArrowLeft, Star, Trophy, Rotate3D, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GeminiService } from '../lib/gemini-service';
@@ -28,12 +28,14 @@ export const GrammarChallenge = () => {
   const [userAnswer, setUserAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
   const [answered, setAnswered] = useState(false);
+  const [imagesPreloaded, setImagesPreloaded] = useState(false); 
+
 
   // Theme state from the store
   const { getThemeStyles } = useThemeStore();
   const theme = getThemeStyles();
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
-  const currentBackground = theme.backgrounds?.[currentBackgroundIndex] || (theme.backgrounds && theme.backgrounds.length > 0 ? theme.backgrounds[0] : '');
+  // Removed currentBackground variable as it's replaced by the crossfade logic
 
   const fallbackProfile = {
     user_id: 'test-user-id',
@@ -46,6 +48,38 @@ export const GrammarChallenge = () => {
     badges: []
   };
 
+  // 🔥 PRELOAD ALL BACKGROUND IMAGES — FIXES THE FLICKER
+  useEffect(() => {
+    const backgrounds = theme.backgrounds;
+    if (backgrounds && backgrounds.length > 0) {
+        let loadedCount = 0;
+        const total = backgrounds.length;
+
+        backgrounds.forEach((src) => {
+            const img = new Image();
+            img.onload = () => {
+                loadedCount++;
+                if (loadedCount === total) {
+                    setImagesPreloaded(true);
+                }
+            };
+            img.onerror = () => {
+                // Treat failed loads as loaded to prevent indefinite waiting
+                loadedCount++;
+                if (loadedCount === total) {
+                    setImagesPreloaded(true);
+                }
+            };
+            img.src = src;
+        });
+
+        if (total === 0) setImagesPreloaded(true);
+    } else {
+        // If no backgrounds, proceed immediately
+        setImagesPreloaded(true); 
+    }
+  }, [theme.backgrounds]);
+
   useEffect(() => {
     fetchProfile();
     checkAttempts();
@@ -53,9 +87,10 @@ export const GrammarChallenge = () => {
     generateGrammarChallenge();
     const backgrounds = theme.backgrounds;
     if (backgrounds && backgrounds.length > 1) {
+      // UPDATED: Interval set to 20 seconds (20000ms) to match ExploreMenu
       const interval = setInterval(() => {
         setCurrentBackgroundIndex((prev) => (prev + 1) % backgrounds.length);
-      }, 5000);
+      }, 20000); 
       return () => clearInterval(interval);
     }
   }, [selectedGrade, theme.backgrounds]);
@@ -220,7 +255,7 @@ export const GrammarChallenge = () => {
       ] : grade === '7-9' ? [
         { id: 1, grade, title: 'Present Continuous Tense', rule: 'Use for actions happening right now.', example: 'She is reading a book.', structure: 'subject + is/are + verb-ing', exercise: 'She _____ a book.', expected: 'is reading' },
         { id: 2, grade, title: 'Past Continuous Tense', rule: 'Use for actions that were ongoing in the past.', example: 'They were playing football.', structure: 'subject + was/were + verb-ing', exercise: 'They _____ football.', expected: 'were playing' },
-        { id: 3, grade, title: 'Comparative Adjectives', rule: 'Use to compare two things.', example: 'This book is bigger than that one.', structure: 'adjective + -er + than', exercise: 'This book is _____ than that one.', expected: 'bigger' },
+        { id: 3, grade: 'Comparative Adjectives', rule: 'Use to compare two things.', example: 'This book is bigger than that one.', structure: 'adjective + -er + than', exercise: 'This book is _____ than that one.', expected: 'bigger' },
         { id: 4, grade, title: 'Modal Verbs: Must', rule: 'Use "must" for obligation.', example: 'You must finish your homework.', structure: 'subject + must + base verb', exercise: 'You _____ finish your homework.', expected: 'must' },
         { id: 5, grade, title: 'Prepositions of Place', rule: 'Use to describe location.', example: 'The cat is under the table.', structure: 'subject + is/are + preposition + noun', exercise: 'The cat is _____ the table.', expected: 'under' },
         { id: 6, grade, title: 'Simple Future Tense', rule: 'Use "will" for future actions.', example: 'I will call you later.', structure: 'subject + will + base verb', exercise: 'I _____ call you later.', expected: 'will' },
@@ -323,89 +358,93 @@ export const GrammarChallenge = () => {
     return <span>{displayText}</span>;
   };
 
-  if (loading) {
+  const BackgroundLayers: React.FC = () => (
+    <>
+      {/* 🔥 SEAMLESS CROSSFADE - z-0/z-10 */}
+      <div className="absolute inset-0 overflow-hidden">
+        {theme.backgrounds?.map((bg, index) => (
+          <motion.div
+            key={bg}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ 
+              backgroundImage: `url(${bg})`,
+              zIndex: index === currentBackgroundIndex ? 10 : 0, // Active: z-10, Inactive: z-0
+              backgroundAttachment: 'fixed',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: index === currentBackgroundIndex ? 1 : 0 
+            }}
+            transition={{ 
+              duration: 1.2, 
+              ease: "easeInOut" 
+            }}
+          />
+        ))}
+      </div>
+      {/* Deep Cosmic Gradient Overlay - z-20 */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-20"></div>
+    </>
+  );
+
+  if (loading || !imagesPreloaded) { // Check both grammar loading and image preloading
     return (
       <div
-        className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gray-900"
-        style={{
-          backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
+        className="min-h-screen flex items-center justify-center relative overflow-hidden bg-black"
       >
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-0"></div>
+        <BackgroundLayers /> 
 
-        <div className="absolute inset-0 z-5">
-          {[...Array(50)].map((_, i) => (
+        {/* Loading Spinner & Text - z-50 */}
+        <div className="absolute inset-0 z-50 flex items-center justify-center">
+            
+            {/* Background for the spinner panel to ensure contrast */}
             <motion.div
-              key={i}
-              className="absolute rounded-full bg-purple-400"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                width: `${1 + Math.random() * 2}px`,
-                height: `${1 + Math.random() * 2}px`,
-              }}
-              animate={{
-                y: [0, (Math.random() > 0.5 ? 1 : -1) * Math.random() * 200],
-                x: [0, (Math.random() > 0.5 ? 1 : -1) * Math.random() * 200],
-                opacity: [0, 1, 0],
-              }}
-              transition={{
-                duration: 1.5 + Math.random() * 2,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-            />
-          ))}
-        </div>
-        
-        <motion.div
-          className="bg-black/80 backdrop-blur-xl rounded-3xl p-10 shadow-2xl border border-white/10 text-center relative z-10 max-w-lg w-full"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-        >
-          <motion.div className="relative mb-6 w-16 h-16 mx-auto">
-            <motion.div
-              animate={{ scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] }}
-              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+              className="bg-black/80 backdrop-blur-xl rounded-3xl p-10 shadow-2xl border border-white/10 text-center relative z-10 max-w-lg w-full"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
             >
-              <BookOpen className="text-purple-400 w-16 h-16" />
+              <motion.div className="relative mb-6 w-16 h-16 mx-auto">
+                <motion.div
+                  animate={{ scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <BookOpen className="text-purple-400 w-16 h-16" />
+                </motion.div>
+                <motion.div
+                  className="absolute top-0 left-0 w-full h-0.5 bg-cyan-300/80"
+                  style={{ boxShadow: '0 0 8px #67e8f9' }}
+                  animate={{ y: [0, 64], opacity: [0.8, 0] }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "circIn" }}
+                />
+              </motion.div>
+
+              <h2 className="text-3xl font-bold text-white mb-3 font-mono tracking-wide">
+                <ScrambleText text="Crafting Your Adventure!" />
+              </h2>
+
+              <p className="text-white/70 text-lg mb-6">
+                Generating personalized exercises...
+              </p>
+
+              <div className="w-full bg-white/10 rounded-full h-2.5 mb-6 overflow-hidden">
+                <motion.div
+                  className="bg-gradient-to-r from-purple-500 to-cyan-400 h-full"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                />
+              </div>
+
+              <motion.div
+                className="text-purple-300 text-sm font-medium"
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+              >
+                🚀 Get ready to level up your grammar skills!
+              </motion.div>
             </motion.div>
-            <motion.div
-              className="absolute top-0 left-0 w-full h-0.5 bg-cyan-300/80"
-              style={{ boxShadow: '0 0 8px #67e8f9' }}
-              animate={{ y: [0, 64], opacity: [0.8, 0] }}
-              transition={{ duration: 1, repeat: Infinity, ease: "circIn" }}
-            />
-          </motion.div>
-
-          <h2 className="text-3xl font-bold text-white mb-3 font-mono tracking-wide">
-             <ScrambleText text="Crafting Your Adventure!" />
-          </h2>
-
-          <p className="text-white/70 text-lg mb-6">
-            Generating personalized exercises...
-          </p>
-
-          <div className="w-full bg-white/10 rounded-full h-2.5 mb-6 overflow-hidden">
-             <motion.div
-               className="bg-gradient-to-r from-purple-500 to-cyan-400 h-full"
-               initial={{ width: '0%' }}
-               animate={{ width: '100%' }}
-               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-             />
-          </div>
-
-          <motion.div
-            className="text-purple-300 text-sm font-medium"
-            animate={{ opacity: [0.7, 1, 0.7] }}
-            transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-          >
-            🚀 Get ready to level up your grammar skills!
-          </motion.div>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -413,39 +452,35 @@ export const GrammarChallenge = () => {
   if (showCompletion) {
     return (
       <div 
-        className="min-h-screen p-8 flex items-center justify-center"
-        style={{
-          backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
+        className="min-h-screen p-8 flex items-center justify-center relative overflow-hidden"
       >
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-0"></div>
+        <BackgroundLayers />
         <motion.div
-          className="bg-black/70 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 text-center max-w-md relative z-10"
+          // UPDATED: Glassmorphic completion screen with neon border/shadow
+          className="bg-black/70 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-purple-500/30 border border-purple-500/50 text-center max-w-md relative z-30"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
         >
-          <Trophy className="text-yellow-400 mx-auto mb-4" size={64} />
+          <Trophy className="text-yellow-400 mx-auto mb-4 drop-shadow-lg" size={64} />
           <h2 className="text-3xl font-bold text-white mb-4">Challenge Completed!</h2>
           <p className="text-white/80 mb-6">Great job! You've improved your grammar skills.</p>
-          <p className="text-white text-lg mb-6">Your grammar progress: {progress}%</p>
+          <p className="text-white text-lg mb-6 border-y border-white/20 py-3">Your grammar progress: <span className='text-cyan-400 font-bold'>{progress}%</span></p>
           {canReattempt && !isLocked && (
             <motion.button
               onClick={handleReattempt}
-              className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-8 py-3 rounded-lg font-medium shadow-lg hover:from-purple-600 hover:to-indigo-600 transition-all"
+              className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-8 py-3 rounded-lg font-medium shadow-lg shadow-purple-500/40 hover:from-purple-600 hover:to-indigo-600 transition-all"
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             >
               Reattempt Challenge
             </motion.button>
           )}
           {isLocked && (
-            <p className="text-white/80">You've reached the daily attempt limit. Come back tomorrow!</p>
+            <p className="text-white/80 bg-red-500/20 border border-red-500/30 p-3 rounded-lg">You've reached the daily attempt limit. Come back tomorrow!</p>
           )}
           <motion.button
             onClick={() => navigate(-1)}
-            className="mt-4 text-white underline"
+            className="mt-4 text-cyan-400 underline hover:text-white transition"
             whileHover={{ scale: 1.05 }}
           >
             Previous Page
@@ -457,25 +492,22 @@ export const GrammarChallenge = () => {
 
   return (
     <div 
-      className="min-h-screen p-8"
-      style={{
-        backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
+      className="min-h-screen p-8 relative overflow-hidden"
     >
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-0"></div>
-      <div className="max-w-4xl mx-auto space-y-8 relative z-10">
+      <BackgroundLayers />
+      <div className="max-w-4xl mx-auto space-y-8 relative z-30">
         <motion.div
-          className="bg-black/70 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+          // UPDATED: Glassmorphic header panel
+          className="bg-black/70 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-indigo-500/30 border border-indigo-500/50"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
           <div className="flex items-center justify-between mb-6">
             <button
+              // UPDATED: Glassmorphic button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition"
+              className="flex items-center gap-2 bg-black/40 text-white px-4 py-2 rounded-lg hover:bg-white/10 transition border border-white/20"
             >
               <ArrowLeft size={20} />
               Previous Page
@@ -485,7 +517,8 @@ export const GrammarChallenge = () => {
               <select
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value)}
-                className="px-4 py-2 rounded-xl bg-white/10 text-white border border-white/20"
+                // UPDATED: Glassmorphic select
+                className="px-4 py-2 rounded-xl bg-black/40 text-white border border-white/20 focus:ring-purple-400 focus:border-purple-400"
               >
                 <option value="4-6">4-6 (Beginner)</option>
                 <option value="7-9">7-9 (Intermediate)</option>
@@ -495,11 +528,12 @@ export const GrammarChallenge = () => {
           </div>
 
           <h1 className="text-4xl font-extrabold text-white mb-4 flex items-center gap-4">
-            <BookOpen className="text-purple-400" size={48} />
+            <BookOpen className="text-purple-400 drop-shadow-lg" size={48} />
             Grammar Practice
           </h1>
           <p className="text-lg text-white/80 mb-6">Master grammar rules with fun and simple exercises!</p>
 
+          {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-white">
               <span>Progress</span>
@@ -507,7 +541,7 @@ export const GrammarChallenge = () => {
             </div>
             <div className="bg-white/10 rounded-full h-4">
               <motion.div
-                className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full"
+                className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full shadow-lg shadow-purple-500/50"
                 animate={{ width: `${((currentRuleIndex + 1) / (grammarRules.length || 1)) * 100}%` }}
                 transition={{ duration: 0.5 }}
               />
@@ -518,63 +552,73 @@ export const GrammarChallenge = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentRuleIndex}
-            className="bg-black/70 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
-            initial={{ opacity: 0, rotateX: -20 }}
+            // UPDATED: Glassmorphic card container
+            className="bg-black/70 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-cyan-500/30 border border-cyan-500/50"
+            initial={{ opacity: 0, rotateX: -10 }}
             animate={{ opacity: 1, rotateX: 0 }}
-            exit={{ opacity: 0, rotateX: 20 }}
-            transition={{ duration: 0.8 }}
+            exit={{ opacity: 0, rotateX: 10 }}
+            transition={{ duration: 0.6 }}
           >
             {currentRule && (
               <div className="space-y-6">
+                {/* Rule Title/Description */}
                 <motion.div
-                  className="bg-white/5 p-8 rounded-2xl text-center"
+                  // UPDATED: Glassmorphic inner card
+                  className="bg-white/10 p-8 rounded-2xl text-center border border-white/10 shadow-lg"
+                  whileHover={{ scale: 1.01 }}
                 >
-                  <h2 className="text-3xl font-bold text-white mb-2">{currentRule.title}</h2>
+                  <h2 className="text-3xl font-bold text-cyan-300 mb-2">{currentRule.title}</h2>
                   <p className="text-white/80 text-lg">{currentRule.rule}</p>
                 </motion.div>
 
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div className="bg-white/5 p-6 rounded-2xl">
-                    <h3 className="text-xl font-semibold text-white mb-3">Example</h3>
+                  <div className="bg-white/10 p-6 rounded-2xl border border-white/10 shadow-md">
+                    <h3 className="text-xl font-semibold text-purple-300 mb-3">Example</h3>
                     <p className="text-white/80 italic">"{currentRule.example}"</p>
                   </div>
-                  <div className="bg-white/5 p-6 rounded-2xl">
-                    <h3 className="text-xl font-semibold text-white mb-3">Structure</h3>
+                  <div className="bg-white/10 p-6 rounded-2xl border border-white/10 shadow-md">
+                    <h3 className="text-xl font-semibold text-purple-300 mb-3">Structure</h3>
                     <p className="text-white/80 font-mono">{currentRule.structure}</p>
                   </div>
                 </div>
 
-                <div className="bg-white/5 p-6 rounded-2xl">
-                  <h3 className="text-xl font-semibold text-white mb-3">Exercise</h3>
+                {/* Exercise */}
+                <div className="bg-white/10 p-6 rounded-2xl border border-white/10 shadow-md">
+                  <h3 className="text-xl font-semibold text-cyan-300 mb-3">Exercise</h3>
                   <p className="text-white/80 mb-4">{currentRule.exercise}</p>
                   <input
                     type="text"
                     value={userAnswer}
                     onChange={(e) => setUserAnswer(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 focus:border-purple-400 outline-none"
+                    // UPDATED: Neon input style
+                    className="w-full px-4 py-2 rounded-lg bg-black/40 text-white border border-purple-400/50 focus:ring-purple-400 focus:border-purple-400 outline-none transition"
                     placeholder="Fill in the blank..."
                     disabled={answered}
                   />
                 </div>
 
                 {feedback && (
-                  <div className="bg-green-500/20 text-green-100 p-4 rounded-xl">
-                    <strong>Feedback:</strong> {feedback}
-                  </div>
+                  <motion.div 
+                    className="bg-green-500/30 text-white p-4 rounded-xl border border-green-500/50"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <strong className='text-green-300'>Feedback:</strong> {feedback}
+                  </motion.div>
                 )}
 
                 <div className="flex justify-center gap-4">
                   <motion.button
                     onClick={verifyAnswer}
-                    className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-3 rounded-lg font-medium shadow-lg hover:from-blue-600 hover:to-cyan-600 transition-all"
+                    className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-3 rounded-lg font-medium shadow-lg shadow-cyan-500/40 hover:from-blue-600 hover:to-cyan-600 transition-all"
                     whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                     disabled={!userAnswer || answered}
                   >
-                    Submit Answer
+                    <Send size={20} className='inline mr-2' /> Submit Answer
                   </motion.button>
                   <motion.button
                     onClick={nextRule}
-                    className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-8 py-3 rounded-lg font-medium shadow-lg hover:from-purple-600 hover:to-indigo-600 transition-all"
+                    className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-8 py-3 rounded-lg font-medium shadow-lg shadow-purple-500/40 hover:from-purple-600 hover:to-indigo-600 transition-all"
                     whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                     disabled={!answered}
                   >

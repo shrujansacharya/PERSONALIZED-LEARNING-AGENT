@@ -1,6 +1,6 @@
 // CasualConversationPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Volume2, ArrowLeft, RefreshCw, User, Bot, MessageSquare } from 'lucide-react';
+import { Mic, Volume2, ArrowLeft, RefreshCw, User, Bot, MessageSquare, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GeminiService } from '../lib/gemini-service';
@@ -181,39 +181,47 @@ export const CasualConversationPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-pink-800 to-red-700 p-8">
-      <div className="max-w-4xl mx-auto flex gap-8">
+      {/* Background Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-0"></div>
+      
+      <div className="max-w-4xl mx-auto flex gap-8 relative z-10">
         <motion.div
-          className="w-64 bg-white/10 backdrop-blur-md rounded-3xl p-6 shadow-2xl border border-white/20 space-y-6"
+          // UPDATED: Glassmorphic Options Panel
+          className="w-64 bg-black/70 backdrop-blur-xl rounded-3xl p-6 shadow-2xl shadow-purple-500/30 border border-purple-500/50 space-y-6"
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <h2 className="text-2xl font-bold text-white mb-4">Options</h2>
+          <h2 className="text-2xl font-bold text-pink-300 mb-4">Options</h2>
           <div className="space-y-4">
             <div>
               <label className="text-white text-sm mb-1 block">Select Level</label>
               <select
                 value={currentLevel}
                 onChange={handleLevelChange}
-                className="w-full bg-white/20 text-white border border-white/30 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                // UPDATED: Neon select input
+                className="w-full bg-black/40 text-white border border-pink-400/50 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-pink-400"
               >
                 <option value="Beginner">Beginner</option>
                 <option value="Intermediate">Intermediate</option>
                 <option value="Advanced">Advanced</option>
               </select>
             </div>
-            <button
+            <motion.button
               onClick={clearConversation}
-              className="w-full p-2 rounded-lg text-left text-white bg-red-500/20 hover:bg-red-500/30 transition-all"
+              // UPDATED: Neon button
+              className="w-full p-2 rounded-lg text-left text-white bg-red-600/50 hover:bg-red-500/60 transition-all border border-red-500/30 shadow-md shadow-red-500/30"
+              whileHover={{ scale: 1.05 }}
             >
               Clear Conversation
-            </button>
+            </motion.button>
           </div>
         </motion.div>
 
         <div className="flex-1 space-y-8">
           <motion.div
-            className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20"
+            // UPDATED: Glassmorphic Header Panel
+            className="bg-black/70 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-indigo-500/30 border border-indigo-500/50"
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -221,15 +229,15 @@ export const CasualConversationPage = () => {
             <div className="relative mb-6">
               <motion.button
                 onClick={() => navigate('/speaking', { state: { level: currentLevel } })}
-                className="absolute left-0 top-0 text-white hover:text-yellow-400 transition-colors p-2 rounded-lg bg-white/10"
+                className="absolute left-0 top-0 text-white hover:text-yellow-400 transition-colors p-3 rounded-lg bg-black/40 border border-white/20"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
                 <ArrowLeft size={24} />
               </motion.button>
               <h1 className="text-5xl font-extrabold text-white flex items-center justify-center gap-4">
-                <MessageSquare className="text-purple-400" size={48} />
-                Casual Conversation ({currentLevel})
+                <MessageSquare className="text-purple-400 drop-shadow-lg" size={48} />
+                Casual Conversation (<span className='text-pink-400'>{currentLevel}</span>)
               </h1>
             </div>
             <p className="text-lg text-white/80 mb-8 text-center">
@@ -237,7 +245,8 @@ export const CasualConversationPage = () => {
             </p>
           </motion.div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20 space-y-4 max-h-96 overflow-y-auto">
+          {/* Conversation Area */}
+          <div className="bg-black/70 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 space-y-4 max-h-[60vh] overflow-y-auto">
             <AnimatePresence>
               {conversation.map((msg, index) => (
                 <motion.div
@@ -249,23 +258,24 @@ export const CasualConversationPage = () => {
                   className={`flex items-start gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {msg.role !== 'user' && (
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-cyan-500/50 flex items-center justify-center">
-                      {msg.role === 'bot' ? <Bot className="text-white" size={20} /> : <User className="text-white" size={20} />}
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-cyan-500/50 flex items-center justify-center border border-cyan-400/50">
+                      {msg.role === 'bot' ? <Bot className="text-white" size={20} /> : <MessageSquare className="text-white" size={20} />}
                     </div>
                   )}
                   <div
-                    className={`p-4 rounded-xl max-w-[80%] shadow-md ${
+                    className={`p-4 rounded-xl max-w-[80%] shadow-lg border border-white/10 ${
+                      // UPDATED: Neon/Glass bubble styling
                       msg.role === 'user'
-                        ? 'bg-purple-600 text-white rounded-br-none'
+                        ? 'bg-purple-600/80 text-white rounded-br-none' // User: Purple
                         : msg.role === 'bot'
-                        ? 'bg-pink-600 text-white rounded-bl-none'
-                        : 'bg-red-600 text-white rounded-bl-none'
+                        ? 'bg-pink-600/80 text-white rounded-bl-none' // AI Friend: Pink
+                        : 'bg-red-600/80 text-white rounded-bl-none' // Feedback: Red
                     }`}
                   >
-                    <strong>{msg.role === 'user' ? 'You:' : msg.role === 'bot' ? 'AI Friend:' : 'Feedback:'}</strong> {msg.text}
+                    <strong className='text-yellow-200'>{msg.role === 'user' ? 'You:' : msg.role === 'bot' ? 'AI Friend:' : 'Feedback:'}</strong> {msg.text}
                   </div>
                   {msg.role === 'user' && (
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-500/50 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-500/50 flex items-center justify-center border border-purple-400/50">
                       <User className="text-white" size={20} />
                     </div>
                   )}
@@ -275,7 +285,7 @@ export const CasualConversationPage = () => {
             <div ref={conversationEndRef} />
           </div>
 
-          <div className="flex justify-center items-center gap-6">
+          <div className="flex justify-center items-center gap-6 mt-8">
             <motion.button
               onClick={() => {
                 console.log('Button clicked, isRecording:', isRecording);
@@ -287,19 +297,23 @@ export const CasualConversationPage = () => {
                   startRecording();
                 }
               }}
-              className={`p-6 rounded-full shadow-lg ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-purple-500'} hover:opacity-90`}
-              whileHover={{ scale: 1.1 }}
+              // UPDATED: Neon Mic Button
+              className={`p-6 rounded-full shadow-xl transition-all ${isRecording 
+                ? 'bg-red-500 animate-pulse shadow-red-500/60' 
+                : 'bg-purple-500 shadow-purple-500/60'} hover:opacity-90 border border-white/10`}
+              whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.9 }}
               disabled={status.includes('Error') || status.includes('Microphone access denied') || !isServiceReady}
             >
               <Mic size={48} className="text-white" />
             </motion.button>
-            <p className="text-white text-xl flex-1 text-center">{status}</p>
+            <p className="text-white text-xl flex-1 text-center font-medium">{status}</p>
             <motion.button
               onClick={() => speakText(conversation.slice().reverse().find((msg: { role: string }) => msg.role === 'bot')?.text || '')}
-              className="p-6 rounded-full shadow-lg bg-pink-500 hover:opacity-90"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
+              // UPDATED: Neon Volume Button
+              className="p-6 rounded-full shadow-xl bg-pink-500 shadow-pink-500/60 hover:opacity-90 border border-white/10"
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
               title="Replay last AI response"
               disabled={!conversation.some((msg) => msg.role === 'bot')}
             >

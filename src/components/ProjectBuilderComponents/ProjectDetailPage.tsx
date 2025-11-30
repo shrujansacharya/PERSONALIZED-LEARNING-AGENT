@@ -18,9 +18,10 @@ const ProjectDetailPage: React.FC = () => {
   useEffect(() => {
     const backgrounds = theme.backgrounds;
     if (backgrounds && backgrounds.length > 1) {
+      // UPDATED: Adjusted interval for a slower cosmic feel (10 seconds)
       const interval = setInterval(() => {
         setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
-      }, 5000);
+      }, 10000); 
       return () => clearInterval(interval);
     }
   }, [theme.backgrounds]);
@@ -177,7 +178,9 @@ const ProjectDetailPage: React.FC = () => {
 
     setVideosLoading(true);
     try {
-      const youtubeService = new YouTubeService('AIzaSyCpN2hq1WvTVIYmVx9bi2IdG_r0aAwGErE');
+      const youtubeService = new YouTubeService(
+        import.meta.env.VITE_YOUTUBE_API_KEY);
+
       const fetchedVideos = await youtubeService.searchVideos(selectedProject.title);
 
       if (fetchedVideos.length > 0) {
@@ -339,20 +342,25 @@ If this is a new concept, start with basics and build up.\n\nFormat your respons
           backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          transition: 'background-image 1s ease-in-out',
+          // UPDATED: Slower transition for cosmic feel
+          transition: 'background-image 1.2s ease-in-out',
         }}
       >
-        {/* Background Overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-0"></div>
+        {/* Background Overlay (UPDATED: Deeper, cosmic gradient overlay + blur) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-0"></div>
 
-        <div className="text-center relative z-10 bg-white/10 backdrop-blur-md p-8 rounded-xl border border-white/20">
-          <h2 className="text-2xl font-bold text-white mb-4">Project Not Found</h2>
-          <p className="text-gray-200 mb-4">The project you're looking for doesn't exist.</p>
+        <div 
+          // UPDATED: Glassmorphism, neon border, and glowing shadow
+          className="text-center relative z-10 bg-black/40 backdrop-blur-xl p-10 rounded-2xl border border-pink-500/50 shadow-2xl shadow-pink-500/20"
+        >
+          <h2 className="text-3xl font-bold text-pink-400 mb-4 drop-shadow-lg">Project Not Found</h2>
+          <p className="text-gray-200 mb-6 text-lg">The project you're looking for doesn't exist in the current database.</p>
           <button
             onClick={handleBackNavigation}
-            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            // UPDATED: Neon button style
+            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 transition-all transform hover:scale-[1.05]"
           >
-            Go Back
+            ← Go Back to Builder
           </button>
         </div>
       </div>

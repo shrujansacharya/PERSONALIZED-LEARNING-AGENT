@@ -13,17 +13,26 @@ const ProjectBuilderMenu: React.FC = () => {
   const theme = useThemeStore((state) => state.getThemeStyles());
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
 
+  // 🔥 PRELOAD ALL BACKGROUND IMAGES — FIXES THE FLICKER
+  useEffect(() => {
+    if (theme.backgrounds) {
+      theme.backgrounds.forEach((src) => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+  }, [theme.backgrounds]);
+
+  // 🎯 CAROUSEL INTERVAL - 20 SECONDS (Matching ExploreMenu)
   useEffect(() => {
     const backgrounds = theme.backgrounds;
     if (backgrounds && backgrounds.length > 1) {
       const interval = setInterval(() => {
         setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
-      }, 5000);
+      }, 20000); // Changed to 20000ms (20 seconds)
       return () => clearInterval(interval);
     }
   }, [theme.backgrounds]);
-
-  const currentBackground = theme.backgrounds?.[currentBackgroundIndex] || '';
   // --- Theme Integration End ---
 
 
@@ -37,23 +46,42 @@ const ProjectBuilderMenu: React.FC = () => {
   return (
     <div 
       className="min-h-screen relative overflow-hidden"
-      style={{
-        backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        transition: 'background-image 1s ease-in-out',
-      }}
     >
-      {/* Background Overlay */}
-      <div className="absolute inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-0"></div>
+      
+      {/* 🔥 SEAMLESS CROSSFADE - NO BLACK SCREEN (New Background Logic) */}
+      <div className="absolute inset-0 overflow-hidden">
+        {theme.backgrounds?.map((bg, index) => (
+          <motion.div
+            key={bg}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ 
+              backgroundImage: `url(${bg})`,
+              zIndex: index === currentBackgroundIndex ? 10 : 0,
+              backgroundAttachment: 'fixed',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: index === currentBackgroundIndex ? 1 : 0 
+            }}
+            transition={{ 
+              duration: 1.2, 
+              ease: "easeInOut" 
+            }}
+          />
+        ))}
+      </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-4 flex flex-col items-center min-h-screen text-center text-white">
+      {/* Background Overlay (UPDATED: Deeper, cosmic gradient overlay + blur) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-20"></div>
+
+      <div className="relative z-30 container mx-auto px-4 py-4 flex flex-col items-center min-h-screen text-center text-white">
+        {/* Back Button (UPDATED: Glassmorphic with Neon Border) */}
         <motion.button
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
           onClick={() => (window.location.href = '/explore-menu')}
-          className="flex items-center gap-2 px-4 py-2 mb-4 self-start bg-white/10 backdrop-blur-sm text-white rounded-full hover:bg-white/20 transition-all duration-300 border border-white/20"
+          className="flex items-center gap-2 px-4 py-2 mb-8 self-start bg-black/40 backdrop-blur-lg text-white rounded-full hover:bg-white/10 transition-all duration-300 border border-indigo-500/30 hover:border-cyan-400/50 shadow-lg"
         >
           <ArrowLeft size={20} />
           Back
@@ -70,7 +98,7 @@ const ProjectBuilderMenu: React.FC = () => {
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.4 }}
-            className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight drop-shadow-2xl"
+            className="text-5xl md:text-7xl font-black text-white mb-6 leading-tight"
           >
             Build Your
             <motion.span
@@ -82,7 +110,8 @@ const ProjectBuilderMenu: React.FC = () => {
                 repeat: Infinity,
                 ease: "linear"
               }}
-              className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent"
+              // Enhanced text glow effect
+              className="bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(255,0,150,0.5)]"
             >
               {' Future'}
             </motion.span>
@@ -93,95 +122,101 @@ const ProjectBuilderMenu: React.FC = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.6 }}
-          className="text-xl md:text-2xl text-blue-100 mb-12 max-w-2xl drop-shadow-lg"
+          className="text-xl md:text-2xl text-blue-200 mb-12 max-w-2xl drop-shadow-xl"
         >
           Explore innovative software and science projects. Learn, create, and innovate with AI guidance and expert tutorials.
         </motion.p>
 
-        {/* Enhanced Action Buttons */}
+        {/* Enhanced Action Buttons (UPDATED: Neon Glow & 3D Lift) */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.8 }}
-          className="flex flex-col md:flex-row gap-6 mb-8"
+          className="flex flex-col md:flex-row gap-8 mb-10"
         >
           <motion.button
             whileHover={{
-              scale: 1.05,
+              scale: 1.08, // More pronounced lift
               rotateX: 5,
               rotateY: 5,
-              boxShadow: "0 20px 40px rgba(59, 130, 246, 0.4)"
+              boxShadow: "0 25px 50px -12px rgba(59, 130, 246, 0.4)", // Stronger shadow
             }}
             whileTap={{ scale: 0.95 }}
             onClick={() => handleViewSelect('software')}
-            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 text-lg font-semibold border border-blue-500/20"
+            // Neon Gradient Button Style
+            className="px-10 py-5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl shadow-2xl shadow-blue-500/30 hover:from-blue-500 hover:to-cyan-500 transition-all duration-300 text-xl font-bold border border-blue-400/50"
             style={{ transformStyle: 'preserve-3d' }}
           >
             🚀 Software Projects
           </motion.button>
           <motion.button
             whileHover={{
-              scale: 1.05,
+              scale: 1.08, // More pronounced lift
               rotateX: 5,
               rotateY: -5,
-              boxShadow: "0 20px 40px rgba(34, 197, 94, 0.4)"
+              boxShadow: "0 25px 50px -12px rgba(34, 197, 94, 0.4)", // Stronger shadow
             }}
             whileTap={{ scale: 0.95 }}
             onClick={() => handleViewSelect('science')}
-            className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl shadow-lg hover:from-green-700 hover:to-green-800 transition-all duration-300 text-lg font-semibold border border-green-500/20"
+            // Neon Gradient Button Style
+            className="px-10 py-5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl shadow-2xl shadow-green-500/30 hover:from-green-500 hover:to-emerald-500 transition-all duration-300 text-xl font-bold border border-green-400/50"
             style={{ transformStyle: 'preserve-3d' }}
           >
             🔬 Science Projects
           </motion.button>
         </motion.div>
 
-        {/* Enhanced Utility Buttons */}
+        {/* Enhanced Utility Buttons (UPDATED: Glassmorphic with Neon Glow) */}
 <motion.div
   initial={{ opacity: 0 }}
   animate={{ opacity: 1 }}
   transition={{ delay: 1 }}
-  className="flex items-center gap-4 justify-center"
+  className="flex items-center gap-4 justify-center mb-16"
 >
   <motion.button
-    whileHover={{ scale: 1.1 }}
+    whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(255,255,255,0.3)" }}
     whileTap={{ scale: 0.9 }}
     onClick={() => setShowStoreModal(true)}
-    className="p-3 bg-white/10 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-all duration-300 border border-white/20"
+    // Glassmorphic Utility Button
+    className="p-4 bg-black/40 backdrop-blur-lg rounded-full text-white hover:bg-white/10 transition-all duration-300 border border-white/20 shadow-lg"
   >
     <ShoppingCart size={24} />
   </motion.button>
 </motion.div>
 
-        {/* Stats Section */}
+        {/* Stats Section (UPDATED: Glassmorphic Cards with Neon Hover) */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2 }}
-          className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl"
+          transition={{ delay: 1.2, staggerChildren: 0.1 }}
+          className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl"
         >
           <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+            whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(59, 130, 246, 0.3)" }}
+            // Glassmorphic Card Style
+            className="bg-black/40 backdrop-blur-lg rounded-xl p-6 border border-white/10 transition-all duration-300 cursor-default shadow-xl"
           >
-            <div className="text-3xl mb-2">📚</div>
-            <div className="text-2xl font-bold text-white">25+</div>
-            <div className="text-blue-100">Projects</div>
+            <div className="text-4xl mb-2 text-cyan-400">📚</div>
+            <div className="text-3xl font-bold text-white">25+</div>
+            <div className="text-blue-200">Projects</div>
           </motion.div>
           <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+            whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(168, 85, 247, 0.3)" }}
+            // Glassmorphic Card Style
+            className="bg-black/40 backdrop-blur-lg rounded-xl p-6 border border-white/10 transition-all duration-300 cursor-default shadow-xl"
           >
-            <div className="text-3xl mb-2">🤖</div>
-            <div className="text-2xl font-bold text-white">AI</div>
-            <div className="text-blue-100">Powered</div>
+            <div className="text-4xl mb-2 text-purple-400">🤖</div>
+            <div className="text-3xl font-bold text-white">AI</div>
+            <div className="text-blue-200">Powered</div>
           </motion.div>
           <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+            whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(236, 72, 153, 0.3)" }}
+            // Glassmorphic Card Style
+            className="bg-black/40 backdrop-blur-lg rounded-xl p-6 border border-white/10 transition-all duration-300 cursor-default shadow-xl"
           >
-            <div className="text-3xl mb-2">🎯</div>
-            <div className="text-2xl font-bold text-white">Learn</div>
-            <div className="text-blue-100">By Doing</div>
+            <div className="text-4xl mb-2 text-pink-400">🎯</div>
+            <div className="text-3xl font-bold text-white">Learn</div>
+            <div className="text-blue-200">By Doing</div>
           </motion.div>
         </motion.div>
       </div>

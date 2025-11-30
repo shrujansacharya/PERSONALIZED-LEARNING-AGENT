@@ -34,6 +34,16 @@ export const WhatIfPage = () => {
     progress: { vocabulary: 0.8, grammar: 0.5, conversation: 0, pronunciation: 0.2, reading: 1, writing: 0.7 },
     badges: []
   };
+  
+  // 🔥 PRELOAD ALL BACKGROUND IMAGES — FIXES THE FLICKER (Copied from ExploreMenu)
+  useEffect(() => {
+    if (theme.backgrounds) {
+      theme.backgrounds.forEach((src) => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+  }, [theme.backgrounds]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -46,9 +56,10 @@ export const WhatIfPage = () => {
 
     const backgrounds = theme.backgrounds;
     if (backgrounds && backgrounds.length > 1) {
+      // 🎯 CAROUSEL INTERVAL - 20 SECONDS (Matching ExploreMenu)
       const interval = setInterval(() => {
         setCurrentBackgroundIndex(prevIndex => (prevIndex + 1) % backgrounds.length);
-      }, 4000);
+      }, 20000); // Updated to 20000ms
       return () => {
         clearInterval(interval);
         window.removeEventListener('mousemove', handleMouseMove);
@@ -134,26 +145,46 @@ export const WhatIfPage = () => {
   return (
     <div 
       className="min-h-screen relative overflow-hidden text-white font-sans"
-      style={{
-        backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `linear-gradient(135deg, rgba(15,23,42,0.8), rgba(30,58,138,0.6)), url(${theme.backgrounds[currentBackgroundIndex]})` : 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        transition: 'background-image 1s ease-in-out',
-      }}
     >
-      {/* Advanced Background Layers */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-black/40"></div>
+      
+      {/* 🔥 SEAMLESS CROSSFADE - NO BLACK SCREEN (New Background Logic - z-0/z-10) */}
+      <div className="absolute inset-0 overflow-hidden">
+        {theme.backgrounds?.map((bg, index) => (
+          <motion.div
+            key={bg}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ 
+              backgroundImage: `url(${bg})`,
+              zIndex: index === currentBackgroundIndex ? 10 : 0, // Active: z-10, Inactive: z-0
+              backgroundAttachment: 'fixed',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: index === currentBackgroundIndex ? 1 : 0 
+            }}
+            transition={{ 
+              duration: 1.2, 
+              ease: "easeInOut" 
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Advanced Background Layers (UPDATED: Deeper, cosmic gradient overlay + blur) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-sm z-20"></div>
       <motion.div 
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-20"
         animate={{ 
           background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(147,51,234,0.3) 0%, transparent 50%)`
         }}
         transition={{ duration: 0.3 }}
       />
-      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5"></div>
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500"></div>
+      {/* Grid pattern retained for visual texture */}
+      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5 z-20"></div>
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500 z-20"></div>
       
-      <div className="max-w-7xl mx-auto p-4 sm:p-8 relative z-10 space-y-12">
+      {/* Main Content (Updated z-index to z-30 to be above overlays) */}
+      <div className="max-w-7xl mx-auto p-4 sm:p-8 relative z-30 space-y-12">
         {/* Advanced Header with Profile */}
         <motion.header
           initial={{ opacity: 0, y: -50 }}
@@ -162,8 +193,9 @@ export const WhatIfPage = () => {
         >
           <motion.button
             onClick={() => navigate('/explore-menu')}
-            className="flex items-center gap-3 text-white/70 hover:text-white transition-all duration-300 p-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10"
-            whileHover={{ scale: 1.05, rotate: -5 }}
+            // UPDATED: Glassmorphic button, neon hover border
+            className="flex items-center gap-3 text-white/70 hover:text-cyan-400 transition-all duration-300 p-4 rounded-2xl bg-black/40 backdrop-blur-lg border border-indigo-400/30 hover:bg-white/10 hover:border-cyan-400/50 shadow-lg"
+            whileHover={{ scale: 1.05, rotate: -3 }}
             whileTap={{ scale: 0.95 }}
           >
             <ArrowLeft size={24} />
@@ -175,7 +207,8 @@ export const WhatIfPage = () => {
               <select
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value)}
-                className="px-6 py-3 text-sm rounded-2xl bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-400/50 backdrop-blur-md appearance-none bg-no-repeat bg-right pr-10"
+                // UPDATED: Glassmorphic select
+                className="px-6 py-3 text-sm rounded-2xl bg-black/40 text-white border border-indigo-400/30 focus:outline-none focus:ring-2 focus:ring-purple-400/50 backdrop-blur-lg appearance-none bg-no-repeat bg-right pr-10 shadow-lg"
               >
                 <option value="4-6">4-6 (Beginner)</option>
                 <option value="7-9">7-9 (Intermediate)</option>
@@ -186,7 +219,8 @@ export const WhatIfPage = () => {
 
             <motion.button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all duration-300"
+              // UPDATED: Glassmorphic button, neon hover border
+              className="flex items-center gap-3 p-3 rounded-2xl bg-black/40 backdrop-blur-lg border border-indigo-400/30 hover:bg-white/10 hover:border-pink-400/50 transition-all duration-300 shadow-lg"
               whileHover={{ scale: 1.05 }}
             >
               <User size={24} className="text-white" />
@@ -199,7 +233,8 @@ export const WhatIfPage = () => {
                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  className="absolute top-full right-0 mt-2 w-48 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl"
+                  // UPDATED: Glassmorphic menu
+                  className="absolute top-full right-0 mt-2 w-48 bg-black/70 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl"
                 >
                   <div className="p-4 space-y-2">
                     <motion.button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors">
@@ -243,8 +278,9 @@ export const WhatIfPage = () => {
           transition={{ staggerChildren: 0.1 }}
         >
           <motion.div 
-            className="lg:col-span-3 relative overflow-hidden bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl group"
-            whileHover={{ scale: 1.02 }}
+            // UPDATED: Glassmorphic panel, subtle neon border/shadow
+            className="lg:col-span-3 relative overflow-hidden bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-purple-500/30 shadow-2xl shadow-purple-500/20 group"
+            whileHover={{ scale: 1.01, boxShadow: "0 20px 40px -10px rgba(168,85,247,0.3)" }}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="relative z-10 flex items-center gap-6 mb-8">
@@ -261,17 +297,17 @@ export const WhatIfPage = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <motion.div className="text-center p-6 bg-white/5 rounded-2xl" whileHover={{ y: -5 }}>
+              <motion.div className="text-center p-6 bg-black/40 backdrop-blur-sm rounded-2xl border border-white/10" whileHover={{ y: -5, scale: 1.05, boxShadow: "0 10px 20px rgba(255,193,7,0.2)" }}>
                 <Star size={32} className="mx-auto mb-3 text-yellow-400" />
                 <p className="text-3xl font-bold">{profile?.points || 0}</p>
                 <span className="text-white/60">Points Earned</span>
               </motion.div>
-              <motion.div className="text-center p-6 bg-white/5 rounded-2xl" whileHover={{ y: -5 }}>
+              <motion.div className="text-center p-6 bg-black/40 backdrop-blur-sm rounded-2xl border border-white/10" whileHover={{ y: -5, scale: 1.05, boxShadow: "0 10px 20px rgba(255,87,34,0.2)" }}>
                 <Flame size={32} className="mx-auto mb-3 text-orange-400" />
                 <p className="text-3xl font-bold">{profile?.streak || 0}</p>
                 <span className="text-white/60">Day Streak</span>
               </motion.div>
-              <motion.div className="text-center p-6 bg-white/5 rounded-2xl md:col-span-1" whileHover={{ y: -5 }}>
+              <motion.div className="text-center p-6 bg-black/40 backdrop-blur-sm rounded-2xl md:col-span-1 border border-white/10" whileHover={{ y: -5, scale: 1.05, boxShadow: "0 10px 20px rgba(76,175,80,0.2)" }}>
                 <div className="w-full bg-white/10 rounded-full h-3 mb-3 overflow-hidden">
                   <motion.div
                     className="h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full"
@@ -286,7 +322,7 @@ export const WhatIfPage = () => {
             </div>
             {allCompleted && (
               <motion.div 
-                className="absolute top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-full font-bold shadow-lg"
+                className="absolute top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-green-500/40"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.5, type: "spring" }}
@@ -297,8 +333,9 @@ export const WhatIfPage = () => {
           </motion.div>
 
           <motion.div 
-            className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl flex flex-col items-center justify-center text-center"
-            whileHover={{ scale: 1.02, rotateY: 5 }}
+            // UPDATED: Glassmorphic panel, subtle neon border/shadow
+            className="bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-pink-500/30 shadow-2xl shadow-pink-500/20 flex flex-col items-center justify-center text-center"
+            whileHover={{ scale: 1.02, rotateY: 3, boxShadow: "0 20px 40px -10px rgba(236,72,153,0.3)" }}
             transition={{ duration: 0.3 }}
           >
             <Lightbulb size={48} className="text-yellow-400 mb-4 drop-shadow-lg" />
@@ -318,7 +355,10 @@ export const WhatIfPage = () => {
               Voice <span className="text-4xl">Revolution</span>
             </h2>
             <p className="text-xl text-white/60 max-w-3xl mx-auto">AI-driven speaking mastery. Select your level and dive into immersive practice modes.</p>
-            <div className="mt-8 max-w-lg mx-auto bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/10">
+            <div 
+              // UPDATED: Glassmorphic progress bar container
+              className="mt-8 max-w-lg mx-auto bg-black/40 backdrop-blur-xl rounded-3xl p-6 border border-cyan-400/30 shadow-lg shadow-cyan-400/20"
+            >
               <div className="flex items-center justify-between">
                 <span className="text-white/70 font-medium">Fluency Score</span>
                 <div className="flex-1 mx-6 bg-white/10 rounded-full h-4 overflow-hidden">
@@ -339,8 +379,9 @@ export const WhatIfPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Sleek Level Selector */}
             <motion.div 
-              className="lg:col-span-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl"
-              whileHover={{ y: -5, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}
+              // UPDATED: Glassmorphic selector container
+              className="lg:col-span-1 bg-black/40 backdrop-blur-xl border border-pink-500/30 rounded-3xl p-8 shadow-2xl shadow-pink-500/20"
+              whileHover={{ y: -5, boxShadow: "0 25px 50px -12px rgba(236,72,153,0.3)" }}
             >
               <div className="flex items-center gap-4 mb-8">
                 <div className="p-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl">
@@ -356,14 +397,16 @@ export const WhatIfPage = () => {
                     <motion.button
                       key={level}
                       onClick={() => setCurrentLevel(level)}
-                      className={`relative w-full p-6 rounded-2xl text-left transition-all duration-500 overflow-hidden group ${isSelected ? 'bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white shadow-2xl ring-2 ring-purple-400/30' : 'bg-white/10 text-white/80 hover:bg-white/20 hover:shadow-xl'}`}
+                      // UPDATED: Glassmorphic non-selected buttons
+                      className={`relative w-full p-6 rounded-2xl text-left transition-all duration-500 overflow-hidden group ${isSelected ? 'bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white shadow-2xl shadow-pink-600/30 ring-2 ring-purple-400/30' : 'bg-black/40 backdrop-blur-sm text-white/80 hover:bg-white/20 hover:shadow-xl'}`}
                       whileHover={isSelected ? { scale: 1.02 } : { scale: 1.05 }}
                       whileTap={{ scale: 0.98 }}
                     >
                       <div className={`absolute inset-0 bg-gradient-to-r ${config.color} opacity-0 group-hover:opacity-20 transition-opacity`}></div>
                       <div className="relative flex items-center gap-4">
                         <motion.div 
-                          className={`p-4 rounded-2xl ${isSelected ? 'bg-white/20' : 'bg-white/10'}`}
+                          // UPDATED: Glassmorphic icon container
+                          className={`p-4 rounded-2xl ${isSelected ? 'bg-white/20' : 'bg-black/40 backdrop-blur-sm'}`}
                         >
                           <config.icon size={32} className={isSelected ? 'text-white' : 'text-white/60'} />
                         </motion.div>
@@ -426,20 +469,23 @@ export const WhatIfPage = () => {
                     animate={{ opacity: 1, y: 0, rotateX: 0 }}
                     transition={{ duration: 0.8, delay: index * 0.2 }}
                     onClick={() => handleNavigate(mode.route, { level: currentLevel })}
-                    className={`group relative overflow-hidden bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 cursor-pointer shadow-2xl hover:shadow-3xl transition-all duration-700 h-full ${mode.color.replace('from-', 'text-')}`}
-                    whileHover={{ y: -15, rotateX: 5, rotateY: 5 }}
+                    // UPDATED: Glassmorphic card base, explicit neon shadow
+                    className={`group relative overflow-hidden bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/10 cursor-pointer shadow-2xl hover:shadow-3xl transition-all duration-700 h-full ${mode.color.replace('from-', 'text-')}`}
+                    whileHover={{ y: -15, rotateX: 5, rotateY: 5, boxShadow: `0 25px 50px -12px ${mode.color.split(' ')[1] || '#8b5cf6'}30` }}
                     whileTap={{ scale: 0.98 }}
                   >
                     {/* 3D Layer */}
                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent -z-10"></div>
                     <motion.div 
                       className={`absolute inset-0 bg-gradient-to-br ${mode.color} opacity-0 group-hover:opacity-20 transition-opacity`}
-                      animate={isPlaying ? { opacity: 0.4 } : {}}
+                      animate={isPlaying ? { opacity: 0.4 } : {}
+                    }
                     />
                     
                     {/* Icon with Glow */}
                     <motion.div 
-                      className="relative z-10 p-6 bg-white/10 rounded-3xl mx-auto mb-6 group-hover:bg-white/20 transition-all backdrop-blur-sm"
+                      // UPDATED: Glassmorphic icon container
+                      className="relative z-10 p-6 bg-black/40 backdrop-blur-sm rounded-3xl mx-auto mb-6 group-hover:bg-white/20 transition-all"
                       style={{ boxShadow: isPlaying ? `0 0 30px ${mode.color.split(' ')[1] || '#8b5cf6'}` : 'none' }}
                     >
                       <mode.icon size={48} className="drop-shadow-lg" />
@@ -455,13 +501,15 @@ export const WhatIfPage = () => {
                     <h4 className="text-2xl font-bold mb-4 relative z-10 text-center drop-shadow-lg">{mode.title}</h4>
                     <p className="text-white/80 mb-6 relative z-10 text-center leading-relaxed">{mode.description}</p>
                     <div className="text-center mb-8 relative z-10">
-                      <span className="inline-block px-4 py-2 bg-white/10 rounded-full text-xs font-semibold">{mode.preview}</span>
+                      {/* UPDATED: Glassmorphic badge */}
+                      <span className="inline-block px-4 py-2 bg-black/40 backdrop-blur-sm rounded-full text-xs font-semibold border border-white/20">{mode.preview}</span>
                     </div>
                     
                     {/* Interactive Play Button */}
                     <motion.button
                       onClick={(e) => { e.stopPropagation(); togglePreview(mode.key); }}
-                      className={`relative z-10 flex items-center justify-center gap-3 p-4 mx-auto bg-white/10 rounded-2xl transition-all duration-300 hover:bg-white/20 backdrop-blur-sm border border-white/20 ${isPlaying ? 'bg-green-500/20 border-green-500/30' : ''}`}
+                      // UPDATED: Glassmorphic launch button
+                      className={`relative z-10 flex items-center justify-center gap-3 p-4 mx-auto bg-black/40 rounded-2xl transition-all duration-300 hover:bg-white/20 backdrop-blur-sm border border-white/20 ${isPlaying ? 'bg-green-500/20 border-green-500/30' : ''}`}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -492,16 +540,18 @@ export const WhatIfPage = () => {
               return (
                 <motion.div
                   key={challenge.id}
-                  className={`group relative overflow-hidden bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 transition-all duration-700 shadow-2xl h-full ${isLocked ? 'opacity-50' : ''}`}
+                  // UPDATED: Glassmorphic card base, explicit neon shadow
+                  className={`group relative overflow-hidden bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/10 transition-all duration-700 shadow-2xl h-full ${isLocked ? 'opacity-50' : ''}`}
                   initial={{ opacity: 0, scale: 0.9, rotateY: 90 }}
                   animate={{ opacity: 1, scale: 1, rotateY: 0 }}
                   transition={{ duration: 0.8, delay: index * 0.15 }}
-                  whileHover={!isLocked ? { scale: 1.05, y: -10, rotateY: 5 } : {}}
+                  whileHover={!isLocked ? { scale: 1.05, y: -10, rotateY: 5, boxShadow: `0 25px 50px -12px ${challenge.color.split(' ')[1] || '#8b5cf6'}30` } : {}}
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${challenge.color} opacity-0 group-hover:opacity-20 -z-10 transition-opacity`}></div>
                   <div className="relative z-10 space-y-6">
                     <motion.div 
-                      className="p-6 bg-white/10 rounded-3xl mx-auto group-hover:bg-white/20 transition-all"
+                      // UPDATED: Glassmorphic icon container
+                      className="p-6 bg-black/40 backdrop-blur-sm rounded-3xl mx-auto group-hover:bg-white/20 transition-all"
                       whileHover={!isLocked ? { scale: 1.15 } : {}}
                     >
                       <challenge.icon size={48} className="drop-shadow-lg" />
@@ -523,7 +573,8 @@ export const WhatIfPage = () => {
                     <motion.button
                       onClick={() => !isLocked && handleNavigate(challenge.route, { grade: selectedGrade, level: getLevelName(selectedGrade) })}
                       disabled={isLocked}
-                      className={`w-full py-4 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-3 ${isLocked ? 'bg-white/10 text-white/50 cursor-not-allowed' : 'bg-gradient-to-r from-white/10 to-white/20 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg hover:shadow-purple-500/25'}`}
+                      // UPDATED: Launch button styling
+                      className={`w-full py-4 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-3 ${isLocked ? 'bg-black/40 text-white/50 cursor-not-allowed border border-white/10' : 'bg-gradient-to-r from-white/10 to-white/20 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg hover:shadow-purple-500/25'}`}
                       whileTap={!isLocked ? { scale: 0.95 } : {}}
                     >
                       {isLocked ? <Trophy size={24} /> : <Zap size={24} />}
@@ -541,7 +592,8 @@ export const WhatIfPage = () => {
       <AnimatePresence>
         {isLoading && (
           <motion.div
-            className="fixed inset-0 bg-black/90 backdrop-blur-3xl flex flex-col items-center justify-center z-50"
+            // UPDATED: Loading screen opacity for deeper look
+            className="fixed inset-0 bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
