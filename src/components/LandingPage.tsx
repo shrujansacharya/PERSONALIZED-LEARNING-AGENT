@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Sun, Moon, Sparkles, Zap, Heart, Star, Trophy, Users, BookOpen, Target, Rocket, Brain, Globe, Palette, Microscope, Crown } from 'lucide-react';
+// Removed Sun and Moon icons from import
+import { Bell, Sparkles, Zap, Heart, Star, Trophy, Users, BookOpen, Target, Rocket, Brain, Globe, Palette, Microscope, Crown } from 'lucide-react';
 
 // --- THIS IS THE UPDATED LINE ---
 // (Make sure you have renamed the file to "landing-page-image.jpg" in src/types/)
@@ -12,7 +13,8 @@ interface NotificationBellProps {
 // ... (rest of the file is unchanged) ...
 const NotificationBell: React.FC<NotificationBellProps> = ({ notifications }) => (
   <div className="relative">
-    <Bell className="h-6 w-6 text-gray-600 dark:text-gray-300 cursor-pointer hover:text-blue-500 transition-colors" />
+    {/* Updated text color for dark mode context */}
+    <Bell className="h-6 w-6 text-cyan-400 cursor-pointer hover:text-blue-300 transition-colors" />
     {notifications.length > 0 && (
       <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
         {notifications.length}
@@ -32,17 +34,17 @@ const themeBackgrounds: Record<string, string> = {
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(false);
+  // Set default to dark mode for the cosmic theme
+  const [darkMode, setDarkMode] = useState(true); 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [activeTheme, setActiveTheme] = useState('');
   const [themeBg, setThemeBg] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedMode = localStorage.getItem('darkMode');
-    if (savedMode === 'true') {
-      setDarkMode(true);
-      document.documentElement.classList.add('dark');
-    }
+    // Force dark mode class on initial load for the cosmic theme
+    document.documentElement.classList.add('dark');
+    
+    // Original effect logic
     setNotifications([{ id: 1, message: 'Welcome to LearnMyWay!' }]);
     
     const observerOptions = {
@@ -97,13 +99,14 @@ const LandingPage: React.FC = () => {
       observer.disconnect();
     };
   }, []);
-
-  const toggleDarkMode = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    document.documentElement.classList.toggle('dark', newMode);
-    localStorage.setItem('darkMode', newMode.toString());
-  };
+    
+  // Removed toggleDarkMode function
+  // const toggleDarkMode = () => {
+  //   const newMode = !darkMode;
+  //   setDarkMode(newMode);
+  //   document.documentElement.classList.toggle('dark', newMode);
+  //   localStorage.setItem('darkMode', newMode.toString());
+  // };
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -113,11 +116,45 @@ const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className={`relative min-h-screen ${darkMode ? 'dark' : ''}`}>
+    // Added perspective to the main container for 3D transforms to work
+    <div className={`relative min-h-screen dark bg-gradient-to-br from-gray-900 via-indigo-900 to-cyan-900`} style={{ perspective: '1500px' }}>
       <style>{`
         * {
             font-family: 'Baloo 2', cursive;
         }
+
+        /* --- Enhanced 3D Card Styles for Glassmorphism & Neon Glow --- */
+        .glass-card { 
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15); /* Softer initial border */
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.15); /* Base Shadow + Inner Glow */
+            transform-style: preserve-3d; /* Key for 3D transform */
+            transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); /* Smoother transition */
+        }
+
+        .slide-card, .theme-card, .career-card {
+            transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .slide-card:hover, .theme-card:hover, .career-card:hover { 
+            /* 3D Transform: Lift, scale, and subtle rotation */
+            transform: translateZ(50px) translateY(-15px) scale(1.05) rotateX(2deg) rotateY(2deg);
+            
+            /* Enhanced Glowing Shadow on Hover */
+            box-shadow: 
+                0 25px 80px rgba(79, 70, 229, 0.8), /* Main Lift Shadow */
+                0 0 40px rgba(0, 255, 255, 0.9),    /* Neon Outer Glow */
+                inset 0 0 15px rgba(255, 255, 255, 0.4); /* Brighter Inner Glow */
+            border: 1px solid rgba(0, 255, 255, 0.7); /* Brighter neon border on hover */
+        }
+
+        /* Set perspective for sections containing 3D cards */
+        #modes > div, #themes > div, #careers > div {
+            transform-style: preserve-3d;
+        }
+        /* --- End Enhanced 3D Card Styles --- */
+
 
         .floating-icon {
             animation: float 6s ease-in-out infinite;
@@ -133,20 +170,18 @@ const LandingPage: React.FC = () => {
         }
         .bounce-in { animation: bounceIn 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
         @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); opacity: 1; }
+            0% { transform: scale(0.3) translateZ(-100px); opacity: 0; } /* Added Z-depth for 3D pop */
+            50% { transform: scale(1.05) translateZ(0); }
+            70% { transform: scale(0.9) translateZ(0); }
+            100% { transform: scale(1) translateZ(0); opacity: 1; }
         }
-        .slide-card { transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .slide-card:hover { transform: translateY(-12px) scale(1.04); box-shadow: 0 25px 50px rgba(0,0,0,0.15); }
+        
         .swipe-card { opacity: 0; transition: all 1s cubic-bezier(0.4, 0, 0.2, 1); }
-        .swipe-card:nth-child(1) { transform: translateX(-100px); transition-delay: 0.3s; }
-        .swipe-card:nth-child(2) { transform: translateX(100px); transition-delay: 0.7s; }
-        .swipe-card:nth-child(3) { transform: translateX(-100px); transition-delay: 1.2s; }
-        .swipe-card.animate-in { opacity: 1; transform: translateX(0); }
-        .theme-card { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .theme-card:hover { transform: scale(1.07) rotate(3deg); }
+        .swipe-card:nth-child(1) { transform: translateX(-100px) translateZ(-50px); transition-delay: 0.3s; }
+        .swipe-card:nth-child(2) { transform: translateY(50px) translateZ(-50px); transition-delay: 0.7s; } /* Adjusted center card for depth */
+        .swipe-card:nth-child(3) { transform: translateX(100px) translateZ(-50px); transition-delay: 1.2s; }
+        .swipe-card.animate-in { opacity: 1; transform: translateX(0) translateZ(0); }
+        
         .theme-section { 
           transition: background 1s cubic-bezier(0.4, 0, 0.2, 1); 
           background-size: cover !important;
@@ -160,8 +195,8 @@ const LandingPage: React.FC = () => {
         .theme-history { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%); }
         .career-icon { animation: pulse 3s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
+            0%, 100% { transform: scale(1) translateZ(0); }
+            50% { transform: scale(1.15) translateZ(10px); } /* Added Z-depth to icon pulse */
         }
         .progress-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawPath 4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
         @keyframes drawPath { to { stroke-dashoffset: 0; } }
@@ -180,7 +215,8 @@ const LandingPage: React.FC = () => {
         @keyframes batSwing { 0%, 100% { transform: rotate(-15deg); } 50% { transform: rotate(15deg); } }
         @keyframes ballBounce { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
         .nav-link { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .nav-link:hover { transform: translateY(-3px); color: #FACC15; }
+        /* Updated nav-link hover color to match neon aesthetic */
+        .nav-link:hover { transform: translateY(-3px) translateZ(10px); color: #38bdf8; } 
         .sparkle { position: fixed; pointer-events: none; z-index: 9999; animation: sparkleAnim 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
         @keyframes sparkleAnim {
             0% { transform: scale(0) rotate(0deg); opacity: 1; }
@@ -190,13 +226,28 @@ const LandingPage: React.FC = () => {
         .science-scope { animation: scopeMove 4s ease-in-out infinite; }
         .history-book { animation: bookFlip 4s ease-in-out infinite; }
         .history-glass { animation: glassMove 3.5s ease-in-out infinite; }
+
+        @keyframes ripple {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(4); opacity: 0; }
+          }
+          @keyframes fade-in {
+            from { opacity: 0; transform: translateY(20px) translateZ(-20px); }
+            to { opacity: 1; transform: translateY(0) translateZ(0); }
+          }
+          @keyframes careerRipple {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(4); opacity: 0; }
+          }
       `}</style>
 
-      <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-xl z-50 shadow-2xl border-b border-white/20 dark:bg-gray-900/80 dark:border-gray-700/50">
+      {/* Updated Navbar for Dark Cosmic Theme */}
+      <nav className="fixed top-0 w-full bg-gray-900/80 backdrop-blur-xl z-50 shadow-2xl border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3 group cursor-pointer">
-              <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">
+              {/* Updated logo gradient for cosmic neon feel */}
+              <span className="text-3xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-xl" style={{ textShadow: '0 0 5px rgba(0, 255, 255, 0.5)' }}>
                 LearnMyWay
               </span>
             </div>
@@ -211,222 +262,216 @@ const LandingPage: React.FC = () => {
                 <a
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
-                  className="nav-link relative px-4 py-2 text-gray-700 font-medium dark:text-gray-300 rounded-full hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-300 group"
+                  className="nav-link relative px-4 py-2 text-gray-300 font-medium rounded-full hover:bg-white/10 transition-all duration-300 group"
+                  style={{ transformStyle: 'preserve-3d' }}
                 >
                   {item.name}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  {/* Neon underline effect on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </a>
               ))}
               <div className="mx-2">
                 <NotificationBell notifications={notifications} />
               </div>
-              <button
-                onClick={toggleDarkMode}
-                className="relative p-3 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900 dark:hover:to-purple-900 transition-all duration-300 hover:scale-110 shadow-lg"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 hover:opacity-20 transition-opacity duration-300"></div>
-                {darkMode ?
-                  <Sun className="h-6 w-6 text-yellow-400 relative z-10" /> :
-                  <Moon className="h-6 w-6 text-gray-600 dark:text-gray-300 relative z-10" />
-                }
-              </button>
+              {/* REMOVED: Dark Mode Toggle Button */}
             </div>
           </div>
         </div>
       </nav>
 
+      {/* Updated Hero Section for Cosmic Theme */}
       <section 
         id="home" 
         className="min-h-screen flex items-center justify-center relative overflow-hidden pt-20"
         style={{
+          // Use a dark cosmic image if available, otherwise rely on the container's gradient
           backgroundImage: `url(${HeroBackgroundImage})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          // Ensure the section color blends with the main cosmic gradient
+          backgroundColor: '#0f172a',
+          transformStyle: 'preserve-3d', // Added for 3D effect on children
         }}
       >
-        {/* Animated background particles */}
+        {/* Animated background particles (using cosmic colors) */}
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(20)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-2 h-2 bg-white/20 rounded-full animate-ping"
+              className="absolute w-2 h-2 bg-cyan-400/50 rounded-full animate-ping shadow-lg shadow-cyan-500/50"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
                 animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 3}s`
+                animationDuration: `${2 + Math.random() * 3}s`,
+                transform: 'translateZ(-50px)', // Pushed back for depth
               }}
             />
           ))}
         </div>
+        {/* Dark overlay to ensure text readability */}
+        <div className="absolute inset-0 bg-black/40"></div> 
 
-        <div className="text-center z-10 px-4 max-w-5xl mx-auto relative">
-          {/* Main heading with enhanced typography */}
+        <div className="text-center z-10 px-4 max-w-5xl mx-auto relative" style={{ transformStyle: 'preserve-3d' }}>
+          {/* Main heading with enhanced typography (Neon Effect) */}
           <div className="relative mb-8">
-            <h1 className="text-6xl md:text-8xl font-black text-white mb-6 bounce-in bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-2xl">
+            <h1 
+                className="text-6xl md:text-8xl font-black text-white mb-6 bounce-in bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-xl" 
+                style={{ 
+                    textShadow: '0 0 10px rgba(0, 255, 255, 0.5), 0 0 20px rgba(79, 70, 229, 0.5)', 
+                    transform: 'translateZ(30px)' // Pushed forward
+                }}
+            >
               Welcome to LearnMyWay
             </h1>
           </div>
 
           {/* Enhanced subtitle */}
-          <p className="text-2xl md:text-3xl text-white/95 mb-6 bounce-in font-semibold" style={{ animationDelay: '0.2s' }}>
+          <p 
+            className="text-2xl md:text-3xl text-cyan-200/95 mb-6 bounce-in font-semibold" 
+            style={{ 
+                animationDelay: '0.2s', 
+                textShadow: '0 0 5px rgba(0, 255, 255, 0.3)',
+                transform: 'translateZ(20px)' // Pushed forward
+            }}
+          >
             Where Learning Feels Like Play! 🎮
           </p>
 
-          {/* Enhanced description */}
-          <p className="text-xl md:text-2xl text-white/85 mb-12 bounce-in max-w-4xl mx-auto leading-relaxed" style={{ animationDelay: '0.4s' }}>
-            A magical space where Students, Teachers, and Parents connect, share, and grow together in an exciting learning adventure! 🌟
-          </p>
-
-          {/* Enhanced CTA buttons */}
-          <div className="flex flex-col md:flex-row gap-6 justify-center items-center bounce-in" style={{ animationDelay: '0.6s' }}>
+          {/* Enhanced CTA buttons (Neon/Cosmic Style) - added translateZ on hover via global CSS for lift */}
+          <div className="flex flex-col md:flex-row gap-6 justify-center items-center bounce-in" style={{ animationDelay: '0.6s', transformStyle: 'preserve-3d' }}>
             <button
               onClick={() => scrollToSection('modes')}
-              className="group relative bg-gradient-to-r from-teal-400 to-teal-600 hover:from-teal-500 hover:to-teal-700 text-white px-10 py-5 rounded-2xl text-xl font-bold shadow-2xl transform hover:scale-110 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
+              className="group relative bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white px-10 py-5 rounded-2xl text-xl font-bold shadow-2xl shadow-cyan-500/30 transform hover:scale-110 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="relative z-10 flex items-center gap-3">
                 🎓 Explore as Student
-                <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                <div className="w-2 h-2 bg-white rounded-full animate-ping shadow-lg shadow-white"></div>
               </span>
             </button>
 
             <button
               onClick={() => scrollToSection('modes')}
-              className="group relative bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white px-10 py-5 rounded-2xl text-xl font-bold shadow-2xl transform hover:scale-110 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
+              className="group relative bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white px-10 py-5 rounded-2xl text-xl font-bold shadow-2xl shadow-indigo-500/30 transform hover:scale-110 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="relative z-10 flex items-center gap-3">
                 👩‍🏫 Enter Teacher Mode
-                <div className="w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
+                <div className="w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDelay: '0.5s', boxShadow: '0 0 5px white' }}></div>
               </span>
             </button>
 
             <button
               onClick={() => scrollToSection('modes')}
-              className="group relative bg-gradient-to-r from-purple-400 to-purple-600 hover:from-purple-500 hover:to-purple-700 text-white px-10 py-5 rounded-2xl text-xl font-bold shadow-2xl transform hover:scale-110 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
+              className="group relative bg-gradient-to-r from-fuchsia-500 to-pink-600 hover:from-fuchsia-400 hover:to-pink-500 text-white px-10 py-5 rounded-2xl text-xl font-bold shadow-2xl shadow-fuchsia-500/30 transform hover:scale-110 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="relative z-10 flex items-center gap-3">
                 💝 Parent Dashboard
-                <div className="w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDelay: '1s' }}></div>
+                <div className="w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDelay: '1s', boxShadow: '0 0 5px white' }}></div>
               </span>
             </button>
           </div>
 
           {/* Scroll indicator */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-            <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
-              <div className="w-1 h-3 bg-white/50 rounded-full mt-2 animate.pulse"></div>
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce" style={{ transform: 'translateZ(10px)' }}>
+            <div className="w-6 h-10 border-2 border-cyan-400/50 rounded-full flex justify-center">
+              <div className="w-1 h-3 bg-cyan-400/70 rounded-full mt-2 animate.pulse"></div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ... (Rest of the file remains the same) ... */}
-
-      <section id="modes" className="py-20 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-10 left-10 w-20 h-20 bg-blue-200/30 rounded-full animate-pulse"></div>
-          <div className="absolute top-20 right-20 w-16 h-16 bg-purple-200/30 rounded-full animate-bounce"></div>
-          <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-teal-200/30 rounded-full animate-spin"></div>
-          <div className="absolute bottom-10 right-1/3 w-24 h-24 bg-orange-200/30 rounded-full animate-ping"></div>
-          <div className="absolute top-1/2 left-1/2 w-8 h-8 bg-pink-200/30 rounded-full animate-pulse"></div>
+      {/* Modes Section with Glassmorphism and 3D */}
+      <section id="modes" className="py-20 bg-transparent relative overflow-hidden">
+        {/* Animated background elements (Cosmic Colors) - Pushed back */}
+        <div className="absolute inset-0 pointer-events-none" style={{ transform: 'translateZ(-100px)' }}>
+          <div className="absolute top-10 left-10 w-20 h-20 bg-blue-500/30 rounded-full animate-pulse blur-xl"></div>
+          <div className="absolute top-20 right-20 w-16 h-16 bg-cyan-500/30 rounded-full animate-bounce blur-xl"></div>
+          <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-indigo-500/30 rounded-full animate-spin blur-xl"></div>
+          <div className="absolute bottom-10 right-1/3 w-24 h-24 bg-fuchsia-500/30 rounded-full animate-ping blur-xl"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="text-center mb-16" style={{ transform: 'translateZ(10px)' }}>
             <div className="relative inline-block">
-              <h2 className="text-4xl md:text-6xl font-black text-gray-800 dark:text-white mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              {/* Neon Heading */}
+              <h2 className="text-4xl md:text-6xl font-black text-white mb-4 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-xl" style={{ textShadow: '0 0 10px rgba(0, 255, 255, 0.5)' }}>
                 🦸 Choose Your Superpower
               </h2>
-              <div className="absolute -top-2 -right-2 text-4xl animate-bounce">⚡</div>
-              <div className="absolute -bottom-2 -left-2 text-3xl animate-spin">✨</div>
+              <div className="absolute -top-2 -right-2 text-4xl animate-bounce text-yellow-300">⚡</div>
+              <div className="absolute -bottom-2 -left-2 text-3xl animate-spin text-cyan-300">✨</div>
             </div>
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 font-semibold">Discover your learning adventure!</p>
+            <p className="text-xl md:text-2xl text-gray-300 font-semibold">Discover your learning adventure!</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Student Card */}
-            <div className="swipe-card slide-card group relative bg-gradient-to-br from-teal-400 via-teal-500 to-teal-600 rounded-3xl p-8 text-white text-center transform hover:scale-105 hover:-translate-y-4 transition-all duration-500 shadow-2xl hover:shadow-teal-500/25 overflow-hidden">
-              {/* Card background animation */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            {/* Student Card (Applied glass-card class) */}
+            <div className="swipe-card glass-card slide-card group relative rounded-3xl p-8 text-white text-center overflow-hidden">
+              {/* Card background animation - now subtle glow/light shift */}
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: 'translateZ(1px)' }}></div>
 
-              {/* Floating elements */}
-              <div className="absolute top-4 right-4 text-2xl animate-bounce">🎓</div>
-              <div className="absolute bottom-4 left-4 text-xl animate-pulse">⭐</div>
-
-              <div className="relative z-10">
-                <div className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300">🎓</div>
-                <h3 className="text-3xl font-bold mb-4 group-hover:text-yellow-200 transition-colors duration-300">Student Power</h3>
-                <p className="text-lg leading-relaxed mb-6">
+              <div className="relative z-10" style={{ transformStyle: 'preserve-3d' }}>
+                <div className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300 text-cyan-400" style={{ transform: 'translateZ(20px)' }}>🎓</div>
+                <h3 className="text-3xl font-bold mb-4 group-hover:text-cyan-200 transition-colors duration-300">Student Power</h3>
+                <p className="text-lg leading-relaxed mb-6 text-gray-200">
                   Step into your own learning world! Play with themes, solve challenges, chat with your study buddy, and explore your dream career — all while having fun!
                 </p>
                 <button
                   onClick={() => navigate('/login')}
-                  className="group/btn relative bg-white text-teal-600 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 hover:shadow-lg overflow-hidden"
+                  className="group/btn relative bg-cyan-500/80 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-cyan-400 transition-all duration-300 transform hover:scale-105 shadow-xl shadow-cyan-500/20 overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-teal-100 to-blue-100 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
                   <span className="relative z-10 flex items-center gap-2">
                     Start Learning 🚀
-                    <div className="w-2 h-2 bg-teal-600 rounded-full animate-ping"></div>
+                    <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                   </span>
                 </button>
               </div>
             </div>
 
-            {/* Teacher Card */}
-            <div className="swipe-card slide-card group relative bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-3xl p-8 text-white text-center transform hover:scale-105 hover:-translate-y-4 transition-all duration-500 shadow-2xl hover:shadow-orange-500/25 overflow-hidden">
-              {/* Card background animation */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            {/* Teacher Card (Applied glass-card class) */}
+            <div className="swipe-card glass-card slide-card group relative rounded-3xl p-8 text-white text-center overflow-hidden">
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: 'translateZ(1px)' }}></div>
 
-              {/* Floating elements */}
-              <div className="absolute top-4 right-4 text-2xl animate-bounce">📚</div>
-              <div className="absolute bottom-4 left-4 text-xl animate-pulse">🎯</div>
-
-              <div className="relative z-10">
-                <div className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300">👩‍🏫</div>
-                <h3 className="text-3xl font-bold mb-4 group-hover:text-yellow-200 transition-colors duration-300">Teacher Power</h3>
-                <p className="text-lg leading-relaxed mb-6">
+              <div className="relative z-10" style={{ transformStyle: 'preserve-3d' }}>
+                <div className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300 text-indigo-400" style={{ transform: 'translateZ(20px)' }}>👩‍🏫</div>
+                <h3 className="text-3xl font-bold mb-4 group-hover:text-indigo-200 transition-colors duration-300">Teacher Power</h3>
+                <p className="text-lg leading-relaxed mb-6 text-gray-200">
                   Track lessons, update completed topics, and collaborate with students. Teaching is now interactive, visual, and engaging!
                 </p>
                 <button
                   onClick={() => navigate('/teacher')}
-                  className="group/btn relative bg-white text-orange-600 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 hover:shadow-lg overflow-hidden"
+                  className="group/btn relative bg-indigo-500/80 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-indigo-400 transition-all duration-300 transform hover:scale-105 shadow-xl shadow-indigo-500/20 overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-red-100 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
                   <span className="relative z-10 flex items-center gap-2">
                     Teach Now 📚
-                    <div className="w-2 h-2 bg-orange-600 rounded-full animate-ping"></div>
+                    <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                   </span>
                 </button>
               </div>
             </div>
 
-            {/* Parent Card */}
-            <div className="swipe-card slide-card group relative bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 rounded-3xl p-8 text-white text-center transform hover:scale-105 hover:-translate-y-4 transition-all duration-500 shadow-2xl hover:shadow-purple-500/25 overflow-hidden">
-              {/* Card background animation */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            {/* Parent Card (Applied glass-card class) */}
+            <div className="swipe-card glass-card slide-card group relative rounded-3xl p-8 text-white text-center overflow-hidden">
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: 'translateZ(1px)' }}></div>
 
-              {/* Floating elements */}
-              <div className="absolute top-4 right-4 text-2xl animate-bounce">💝</div>
-              <div className="absolute bottom-4 left-4 text-xl animate-pulse">🌟</div>
-
-              <div className="relative z-10">
-                <div className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300">👨‍👩‍👧‍👦</div>
-                <h3 className="text-3xl font-bold mb-4 group-hover:text-yellow-200 transition-colors duration-300">Parent Power</h3>
-                <p className="text-lg leading-relaxed mb-6">
+              <div className="relative z-10" style={{ transformStyle: 'preserve-3d' }}>
+                <div className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300 text-fuchsia-400" style={{ transform: 'translateZ(20px)' }}>👨‍👩‍👧‍👦</div>
+                <h3 className="text-3xl font-bold mb-4 group-hover:text-fuchsia-200 transition-colors duration-300">Parent Power</h3>
+                <p className="text-lg leading-relaxed mb-6 text-gray-200">
                   Stay in the loop with your child's learning journey. See completed portions, check progress, and cheer them on every step!
                 </p>
                 <button
                   onClick={() => navigate('/parent')}
-                  className="group/btn relative bg-white text-purple-600 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 hover:shadow-lg overflow-hidden"
+                  className="group/btn relative bg-fuchsia-500/80 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-fuchsia-400 transition-all duration-300 transform hover:scale-105 shadow-xl shadow-fuchsia-500/20 overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-100 to-pink-100 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
                   <span className="relative z-10 flex items-center gap-2">
                     Track Progress 📈
-                    <div className="w-2 h-2 bg-purple-600 rounded-full animate-ping"></div>
+                    <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                   </span>
                 </button>
               </div>
@@ -434,32 +479,34 @@ const LandingPage: React.FC = () => {
           </div>
 
           {/* Bottom decorative elements */}
-          <div className="flex justify-center mt-12 space-x-4">
-            <div className="w-3 h-3 bg-teal-400 rounded-full animate-pulse"></div>
-            <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+          <div className="flex justify-center mt-12 space-x-4" style={{ transform: 'translateZ(10px)' }}>
+            <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse shadow-lg shadow-cyan-400/50"></div>
+            <div className="w-3 h-3 bg-indigo-400 rounded-full animate-pulse shadow-lg shadow-indigo-400/50" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-3 h-3 bg-fuchsia-400 rounded-full animate-pulse shadow-lg shadow-fuchsia-400/50" style={{ animationDelay: '0.4s' }}></div>
           </div>
         </div>
       </section>
 
+      {/* Themes Section with Glassmorphism and Dynamic Background */}
       <section
         id="themes"
         className="theme-section py-20 relative overflow-hidden"
         style={{
-          background: themeBg ? `url("https://image.pollinations.ai/prompt/${encodeURIComponent(themeBg)}")` : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: themeBg ? `url("https://image.pollinations.ai/prompt/${encodeURIComponent(themeBg)}")` : 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          transformStyle: 'preserve-3d',
         }}
       >
         {/* Dynamic overlay based on active theme */}
-        <div className={`absolute inset-0 transition-all duration-1000 ${activeTheme ? 'bg-black/40' : 'bg-gradient-to-br from-blue-900/80 via-purple-900/80 to-pink-900/80'}`}></div>
+        <div className={`absolute inset-0 transition-all duration-1000 ${activeTheme ? 'bg-black/40' : 'bg-black/70'}`} style={{ transform: 'translateZ(0)' }}></div>
 
-        {/* Floating particles */}
-        <div className="absolute inset-0 pointer-events-none">
+        {/* Floating particles - Pushed back */}
+        <div className="absolute inset-0 pointer-events-none" style={{ transform: 'translateZ(-100px)' }}>
           {[...Array(15)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-2 h-2 bg-white/20 rounded-full animate-ping"
+              className="absolute w-2 h-2 bg-cyan-300/30 rounded-full animate-ping shadow-lg shadow-cyan-300/30"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
@@ -470,16 +517,17 @@ const LandingPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="relative mb-16">
-            <h2 className="text-4xl md:text-6xl font-black text-white mb-6 bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="relative mb-16" style={{ transform: 'translateZ(10px)' }}>
+            {/* Neon Heading */}
+            <h2 className="text-4xl md:text-6xl font-black text-white mb-6 bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-xl" style={{ textShadow: '0 0 10px rgba(0, 255, 255, 0.5)' }}>
               🎨 Learn the Way YOU Love ✨
             </h2>
-            <div className="absolute -top-4 -right-4 text-4xl animate-bounce">🌟</div>
-            <div className="absolute -bottom-4 -left-4 text-3xl animate-spin">🎭</div>
+            <div className="absolute -top-4 -right-4 text-4xl animate-bounce text-yellow-300">🌟</div>
+            <div className="absolute -bottom-4 -left-4 text-3xl animate-spin text-fuchsia-300">🎭</div>
           </div>
 
-          <p className="text-xl md:text-2xl text-white/90 mb-12 font-semibold drop-shadow-lg">
+          <p className="text-xl md:text-2xl text-white/90 mb-12 font-semibold drop-shadow-lg" style={{ transform: 'translateZ(5px)' }}>
             Hover on a theme and watch the magic happen! ✨
           </p>
 
@@ -487,12 +535,15 @@ const LandingPage: React.FC = () => {
             {Object.keys(themeBackgrounds).map((theme, index) => (
               <div
                 key={theme}
-                className="group relative rounded-3xl p-8 text-white text-center cursor-pointer transition-all duration-500 transform hover:scale-110 hover:-translate-y-6 overflow-hidden shadow-2xl"
+                className="glass-card theme-card group relative rounded-3xl p-8 text-white text-center cursor-pointer transition-all duration-500 transform hover:scale-110 hover:-translate-y-6 overflow-hidden"
                 style={{
-                  background: activeTheme === theme ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.6)',
+                  // Adjusted opacity/blur for theme cards
+                  background: 'rgba(255, 255, 255, 0.05)',
                   backdropFilter: 'blur(10px)',
-                  border: activeTheme === theme ? '2px solid rgba(255,255,255,0.8)' : '2px solid rgba(255,255,255,0.2)',
-                  animationDelay: `${index * 0.2}s`
+                  border: activeTheme === theme ? '2px solid rgba(0, 255, 255, 0.7)' : '1px solid rgba(255, 255, 255, 0.2)',
+                  boxShadow: activeTheme === theme ? '0 0 30px rgba(0, 255, 255, 0.6)' : '0 4px 30px rgba(0, 0, 0, 0.2)',
+                  animationDelay: `${index * 0.2}s`,
+                  transformStyle: 'preserve-3d',
                 }}
                 onMouseEnter={() => {
                   setActiveTheme(theme);
@@ -504,32 +555,10 @@ const LandingPage: React.FC = () => {
                 }}
               >
                 {/* Card background glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: 'translateZ(1px)' }}></div>
 
-                {/* Animated border */}
-                <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-white/50 transition-all duration-300"></div>
-
-                {/* Floating elements */}
-                <div className="absolute top-4 right-4 text-2xl animate-bounce opacity-60 group-hover:opacity-100 transition-opacity">
-                  {theme === 'cricket' && '⚡'}
-                  {theme === 'space' && '🚀'}
-                  {theme === 'nature' && '🌸'}
-                  {theme === 'science' && '⚗️'}
-                  {theme === 'art' && '🎨'}
-                  {theme === 'history' && '📜'}
-                </div>
-
-                <div className="absolute bottom-4 left-4 text-xl animate-pulse opacity-60 group-hover:opacity-100 transition-opacity">
-                  {theme === 'cricket' && '🏆'}
-                  {theme === 'space' && '⭐'}
-                  {theme === 'nature' && '🌿'}
-                  {theme === 'science' && '🔬'}
-                  {theme === 'art' && '🖌️'}
-                  {theme === 'history' && '🏛️'}
-                </div>
-
-                <div className="relative z-10">
-                  <div className={`text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 ${activeTheme === theme ? 'animate-bounce' : ''}`}>
+                <div className="relative z-10" style={{ transformStyle: 'preserve-3d' }}>
+                  <div className={`text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 ${activeTheme === theme ? 'animate-bounce text-cyan-300' : 'text-white'}`} style={{ transform: 'translateZ(20px)' }}>
                     {theme === 'cricket' && '🏏'}
                     {theme === 'space' && '🌌'}
                     {theme === 'nature' && '🌿'}
@@ -538,18 +567,18 @@ const LandingPage: React.FC = () => {
                     {theme === 'history' && '🏛️'}
                   </div>
 
-                  <h3 className={`text-2xl md:text-3xl font-bold capitalize mb-4 transition-colors duration-300 ${activeTheme === theme ? 'text-gray-800' : 'text-white'}`}>
+                  <h3 className={`text-2xl md:text-3xl font-bold capitalize mb-4 transition-colors duration-300 ${activeTheme === theme ? 'text-cyan-300' : 'text-white'}`} style={{ transform: 'translateZ(10px)' }}>
                     {theme} Theme
                   </h3>
 
-                  <p className={`text-lg leading-relaxed transition-colors duration-300 ${activeTheme === theme ? 'text-gray-600' : 'text-white/90'}`}>
+                  <p className={`text-lg leading-relaxed text-white/90`} style={{ transform: 'translateZ(5px)' }}>
                     Make learning fun with {theme} adventures!
                   </p>
 
                   {/* Hover indicator */}
-                  <div className="mt-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                      <span className="text-sm font-semibold">Click to explore</span>
+                  <div className="mt-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: 'translateZ(10px)' }}>
+                    <div className="inline-flex items-center gap-2 bg-cyan-500/30 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg shadow-cyan-500/20">
+                      <span className="text-sm font-semibold text-white">Click to explore</span>
                       <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                     </div>
                   </div>
@@ -558,8 +587,9 @@ const LandingPage: React.FC = () => {
                 {/* Ripple effect on hover */}
                 <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                      style={{
-                       background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-                       animation: 'ripple 1s ease-out'
+                       background: 'radial-gradient(circle, rgba(0,255,255,0.1) 0%, transparent 70%)',
+                       animation: 'ripple 1s ease-out',
+                       transform: 'translateZ(1px)', // Ensure ripple is on top layer of the card
                      }}>
                 </div>
               </div>
@@ -568,8 +598,8 @@ const LandingPage: React.FC = () => {
 
           {/* Theme preview indicator */}
           {activeTheme && (
-            <div className="mt-12 animate-fade-in">
-              <div className="inline-flex items-center gap-3 bg-white/20 backdrop-blur-md rounded-2xl px-6 py-3">
+            <div className="mt-12 animate-fade-in" style={{ transform: 'translateZ(10px)' }}>
+              <div className="inline-flex items-center gap-3 bg-cyan-500/30 backdrop-blur-md rounded-2xl px-6 py-3 shadow-xl shadow-cyan-500/20">
                 <span className="text-lg font-semibold text-white">🌟 Exploring {activeTheme} theme...</span>
                 <div className="flex space-x-1">
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
@@ -581,41 +611,28 @@ const LandingPage: React.FC = () => {
           )}
 
           {/* Bottom decorative elements */}
-          <div className="flex justify-center mt-16 space-x-6">
-            <div className="w-4 h-4 bg-white/30 rounded-full animate-pulse"></div>
-            <div className="w-4 h-4 bg-white/30 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
-            <div className="w-4 h-4 bg-white/30 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+          <div className="flex justify-center mt-16 space-x-6" style={{ transform: 'translateZ(10px)' }}>
+            <div className="w-4 h-4 bg-cyan-400/50 rounded-full animate-pulse"></div>
+            <div className="w-4 h-4 bg-blue-400/50 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+            <div className="w-4 h-4 bg-indigo-400/50 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
           </div>
         </div>
-
-        <style>{`
-          @keyframes ripple {
-            0% { transform: scale(0); opacity: 1; }
-            100% { transform: scale(4); opacity: 0; }
-          }
-          @keyframes fade-in {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
       </section>
 
-      <section id="careers" className="py-20 bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 dark:from-gray-800 dark:to-gray-900 relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-200/20 rounded-full animate-pulse"></div>
-          <div className="absolute top-20 right-20 w-24 h-24 bg-orange-200/20 rounded-full animate-bounce"></div>
-          <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-red-200/20 rounded-full animate-spin"></div>
-          <div className="absolute bottom-10 right-1/3 w-28 h-28 bg-pink-200/20 rounded-full animate-ping"></div>
-          <div className="absolute top-1/2 left-1/2 w-16 h-16 bg-purple-200/20 rounded-full animate-pulse"></div>
+      {/* Careers Section with Glassmorphism and 3D */}
+      <section id="careers" className="py-20 bg-transparent relative overflow-hidden">
+        {/* Animated background elements (Cosmic Colors) - Pushed back */}
+        <div className="absolute inset-0 pointer-events-none" style={{ transform: 'translateZ(-100px)' }}>
+          <div className="absolute top-10 left-10 w-32 h-32 bg-indigo-500/20 rounded-full animate-pulse blur-xl"></div>
+          <div className="absolute top-20 right-20 w-24 h-24 bg-fuchsia-500/20 rounded-full animate-bounce blur-xl"></div>
         </div>
 
-        {/* Floating particles */}
-        <div className="absolute inset-0 pointer-events-none">
+        {/* Floating particles - Pushed back */}
+        <div className="absolute inset-0 pointer-events-none" style={{ transform: 'translateZ(-50px)' }}>
           {[...Array(12)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full animate-ping opacity-60"
+              className="absolute w-3 h-3 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full animate-ping opacity-60 shadow-lg shadow-blue-400/30"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
@@ -626,45 +643,37 @@ const LandingPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="text-center mb-16" style={{ transform: 'translateZ(10px)' }}>
             <div className="relative inline-block">
-              <h2 className="text-4xl md:text-6xl font-black text-gray-800 dark:text-white mb-6 bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text text-transparent drop-shadow-2xl">
+              {/* Neon Heading */}
+              <h2 className="text-4xl md:text-6xl font-black text-white mb-6 bg-gradient-to-r from-blue-400 via-indigo-400 to-fuchsia-400 bg-clip-text text-transparent drop-shadow-xl" style={{ textShadow: '0 0 10px rgba(79, 70, 229, 0.5)' }}>
                 🚀 Dream Big. Start Early.
               </h2>
-              <div className="absolute -top-4 -right-4 text-4xl animate-bounce">⭐</div>
-              <div className="absolute -bottom-4 -left-4 text-3xl animate-spin">🌟</div>
+              <div className="absolute -top-4 -right-4 text-4xl animate-bounce text-yellow-300">⭐</div>
+              <div className="absolute -bottom-4 -left-4 text-3xl animate-spin text-cyan-300">🌟</div>
             </div>
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 font-semibold">Explore careers with mini roadmaps, fun facts, and stories!</p>
+            <p className="text-xl md:text-2xl text-gray-300 font-semibold">Explore careers with mini roadmaps, fun facts, and stories!</p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-8">
-            {/* AI Scientist Card */}
-            <div className="group relative bg-white rounded-3xl p-8 text-center shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-4 dark:bg-gray-800 overflow-hidden">
-              {/* Card background glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 dark:from-blue-900/20 dark:to-purple-900/20"></div>
+            {/* AI Scientist Card (Applied glass-card class) */}
+            <div className="career-card glass-card group relative rounded-3xl p-8 text-center overflow-hidden" style={{ transformStyle: 'preserve-3d' }}>
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: 'translateZ(1px)' }}></div>
 
-              {/* Animated border */}
-              <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-blue-300 transition-all duration-300"></div>
-
-              {/* Floating elements */}
-              <div className="absolute top-4 right-4 text-2xl animate-bounce opacity-60 group-hover:opacity-100 transition-opacity">⚡</div>
-              <div className="absolute bottom-4 left-4 text-xl animate-pulse opacity-60 group-hover:opacity-100 transition-opacity">🤖</div>
-
-              <div className="relative z-10">
-                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce">🤖</div>
-                <h4 className="font-black text-xl md:text-2xl text-gray-800 dark:text-white mb-4 group-hover:text-blue-600 transition-colors duration-300">AI Scientist</h4>
-                <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed mb-6 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors duration-300">
+              <div className="relative z-10" style={{ transformStyle: 'preserve-3d' }}>
+                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce text-blue-400" style={{ transform: 'translateZ(20px)' }}>🤖</div>
+                <h4 className="font-black text-xl md:text-2xl text-white mb-4 group-hover:text-blue-300 transition-colors duration-300" style={{ transform: 'translateZ(10px)' }}>AI Scientist</h4>
+                <p className="text-base text-gray-300 leading-relaxed mb-6" style={{ transform: 'translateZ(5px)' }}>
                   Build the future with artificial intelligence!
                 </p>
 
-                {/* Hover details */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
-                  <div className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-xl p-4 mb-4">
-                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">Skills: Python, Machine Learning, Data Science</p>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0" style={{ transform: 'translateZ(15px)' }}>
+                  <div className="bg-blue-400/20 backdrop-blur-md rounded-xl p-4 mb-4">
+                    <p className="text-sm font-semibold text-blue-200">Skills: Python, Machine Learning, Data Science</p>
                   </div>
                   <div className="flex justify-center">
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 cursor-pointer">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 cursor-pointer shadow-lg shadow-blue-500/30">
                       <span>Explore Path</span>
                       <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                     </div>
@@ -672,41 +681,32 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Ripple effect on hover */}
               <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                    style={{
                      background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)',
-                     animation: 'careerRipple 1s ease-out'
+                     animation: 'careerRipple 1s ease-out',
+                     transform: 'translateZ(1px)',
                    }}>
               </div>
             </div>
 
-            {/* Doctor Card */}
-            <div className="group relative bg-white rounded-3xl p-8 text-center shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-4 dark:bg-gray-800 overflow-hidden">
-              {/* Card background glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-teal-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 dark:from-green-900/20 dark:to-teal-900/20"></div>
+            {/* Doctor Card (Applied glass-card class) */}
+            <div className="career-card glass-card group relative rounded-3xl p-8 text-center overflow-hidden" style={{ transformStyle: 'preserve-3d' }}>
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: 'translateZ(1px)' }}></div>
 
-              {/* Animated border */}
-              <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-green-300 transition-all duration-300"></div>
-
-              {/* Floating elements */}
-              <div className="absolute top-4 right-4 text-2xl animate-bounce opacity-60 group-hover:opacity-100 transition-opacity">💚</div>
-              <div className="absolute bottom-4 left-4 text-xl animate-pulse opacity-60 group-hover:opacity-100 transition-opacity">🏥</div>
-
-              <div className="relative z-10">
-                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce">🩺</div>
-                <h4 className="font-black text-xl md:text-2xl text-gray-800 dark:text-white mb-4 group-hover:text-green-600 transition-colors duration-300">Doctor</h4>
-                <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed mb-6 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors duration-300">
+              <div className="relative z-10" style={{ transformStyle: 'preserve-3d' }}>
+                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce text-green-400" style={{ transform: 'translateZ(20px)' }}>🩺</div>
+                <h4 className="font-black text-xl md:text-2xl text-white mb-4 group-hover:text-green-300 transition-colors duration-300" style={{ transform: 'translateZ(10px)' }}>Doctor</h4>
+                <p className="text-base text-gray-300 leading-relaxed mb-6" style={{ transform: 'translateZ(5px)' }}>
                   Help people and save lives every day!
                 </p>
 
-                {/* Hover details */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
-                  <div className="bg-gradient-to-r from-green-100 to-teal-100 dark:from-green-900/30 dark:to-teal-900/30 rounded-xl p-4 mb-4">
-                    <p className="text-sm font-semibold text-green-800 dark:text-green-200">Skills: Biology, Medicine, Compassion</p>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0" style={{ transform: 'translateZ(15px)' }}>
+                  <div className="bg-green-400/20 backdrop-blur-md rounded-xl p-4 mb-4">
+                    <p className="text-sm font-semibold text-green-200">Skills: Biology, Medicine, Compassion</p>
                   </div>
                   <div className="flex justify-center">
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-green-600 hover:to-teal-700 transition-all duration-300 cursor-pointer">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-green-600 hover:to-teal-700 transition-all duration-300 cursor-pointer shadow-lg shadow-green-500/30">
                       <span>Explore Path</span>
                       <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                     </div>
@@ -714,41 +714,32 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Ripple effect on hover */}
               <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                    style={{
                      background: 'radial-gradient(circle, rgba(34,197,94,0.1) 0%, transparent 70%)',
-                     animation: 'careerRipple 1s ease-out'
+                     animation: 'careerRipple 1s ease-out',
+                     transform: 'translateZ(1px)',
                    }}>
               </div>
             </div>
 
-            {/* Space Explorer Card */}
-            <div className="group relative bg-white rounded-3xl p-8 text-center shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-4 dark:bg-gray-800 overflow-hidden">
-              {/* Card background glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 dark:from-purple-900/20 dark:to-indigo-900/20"></div>
+            {/* Space Explorer Card (Applied glass-card class) */}
+            <div className="career-card glass-card group relative rounded-3xl p-8 text-center overflow-hidden" style={{ transformStyle: 'preserve-3d' }}>
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: 'translateZ(1px)' }}></div>
 
-              {/* Animated border */}
-              <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-purple-300 transition-all duration-300"></div>
-
-              {/* Floating elements */}
-              <div className="absolute top-4 right-4 text-2xl animate-bounce opacity-60 group-hover:opacity-100 transition-opacity">🚀</div>
-              <div className="absolute bottom-4 left-4 text-xl animate-pulse opacity-60 group-hover:opacity-100 transition-opacity">⭐</div>
-
-              <div className="relative z-10">
-                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce">🛰</div>
-                <h4 className="font-black text-xl md:text-2xl text-gray-800 dark:text-white mb-4 group-hover:text-purple-600 transition-colors duration-300">Space Explorer</h4>
-                <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed mb-6 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors duration-300">
+              <div className="relative z-10" style={{ transformStyle: 'preserve-3d' }}>
+                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce text-purple-400" style={{ transform: 'translateZ(20px)' }}>🛰</div>
+                <h4 className="font-black text-xl md:text-2xl text-white mb-4 group-hover:text-purple-300 transition-colors duration-300" style={{ transform: 'translateZ(10px)' }}>Space Explorer</h4>
+                <p className="text-base text-gray-300 leading-relaxed mb-6" style={{ transform: 'translateZ(5px)' }}>
                   Discover new worlds beyond Earth!
                 </p>
 
-                {/* Hover details */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
-                  <div className="bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-xl p-4 mb-4">
-                    <p className="text-sm font-semibold text-purple-800 dark:text-purple-200">Skills: Physics, Engineering, Astronomy</p>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0" style={{ transform: 'translateZ(15px)' }}>
+                  <div className="bg-purple-400/20 backdrop-blur-md rounded-xl p-4 mb-4">
+                    <p className="text-sm font-semibold text-purple-200">Skills: Physics, Engineering, Astronomy</p>
                   </div>
                   <div className="flex justify-center">
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-purple-600 hover:to-indigo-700 transition-all duration-300 cursor-pointer">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-purple-600 hover:to-indigo-700 transition-all duration-300 cursor-pointer shadow-lg shadow-purple-500/30">
                       <span>Explore Path</span>
                       <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                     </div>
@@ -756,41 +747,32 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Ripple effect on hover */}
               <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                    style={{
                      background: 'radial-gradient(circle, rgba(147,51,234,0.1) 0%, transparent 70%)',
-                     animation: 'careerRipple 1s ease-out'
+                     animation: 'careerRipple 1s ease-out',
+                     transform: 'translateZ(1px)',
                    }}>
               </div>
             </div>
 
-            {/* Game Designer Card */}
-            <div className="group relative bg-white rounded-3xl p-8 text-center shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-4 dark:bg-gray-800 overflow-hidden">
-              {/* Card background glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-rose-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 dark:from-pink-900/20 dark:to-rose-900/20"></div>
+            {/* Game Designer Card (Applied glass-card class) */}
+            <div className="career-card glass-card group relative rounded-3xl p-8 text-center overflow-hidden" style={{ transformStyle: 'preserve-3d' }}>
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: 'translateZ(1px)' }}></div>
 
-              {/* Animated border */}
-              <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-pink-300 transition-all duration-300"></div>
-
-              {/* Floating elements */}
-              <div className="absolute top-4 right-4 text-2xl animate-bounce opacity-60 group-hover:opacity-100 transition-opacity">🎯</div>
-              <div className="absolute bottom-4 left-4 text-xl animate-pulse opacity-60 group-hover:opacity-100 transition-opacity">🎮</div>
-
-              <div className="relative z-10">
-                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce">🎮</div>
-                <h4 className="font-black text-xl md:text-2xl text-gray-800 dark:text-white mb-4 group-hover:text-pink-600 transition-colors duration-300">Game Designer</h4>
-                <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed mb-6 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors duration-300">
+              <div className="relative z-10" style={{ transformStyle: 'preserve-3d' }}>
+                <div className="career-icon text-6xl mb-6 transform group-hover:scale-125 transition-transform duration-300 group-hover:animate-bounce text-pink-400" style={{ transform: 'translateZ(20px)' }}>🎮</div>
+                <h4 className="font-black text-xl md:text-2xl text-white mb-4 group-hover:text-pink-300 transition-colors duration-300" style={{ transform: 'translateZ(10px)' }}>Game Designer</h4>
+                <p className="text-base text-gray-300 leading-relaxed mb-6" style={{ transform: 'translateZ(5px)' }}>
                   Create amazing games that millions love!
                 </p>
 
-                {/* Hover details */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
-                  <div className="bg-gradient-to-r from-pink-100 to-rose-100 dark:from-pink-900/30 dark:to-rose-900/30 rounded-xl p-4 mb-4">
-                    <p className="text-sm font-semibold text-pink-800 dark:text-pink-200">Skills: Art, Programming, Creativity</p>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0" style={{ transform: 'translateZ(15px)' }}>
+                  <div className="bg-pink-400/20 backdrop-blur-md rounded-xl p-4 mb-4">
+                    <p className="text-sm font-semibold text-pink-200">Skills: Art, Programming, Creativity</p>
                   </div>
                   <div className="flex justify-center">
-                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-pink-600 hover:to-rose-700 transition-all duration-300 cursor-pointer">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:from-pink-600 hover:to-rose-700 transition-all duration-300 cursor-pointer shadow-lg shadow-pink-500/30">
                       <span>Explore Path</span>
                       <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
                     </div>
@@ -798,19 +780,19 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Ripple effect on hover */}
               <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                    style={{
                      background: 'radial-gradient(circle, rgba(236,72,153,0.1) 0%, transparent 70%)',
-                     animation: 'careerRipple 1s ease-out'
+                     animation: 'careerRipple 1s ease-out',
+                     transform: 'translateZ(1px)',
                    }}>
               </div>
             </div>
           </div>
 
           {/* Career exploration CTA */}
-          <div className="text-center mt-16">
-            <div className="inline-flex items-center gap-4 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white px-8 py-4 rounded-2xl text-xl font-bold shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-500 cursor-pointer">
+          <div className="text-center mt-16" style={{ transform: 'translateZ(10px)' }}>
+            <div className="inline-flex items-center gap-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 text-white px-8 py-4 rounded-2xl text-xl font-bold shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-500 cursor-pointer shadow-cyan-500/50">
               <span>Discover More Career Paths</span>
               <div className="flex space-x-1">
                 <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
@@ -821,91 +803,88 @@ const LandingPage: React.FC = () => {
           </div>
 
           {/* Bottom decorative elements */}
-          <div className="flex justify-center mt-12 space-x-6">
-            <div className="w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
-            <div className="w-4 h-4 bg-orange-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
-            <div className="w-4 h-4 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
-            <div className="w-4 h-4 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: '0.9s' }}></div>
+          <div className="flex justify-center mt-12 space-x-6" style={{ transform: 'translateZ(10px)' }}>
+            <div className="w-4 h-4 bg-blue-400 rounded-full animate-pulse shadow-lg shadow-blue-400/50"></div>
+            <div className="w-4 h-4 bg-indigo-400 rounded-full animate-pulse shadow-lg shadow-indigo-400/50" style={{ animationDelay: '0.3s' }}></div>
+            <div className="w-4 h-4 bg-fuchsia-400 rounded-full animate-pulse shadow-lg shadow-fuchsia-400/50" style={{ animationDelay: '0.6s' }}></div>
+            <div className="w-4 h-4 bg-pink-400 rounded-full animate-pulse shadow-lg shadow-pink-400/50" style={{ animationDelay: '0.9s' }}></div>
           </div>
         </div>
-
-        <style>{`
-          @keyframes careerRipple {
-            0% { transform: scale(0); opacity: 1; }
-            100% { transform: scale(4); opacity: 0; }
-          }
-        `}</style>
       </section>
 
-      <section className="py-20 bg-gradient-to-br from-blue-600 to-purple-600 text-white dark:from-gray-900 dark:to-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+      {/* AI Buddy Section (Updated for 3D/Dark Theme) */}
+      <section className="py-20 bg-transparent">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="text-center mb-16" style={{ transform: 'translateZ(10px)' }}>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
               🗣 Your AI Learning Buddy
             </h2>
-            <p className="text-xl">AI that explains concepts in the theme YOU love!</p>
+            <p className="text-xl text-gray-300">AI that explains concepts in the theme YOU love!</p>
           </div>
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8">
-                <h3 className="text-2xl font-bold mb-4">🏏 Cricket Bot Says:</h3>
-                <p className="text-lg leading-relaxed">
+              {/* Glassmorphic card */}
+              <div className="glass-card rounded-2xl p-8 slide-card group relative" style={{ transformStyle: 'preserve-3d' }}>
+                <h3 className="text-2xl font-bold mb-4 text-cyan-300" style={{ transform: 'translateZ(10px)' }}>🏏 Cricket Bot Says:</h3>
+                <p className="text-lg leading-relaxed text-gray-200" style={{ transform: 'translateZ(5px)' }}>
                   "Didn't get fractions? Think of it like cricket! If a team scores 150 runs in 30 overs, that's 150/30 = 5 runs per over. Fractions are just parts of a whole, like overs in a match!"
                 </p>
               </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 mt-6">
-                <h3 className="text-2xl font-bold mb-4">🤔 What If? Bot:</h3>
-                <p className="text-lg leading-relaxed">
-                  "What if we could fly? We'd need wings 6 times our arm span and super strong chest muscles! That's why airplanes have big wings and powerful engines!"
+              {/* Glassmorphic card */}
+              <div className="glass-card rounded-2xl p-8 mt-6 slide-card group relative" style={{ transformStyle: 'preserve-3d' }}>
+                <h3 className="text-2xl font-bold mb-4 text-indigo-300" style={{ transform: 'translateZ(10px)' }}>🧠 Learning Style Bot:</h3>
+                <p className="text-lg leading-relaxed text-gray-200" style={{ transform: 'translateZ(5px)' }}>
+                  "Everyone learns differently! I explain topics the way YOU learn best — with visuals, stories, examples, or step-by-step logic. Let’s learn your way!"
                 </p>
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-8xl mb-6">🤖</div>
-              <h3 className="text-3xl font-bold mb-4">Always Here to Help!</h3>
-              <p className="text-xl">Ask anything, anytime, in any theme you love!</p>
+            <div className="text-center" style={{ transformStyle: 'preserve-3d' }}>
+              <div className="text-8xl mb-6 text-cyan-400" style={{ transform: 'translateZ(30px)' }}>🤖</div>
+              <h3 className="text-3xl font-bold mb-4 text-white" style={{ transform: 'translateZ(20px)' }}>Always Here to Help!</h3>
+              <p className="text-xl text-gray-300" style={{ transform: 'translateZ(10px)' }}>Ask anything, anytime, in any theme you love!</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-white dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
+      {/* Collaboration Section (Updated for 3D/Dark Theme) */}
+      <section className="py-20 bg-transparent">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="text-center mb-16" style={{ transform: 'translateZ(10px)' }}>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 bg-gradient-to-r from-green-300 to-blue-300 bg-clip-text text-transparent">
               👥 Learn Together, Feel Together
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">Join study groups with friends & teachers!</p>
+            <p className="text-xl text-gray-300">Join study groups with friends & teachers!</p>
           </div>
-          <div className="bg-gradient-to-br from-green-100 to-blue-100 rounded-3xl p-8 md:p-12 dark:from-gray-800 dark:to-gray-800">
+          <div className="glass-card rounded-3xl p-8 md:p-12 slide-card group relative" style={{ transformStyle: 'preserve-3d' }}>
             <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div>
-                <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Emotion Detection Magic ✨</h3>
-                <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
+              <div style={{ transform: 'translateZ(10px)' }}>
+                <h3 className="text-2xl font-bold text-white mb-4 text-cyan-300">Emotion Detection Magic ✨</h3>
+                <p className="text-lg text-gray-300 leading-relaxed mb-6">
                   AI tracks emotions — 😊 means understood, 😕 means confused — so teachers know exactly when to step in and help!
                 </p>
                 <div className="space-y-4">
                   <div className="flex items-center space-x-4">
                     <span className="text-3xl">😊</span>
-                    <span className="text-lg font-medium text-gray-800 dark:text-white">I understand this concept!</span>
+                    <span className="text-lg font-medium text-white">I understand this concept!</span>
                   </div>
                   <div className="flex items-center space-x-4">
                     <span className="text-3xl">🤔</span>
-                    <span className="text-lg font-medium text-gray-800 dark:text-white">I need to think about this...</span>
+                    <span className="text-lg font-medium text-white">I need to think about this...</span>
                   </div>
                   <div className="flex items-center space-x-4">
                     <span className="text-3xl">😕</span>
-                    <span className="text-lg font-medium text-gray-800 dark:text-white">I'm confused, need help!</span>
+                    <span className="text-lg font-medium text-white">I'm confused, need help!</span>
                   </div>
                 </div>
               </div>
-              <div className="text-center">
-                <div className="bg-white rounded-2xl p-6 shadow-lg dark:bg-gray-700">
-                  <h4 className="font-bold text-lg mb-4 text-gray-800 dark:text-white">Live Collaboration Board</h4>
-                  <div className="bg-gray-100 rounded-lg p-4 mb-4 dark:bg-gray-600">
-                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Sarah is drawing...</div>
-                    <div className="h-20 bg-blue-200 rounded flex items-center justify-center dark:bg-blue-800">
-                      <span className="text-2xl">📐 ➕ 📏 = 📊</span>
+              <div className="text-center" style={{ transformStyle: 'preserve-3d' }}>
+                <div className="bg-white/10 rounded-2xl p-6 shadow-xl shadow-cyan-500/10 backdrop-blur-sm" style={{ transform: 'translateZ(20px)' }}>
+                  <h4 className="font-bold text-lg mb-4 text-white">Live Collaboration Board</h4>
+                  <div className="bg-gray-700 rounded-lg p-4 mb-4" style={{ transform: 'translateZ(10px)' }}>
+                    <div className="text-sm text-gray-400 mb-2">Sarah is drawing...</div>
+                    <div className="h-20 bg-blue-800 rounded flex items-center justify-center">
+                      <span className="text-2xl text-white" style={{ transform: 'translateZ(15px)' }}>📐 ➕ 📏 = 📊</span>
                     </div>
                   </div>
                   <div className="flex justify-center space-x-2">
@@ -920,41 +899,42 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-gray-800 dark:to-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
+      {/* Progress Tracking Section (Updated for 3D/Dark Theme) */}
+      <section className="py-20 bg-transparent">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="text-center mb-16" style={{ transform: 'translateZ(10px)' }}>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 bg-gradient-to-r from-yellow-300 to-fuchsia-300 bg-clip-text text-transparent">
               📈 Track Your Learning Journey Like a Game!
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">Level up with every lesson completed!</p>
+            <p className="text-xl text-gray-300">Level up with every lesson completed!</p>
           </div>
-          <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl dark:bg-gray-800">
+          <div className="glass-card rounded-3xl p-8 md:p-12 shadow-xl shadow-indigo-500/10 slide-card group relative" style={{ transformStyle: 'preserve-3d' }}>
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🏆</div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Level 15</h3>
-                <p className="text-gray-600 dark:text-gray-400">Math Master</p>
-                <div className="bg-yellow-200 rounded-full h-3 mt-4 dark:bg-yellow-800">
-                  <div className="bg-yellow-500 h-3 rounded-full" style={{ width: '75%' }}></div>
+              <div className="text-center" style={{ transform: 'translateZ(10px)' }}>
+                <div className="text-6xl mb-4 text-yellow-400">🏆</div>
+                <h3 className="text-xl font-bold text-white mb-2">Level 15</h3>
+                <p className="text-gray-400">Math Master</p>
+                <div className="bg-yellow-800 rounded-full h-3 mt-4">
+                  <div className="bg-yellow-500 h-3 rounded-full shadow-lg shadow-yellow-500/50" style={{ width: '75%', transform: 'translateZ(5px)' }}></div>
                 </div>
               </div>
-              <div className="text-center">
-                <div className="text-6xl mb-4">⭐</div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">847 Stars</h3>
-                <p className="text-gray-600 dark:text-gray-400">Collected This Month</p>
-                <div className="flex justify-center space-x-1 mt-4">
+              <div className="text-center" style={{ transform: 'translateZ(10px)' }}>
+                <div className="text-6xl mb-4 text-white">⭐</div>
+                <h3 className="text-xl font-bold text-white mb-2">847 Stars</h3>
+                <p className="text-gray-400">Collected This Month</p>
+                <div className="flex justify-center space-x-1 mt-4" style={{ transform: 'translateZ(5px)' }}>
                   <span className="text-yellow-400">⭐</span>
                   <span className="text-yellow-400">⭐</span>
                   <span className="text-yellow-400">⭐</span>
                   <span className="text-yellow-400">⭐</span>
-                  <span className="text-gray-300">⭐</span>
+                  <span className="text-gray-600">⭐</span>
                 </div>
               </div>
-              <div className="text-center">
-                <div className="text-6xl mb-4">🎯</div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">12 Badges</h3>
-                <p className="text-gray-600 dark:text-gray-400">Achievements Unlocked</p>
-                <div className="flex justify-center space-x-2 mt-4">
+              <div className="text-center" style={{ transform: 'translateZ(10px)' }}>
+                <div className="text-6xl mb-4 text-fuchsia-400">🎯</div>
+                <h3 className="text-xl font-bold text-white mb-2">12 Badges</h3>
+                <p className="text-gray-400">Achievements Unlocked</p>
+                <div className="flex justify-center space-x-2 mt-4" style={{ transform: 'translateZ(5px)' }}>
                   <span className="text-2xl">🏅</span>
                   <span className="text-2xl">🎖</span>
                   <span className="text-2xl">🏆</span>
@@ -962,24 +942,24 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
             <div className="mt-12">
-              <h4 className="text-2xl font-bold text-center text-gray-800 dark:text-white mb-8">Your Learning Adventure Map</h4>
-              <div className="relative">
+              <h4 className="text-2xl font-bold text-center text-white mb-8" style={{ transform: 'translateZ(10px)' }}>Your Learning Adventure Map</h4>
+              <div className="relative" style={{ transformStyle: 'preserve-3d' }}>
                 <svg className="w-full h-32" viewBox="0 0 800 120">
-                  <path className="progress-path" d="M50,60 Q200,20 350,60 T650,60 L750,60" stroke="#4ade80" strokeWidth="4" fill="none" />
-                  <circle cx="50" cy="60" r="8" fill="#22c55e" />
-                  <circle cx="200" cy="40" r="8" fill="#22c55e" />
-                  <circle cx="350" cy="60" r="8" fill="#22c55e" />
-                  <circle cx="500" cy="40" r="8" fill="#fbbf24" />
-                  <circle cx="650" cy="60" r="6" fill="#d1d5db" />
-                  <circle cx="750" cy="60" r="6" fill="#d1d5db" />
+                  <path className="progress-path" d="M50,60 Q200,20 350,60 T650,60 L750,60" stroke="#4ade80" strokeWidth="4" fill="none" style={{ transform: 'translateZ(5px)' }} />
+                  <circle cx="50" cy="60" r="8" fill="#22c55e" style={{ transform: 'translateZ(10px)' }} />
+                  <circle cx="200" cy="40" r="8" fill="#22c55e" style={{ transform: 'translateZ(10px)' }} />
+                  <circle cx="350" cy="60" r="8" fill="#22c55e" style={{ transform: 'translateZ(10px)' }} />
+                  <circle cx="500" cy="40" r="8" fill="#fbbf24" style={{ transform: 'translateZ(10px)' }} />
+                  <circle cx="650" cy="60" r="6" fill="#4b5563" style={{ transform: 'translateZ(10px)' }} /> {/* Darkened inactive node */}
+                  <circle cx="750" cy="60" r="6" fill="#4b5563" style={{ transform: 'translateZ(10px)' }} /> {/* Darkened inactive node */}
                 </svg>
                 <div className="absolute top-0 left-0 w-full h-full flex items-center justify-between px-8">
-                  <span className="text-xs font-medium text-gray-800 dark:text-white">Start</span>
-                  <span className="text-xs font-medium text-gray-800 dark:text-white">Basics</span>
-                  <span className="text-xs font-medium text-gray-800 dark:text-white">Intermediate</span>
-                  <span className="text-xs font-medium text-yellow-600">Current</span>
-                  <span className="text-xs font-medium text-gray-400">Advanced</span>
-                  <span className="text-xs font-medium text-gray-400">Expert</span>
+                  <span className="text-xs font-medium text-white" style={{ transform: 'translateZ(15px)' }}>Start</span>
+                  <span className="text-xs font-medium text-white" style={{ transform: 'translateZ(15px)' }}>Basics</span>
+                  <span className="text-xs font-medium text-white" style={{ transform: 'translateZ(15px)' }}>Intermediate</span>
+                  <span className="text-xs font-medium text-yellow-400" style={{ transform: 'translateZ(15px)' }}>Current</span>
+                  <span className="text-xs font-medium text-gray-400" style={{ transform: 'translateZ(15px)' }}>Advanced</span>
+                  <span className="text-xs font-medium text-gray-400" style={{ transform: 'translateZ(15px)' }}>Expert</span>
                 </div>
               </div>
             </div>
@@ -987,56 +967,57 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      <section id="about" className="py-20 bg-gradient-to-br from-pink-100 to-purple-100 dark:from-gray-900 dark:to-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
+      {/* About Section (Updated for 3D/Dark Theme) */}
+      <section id="about" className="py-20 bg-transparent">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="text-center mb-16" style={{ transform: 'translateZ(10px)' }}>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 bg-gradient-to-r from-pink-300 to-purple-300 bg-clip-text text-transparent">
               💡 Why LearnMyWay?
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Because learning should never feel boring! We connect parents, teachers, and students through theme-based, gamified, and personalized learning experiences that make education magical.
             </p>
           </div>
-          <div className="text-center">
-            <div className="text-8xl mb-8">🌈</div>
+          <div className="text-center" style={{ transform: 'translateZ(10px)' }}>
+            <div className="text-8xl mb-8 text-cyan-400">🌈</div>
             <div className="flex justify-center items-center space-x-8 mb-8">
               <div className="text-center">
-                <div className="text-4xl mb-2">👨‍👩‍👧‍👦</div>
-                <p className="font-medium text-gray-700 dark:text-gray-300">Parents</p>
+                <div className="text-4xl mb-2 text-indigo-400">👨‍👩‍👧‍👦</div>
+                <p className="font-medium text-gray-300">Parents</p>
               </div>
-              <div className="text-3xl text-pink-500">❤</div>
+              <div className="text-3xl text-fuchsia-400">❤</div>
               <div className="text-center">
-                <div className="text-4xl mb-2">👩‍🏫</div>
-                <p className="font-medium text-gray-700 dark:text-gray-300">Teachers</p>
+                <div className="text-4xl mb-2 text-cyan-400">👩‍🏫</div>
+                <p className="font-medium text-gray-300">Teachers</p>
               </div>
-              <div className="text-3xl text-pink-500">❤</div>
+              <div className="text-3xl text-fuchsia-400">❤</div>
               <div className="text-center">
-                <div className="text-4xl mb-2">🎓</div>
-                <p className="font-medium text-gray-700 dark:text-gray-300">Students</p>
+                <div className="text-4xl mb-2 text-blue-400">🎓</div>
+                <p className="font-medium text-gray-300">Students</p>
               </div>
             </div>
-            <button onClick={() => navigate('/join')} className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-12 py-4 rounded-full text-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+            <button onClick={() => navigate('/join')} className="bg-gradient-to-r from-fuchsia-500 to-indigo-600 text-white px-12 py-4 rounded-full text-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 shadow-fuchsia-500/50">
               Join Our Learning Family! 🚀
             </button>
           </div>
         </div>
       </section>
 
-      <footer className="bg-gray-800 text-white py-12 dark:bg-gray-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* Footer (Updated for Dark Cosmic Theme) */}
+      <footer className="bg-gray-950 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center" style={{ transform: 'translateZ(0)' }}>
           <div className="flex items-center justify-center space-x-2 mb-4">
-            {/* <span className="text-3xl">🚀</span> */}
-            <span className="text-2xl font-bold">LearnMyWay</span>
+            <span className="text-2xl font-bold text-cyan-400">LearnMyWay</span>
           </div>
           <p className="text-gray-400 mb-6">Where Learning Feels Like Play!</p>
-          <div className="flex justify-center space-x-6 text-2xl">
+          <div className="flex justify-center space-x-6 text-2xl text-cyan-300">
             <span>📚</span>
             <span>🎨</span>
             <span>🚀</span>
             <span>✨</span>
             <span>🌟</span>
           </div>
-          <p className="text-gray-500 text-sm mt-8">© 2024 LearnMyWay. Making education magical for everyone!</p>
+          <p className="text-gray-500 text-sm mt-8">© 2025 LearnMyWay. Making education magical for everyone!</p>
         </div>
       </footer>
     </div>
