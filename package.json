@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev-all": "concurrently -k -s first --hide exit -n api,node,web \"cd backend && python api.py\" \"cd backend && node server.js\" \"npm run dev\""
+
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -64,7 +66,7 @@
     "react-lottie": "^1.2.10",
     "react-markdown": "^9.1.0",
     "react-router-dom": "^6.30.0",
-    "react-syntax-highlighter": "^15.6.6",
+    "react-syntax-highlighter": "^16.1.0",
     "react-tsparticles": "^2.12.2",
     "react-virtuoso": "^4.12.6",
     "reactflow": "^11.11.4",
@@ -94,6 +96,7 @@
     "@types/socket.io-client": "^1.4.36",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
     "eslint": "^9.24.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",

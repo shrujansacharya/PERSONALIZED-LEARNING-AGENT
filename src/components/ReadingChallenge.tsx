@@ -383,94 +383,7 @@ export const ReadingChallenge = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gray-900"
-        style={{
-          // *** CORRECTED: Using consistent variable for background ***
-          backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          transition: 'background-image 1s ease-in-out',
-        }}
-      >
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-0"></div>
 
-        <div className="absolute inset-0 z-5">
-          {[...Array(50)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full bg-green-300"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                width: `${1 + Math.random() * 2}px`,
-                height: `${1 + Math.random() * 2}px`,
-              }}
-              animate={{
-                y: [0, (Math.random() > 0.5 ? 1 : -1) * Math.random() * 200],
-                x: [0, (Math.random() > 0.5 ? 1 : -1) * Math.random() * 200],
-                opacity: [0, 1, 0],
-              }}
-              transition={{
-                duration: 1.5 + Math.random() * 2,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-            />
-          ))}
-        </div>
-        
-        <motion.div
-          className="bg-black/80 backdrop-blur-xl rounded-3xl p-10 shadow-2xl border border-white/10 text-center relative z-10 max-w-lg w-full"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-        >
-          <motion.div className="relative mb-6 w-16 h-16 mx-auto">
-            <motion.div
-              animate={{ scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] }}
-              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <Book className="text-green-400 w-16 h-16" />
-            </motion.div>
-            <motion.div
-              className="absolute top-0 left-0 w-full h-0.5 bg-teal-300/80"
-              style={{ boxShadow: '0 0 8px #67e8f9' }}
-              animate={{ y: [0, 64], opacity: [0.8, 0] }}
-              transition={{ duration: 1, repeat: Infinity, ease: "circIn" }}
-            />
-          </motion.div>
-
-          <h2 className="text-3xl font-bold text-white mb-3 font-mono tracking-wide">
-             Finding A Good Read...
-          </h2>
-
-          <p className="text-white/70 text-lg mb-6">
-            Preparing your challenge...
-          </p>
-
-          <div className="w-full bg-white/10 rounded-full h-2.5 mb-6 overflow-hidden">
-             <motion.div
-               className="bg-gradient-to-r from-green-500 to-teal-400 h-full"
-               initial={{ width: '0%' }}
-               animate={{ width: '100%' }}
-               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-             />
-          </div>
-
-          <motion.div
-            className="text-green-300 text-sm font-medium"
-            animate={{ opacity: [0.7, 1, 0.7] }}
-            transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-          >
-            🚀 Just a moment...
-          </motion.div>
-        </motion.div>
-      </div>
-    );
-  }
 
   // Locked Screen
   if (isLocked) {
@@ -503,8 +416,43 @@ export const ReadingChallenge = () => {
             className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg font-medium shadow-lg shadow-green-500/40 hover:from-green-600 hover:to-teal-600 transition-all duration-300"
             whileHover={{ scale: 1.05 }}
           >
-            Previous Page
+            Back 
           </motion.button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Loading Screen
+  if (loading) {
+    return (
+      <div
+        className="min-h-screen p-8 relative overflow-hidden flex items-center justify-center"
+        style={{
+          backgroundImage: currentBackground ? `url(${currentBackground})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          transition: 'background-image 1s ease-in-out',
+        }}
+      >
+        {/* UPDATED: Deep Cosmic Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-md z-0"></div>
+        <motion.div
+          className="bg-black/70 backdrop-blur-xl rounded-3xl p-10 shadow-2xl border border-green-500/50 text-center relative z-30 max-w-lg w-full"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          <motion.div className="relative mb-6 w-16 h-16 mx-auto">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            >
+              <Book className="text-green-400 w-16 h-16" />
+            </motion.div>
+          </motion.div>
+          <h2 className="text-3xl font-bold text-white mb-3 font-mono tracking-wide">Loading Challenge...</h2>
+          <p className="text-white/70 text-lg mb-6">Preparing your reading challenge...</p>
         </motion.div>
       </div>
     );
@@ -598,14 +546,17 @@ export const ReadingChallenge = () => {
           transition={{ duration: 0.8 }}
         >
           <div className="flex items-center justify-between mb-6">
-            <button
+            {/* --- NEW BACK BUTTON CODE --- */}
+            <motion.button
               onClick={() => navigate(-1)}
-              // UPDATED: Glassmorphic button
-              className="flex items-center gap-2 bg-black/40 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition border border-white/20"
+              className="flex items-center gap-2 bg-black/40 text-white px-4 py-2 rounded-lg hover:bg-white/10 transition border border-white/20"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <ArrowLeft size={20} />
               Previous Page
-            </button>
+            </motion.button>
+            {/* --- END NEW BACK BUTTON CODE --- */}
             <div className="flex items-center gap-4">
               <label className="text-white font-medium">Grade Level:</label>
               <select

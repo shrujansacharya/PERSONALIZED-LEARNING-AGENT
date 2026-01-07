@@ -1,3 +1,4 @@
+
 // learnmyway-backend/server.js
 require('dotenv').config();
 const express = require('express');
@@ -245,6 +246,10 @@ io.on('connection', (socket) => {
 app.post('/api/register', async (req, res) => {
   try {
     const { firebaseUid, name, dob, class: userClass, email } = req.body;
+    // Check if required fields are present to prevent 400 Bad Request
+    if (!firebaseUid || !name || !email) {
+      return res.status(400).json({ error: 'Missing required registration fields.' });
+    }
     const newUser = new User({ firebaseUid, name, dob, class: userClass, email });
     await newUser.save();
     res.status(201).json(newUser);
@@ -883,7 +888,7 @@ ${syllabus}
             );
             questionPaperText = text.trim();
           } else if (fileType === 'text/plain') {
-            questionPaperText = questionFile.buffer.toString('utf8').trim();
+            questionPaperText = questionPaperFile.buffer.toString('utf8').trim();
           }
 
           // Fallback OCR (increased pages)
@@ -952,7 +957,7 @@ ${syllabus}
       }
 
       // ✅ Final Response
-      res.status(200).json({ plan, answers });
+      res.status(200).json({ plan, answers, syllabus });
     } catch (error) {
       console.error('🔴 Error in /api/generate-full-plan:', error);
       res.status(500).json({ error: 'Failed to generate study plan.' });
@@ -961,44 +966,140 @@ ${syllabus}
 );
 
 
-app.post('/api/youtube-videos', async (req, res) => {
-  try {
-    const { subject } = req.body;
 
-    if (!subject) {
-      return res.status(400).json({ error: 'Subject is required' });
+// Enhanced server.js excerpt for /api/youtube-videos
+
+app.post('/api/youtube-videos', async (req, res) => {
+  console.log('YouTube API request body (excerpt length):', req.body.syllabusExcerpt?.length || 0);
+  try {
+    const { subject, learningStyle, syllabusExcerpt } = req.body;
+
+    if (!syllabusExcerpt || syllabusExcerpt.trim().length < 100) {
+      console.warn('Syllabus excerpt too short – using subject fallback');
+      return fetchVideosFromDifferentChannels(`${subject} tutorial`, res, 3);
     }
 
-    // Mock YouTube videos data since we don't have YouTube API key
-    // In production, you would use YouTube Data API v3
-    // In server.js
-const mockVideos = [
-  {
-    title: `${subject} - Introduction and Basics`,
-    video_id: 'YOUTUBE_ID_1', // Unique ID
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-  },
-  {
-    title: `Advanced ${subject} Concepts`,
-    video_id: 'YOUTUBE_ID_2', // Unique ID
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-  },
-  {
-    title: `${subject} Practice Problems`,
-    video_id: 'YOUTUBE_ID_3', // Unique ID
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-  }
-];
+    // Use Gemini to extract 1-2 CLEAN main topics (strict filtering)
+    let topTopics = [];
+    if (generativeModel) {
+      const topicPrompt = `
+From the study material TEXT ONLY, extract 1-2 MAIN TOPICS or KEY CONCEPTS. 
+CRITERIA:
+- Must be educational concepts, chapters, algorithms, or processes (e.g., "Baum-Welch Algorithm", "Hidden Markov Models").
+- IGNORE: Names (e.g., "Abinas V"), dates (e.g., "November 26, 2025"), numbers/sections (e.g., "3: The Learning Problem"), metadata, or non-content noise.
+- Focus on the core subject matter only.
+- Output ONLY a JSON array: ["Topic 1", "Topic 2"] (max 2, or just 1 if only one clear).
 
-    res.status(200).json({ videos: mockVideos });
+Material: ${syllabusExcerpt.substring(0, 4000)}
+      `;
+      const topicResponse = await generativeModel.generateContent({
+        contents: [{ role: 'user', parts: [{ text: topicPrompt }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 100 },
+      });
+      const topicText = topicResponse.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      try {
+        const cleanedText = topicText.replace(/```json|```/g, '').trim();
+        topTopics = JSON.parse(cleanedText).filter(topic => 
+          topic.length > 10 && // Min length for validity
+          !/\d{4}/.test(topic) && // No years/dates
+          !/[A-Z][a-z]+ [A-Z]\./.test(topic) && // No initials like "A. V."
+          topic.toLowerCase().includes('algorithm') || topic.toLowerCase().includes('model') || topic.toLowerCase().includes('problem') // Bias to technical terms
+        ).slice(0, 2); // Max 2 clean topics
+      } catch (parseErr) {
+        console.warn('Topic JSON parse failed:', parseErr);
+        topTopics = [];
+      }
+    }
+
+    // Fallback: Extract 1 clean topic from first meaningful sentence
+    if (topTopics.length === 0) {
+      const sentences = syllabusExcerpt.split(/[.!?]+/).filter(s => 
+        s.trim().length > 30 && 
+        !/\d{4}/.test(s) && 
+        !/^[A-Z]\)\s/.test(s) 
+      ).slice(0, 1); 
+      if (sentences.length > 0) {
+        const words = sentences[0].trim().split(/\s+/).slice(0, 6).join(' '); // First 6 words as topic
+        topTopics = [words.substring(0, 60)]; // Clean and cap
+      }
+    }
+
+    const mainTopic = topTopics[0] || 'key concepts'; // Use first (best) topic
+    console.log('Clean main topic extracted:', mainTopic);
+
+    // Fetch 3 videos from DIFFERENT channels for this main topic
+    const videos = await fetchVideosFromDifferentChannels(`"${mainTopic}" tutorial explained`, res, 3);
+    
+    if (videos.length === 0) {
+      // Ultimate fallback: Use snippet
+      const snippet = syllabusExcerpt.substring(0, 150).replace(/\s+/g, ' ');
+      const fallbackVideos = await fetchVideosFromDifferentChannels(`${snippet} tutorial`, res, 3);
+      res.status(200).json({ videos: fallbackVideos });
+      return;
+    }
+
+    console.log(`Success: ${videos.length} videos from different channels for "${mainTopic}"`);
+    res.status(200).json({ videos });
   } catch (error) {
-    console.error('Error fetching YouTube videos:', error);
-    res.status(500).json({ error: 'Failed to fetch YouTube videos' });
+    console.error('YouTube videos error:', error.message || error);
+    res.status(200).json({ videos: [] }); // Empty to avoid UI break
   }
 });
+
+// NEW Helper: Fetch videos and ensure unique channels
+async function fetchVideosFromDifferentChannels(query, res, numVideos = 3) {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    console.warn('No YOUTUBE_API_KEY');
+    return [];
+  }
+
+  try {
+    // Fetch more results to ensure channel diversity (start with 10)
+    const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+      params: {
+        part: 'snippet',
+        q: query,
+        type: 'video',
+        maxResults: Math.min(10, numVideos * 3), // Overfetch for selection
+        key: apiKey,
+        videoDuration: 'short', // Focused clips
+        order: 'relevance',
+        publishedAfter: '2020-01-01T00:00:00Z', // Recent
+      },
+      timeout: 10000,
+    });
+
+    const items = response.data.items || [];
+    const videosWithChannels = items
+      .filter(item => item.id.videoId && item.snippet.channelId)
+      .map((item) => ({
+        title: item.snippet.title,
+        video_id: item.id.videoId,
+        thumbnail: item.snippet.thumbnails.medium.url,
+        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+        channelId: item.snippet.channelId,
+        channelTitle: item.snippet.channelTitle,
+      }));
+
+    // Dedupe by channelId and select top numVideos
+    const uniqueByChannel = [];
+    const seenChannels = new Set();
+    for (const video of videosWithChannels) {
+      if (!seenChannels.has(video.channelId) && uniqueByChannel.length < numVideos) {
+        seenChannels.add(video.channelId);
+        uniqueByChannel.push(video);
+      }
+      if (uniqueByChannel.length >= numVideos) break;
+    }
+
+    console.log(`Query "${query}": Found ${videosWithChannels.length} total, selected ${uniqueByChannel.length} unique channels`);
+    return uniqueByChannel;
+  } catch (fetchErr) {
+    console.error(`Channel-diverse fetch failed for "${query}":`, fetchErr.message);
+    return [];
+  }
+}
 
 app.post('/api/adapt-plan', async (req, res) => {
   try {
@@ -1070,35 +1171,37 @@ Please provide an adapted study plan that adjusts the difficulty and pace accord
 // --- NEW CHAT ENDPOINT (FIXED) ---
 app.post('/api/chat', async (req, res) => {
   try {
+    // Frontend sends history, message, and systemInstruction
     const { history, message, systemInstruction } = req.body;
 
-    if (!history || !message || !systemInstruction) {
-      return res.status(400).json({ error: 'Missing required fields: history, message, or systemInstruction' });
+    if (!message || !systemInstruction) {
+      // History can be empty for the first message, so we check others
+      return res.status(400).json({ error: 'Missing required fields: message or systemInstruction' });
     }
 
     // 1. Check if your successfully initialized Vertex AI model exists
     if (!generativeModel) {
-      return res.status(500).json({ error: 'AI Service (Vertex AI) not configured on server.' });
+      // Ensure the error is returned as JSON to avoid the SyntaxError on the client
+      return res.status(500).json({ error: 'AI Service (Vertex AI) not configured on server. Check your GCP setup.' });
     }
 
-    // 2. Format the chat history for the Vertex AI SDK
-    const contents = [
-      {
-        role: 'user',
-        parts: [{ text: systemInstruction }],
-      },
-      {
-        role: 'model',
-        parts: [{ text: "Okay, I understand. I will act as instructed." }],
-      },
-      ...history,
-      {
-        role: 'user',
-        parts: [{ text: message }],
-      },
-    ];
+    // 2. Format the chat contents for the Vertex AI SDK
+    const contents = [];
 
-    // 3. Use the Vertex AI SDK (generativeModel) instead of axios
+    // Add system instruction as the first user message 
+    contents.push({ role: 'user', parts: [{ text: systemInstruction }] });
+    // Add a model response to set the context
+    contents.push({ role: 'model', parts: [{ text: "Okay, I understand. I will act as instructed." }] });
+    
+    // Add history 
+    if (Array.isArray(history)) {
+        contents.push(...history);
+    }
+    
+    // Add the current user message
+    contents.push({ role: 'user', parts: [{ text: message }] });
+
+    // 3. Use the Vertex AI SDK (generativeModel)
     const sdkResponse = await generativeModel.generateContent({
       contents: contents,
       generationConfig: {
@@ -1107,13 +1210,13 @@ app.post('/api/chat', async (req, res) => {
       },
     });
 
-    // 4. Send the SDK's response. 
-    // The 'candidates' array is inside the 'response' property.
+    // 4. Send the SDK's response. The frontend extracts the answer text.
     res.status(200).json(sdkResponse.response);
 
   } catch (error) {
     console.error('Error in /api/chat endpoint:', error.response ? error.response.data : error.message);
-    res.status(500).json({ error: 'Failed to get response from AI model.' });
+    // Ensure the error is returned as JSON to avoid the SyntaxError on the client
+    res.status(500).json({ error: 'Failed to get response from AI model. Check Vertex AI connectivity.' });
   }
 });
 

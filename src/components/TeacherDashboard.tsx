@@ -1,16 +1,28 @@
+// Updated TeacherDashboard.tsx
+// Changes:
+// 1. Imported UsersIcon and CreateSession.
+// 2. Updated the view state to include 'create-session'.
+// 3. Added the 'Study Group' item to the Sidebar.
+// 4. Added the 'Create Study Group' QuickActionCard to the Dashboard view.
+// 5. Added the 'create-session' case to the renderContent switch.
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     BellIcon, MagnifyingGlassIcon, UserIcon, CalendarIcon, 
     ChartBarIcon, CogIcon, DocumentIcon, LockClosedIcon, SparklesIcon,
     ChevronLeftIcon, ChevronDoubleLeftIcon, Bars3Icon,
-    ArrowTrendingUpIcon, UserPlusIcon, InboxStackIcon
+    ArrowTrendingUpIcon, UserPlusIcon, InboxStackIcon,
+    ClipboardDocumentCheckIcon,
+    UsersIcon // NEW: Import for Study Group icon
 } from '@heroicons/react/24/outline';
 import StudentManagement from './StudentManagement';
 import MaterialsManager from './MaterialsManager';
 import Analytics from './Analytics';
 import Settings from './Settings';
 import Calendar from './Calendar';
+import GenerateProgressCard from './GenerateProgressCard';
+import CreateSession from './CreateSession'; // NEW: Component for creation form
 
 // --- (Existing) StatCard Component ---
 const StatCard: React.FC<{
@@ -94,7 +106,7 @@ const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
             className="mb-8 p-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl flex items-center justify-between"
         >
             <div>
-                <h2 className="text-3xl font-bold text-white">Welcome back, {name}!</h2>
+                <h2 className="text-3xl font-bold text-white">Hello Mr.{name}!</h2>
                 <p className="text-lg text-blue-100 mt-1">Here's your complete overview for today.</p>
             </div>
             <SparklesIcon className="w-16 h-16 text-white/30 hidden md:block" />
@@ -102,7 +114,8 @@ const WelcomeBanner: React.FC<{ name: string }> = ({ name }) => {
     );
 };
 
-// --- (Existing) Sidebar Component ---
+// --- (Updated) Sidebar Component ---
+// Added 'create-session' to navItems
 const Sidebar: React.FC<{
     view: string;
     setView: (view: any) => void;
@@ -113,6 +126,8 @@ const Sidebar: React.FC<{
         { name: 'Dashboard', icon: ChartBarIcon, view: 'dashboard' },
         { name: 'Students', icon: UserIcon, view: 'students' },
         { name: 'Materials', icon: DocumentIcon, view: 'materials' },
+        { name: 'Progress Cards', icon: ClipboardDocumentCheckIcon, view: 'progress-cards' }, 
+        { name: 'Study Group', icon: UsersIcon, view: 'create-session' }, // NEW ITEM
         { name: 'Analytics', icon: ArrowTrendingUpIcon, view: 'analytics' },
         { name: 'Calendar', icon: CalendarIcon, view: 'calendar' },
         { name: 'Settings', icon: CogIcon, view: 'settings' },
@@ -236,7 +251,8 @@ const RecentActivity: React.FC<{ activities: any[] }> = ({ activities }) => {
 
 
 const TeacherDashboard: React.FC = () => {
-    const [view, setView] = useState<'dashboard' | 'students' | 'materials' | 'analytics' | 'calendar' | 'settings'>('dashboard');
+    // UPDATED: Added 'create-session' to the possible view states
+    const [view, setView] = useState<'dashboard' | 'students' | 'materials' | 'progress-cards' | 'analytics' | 'calendar' | 'settings' | 'create-session'>('dashboard');
     const [isPasswordProtected, setIsPasswordProtected] = useState(true);
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
@@ -388,6 +404,10 @@ const TeacherDashboard: React.FC = () => {
                 return <StudentManagement onBack={() => setView('dashboard')} />;
             case 'materials':
                 return <MaterialsManager onBack={() => setView('dashboard')} />;
+            case 'progress-cards': 
+                return <GenerateProgressCard onBack={() => setView('dashboard')} />;
+            case 'create-session': // NEW CASE: Renders the CreateSession component
+                return <CreateSession onBack={() => setView('dashboard')} />;
             case 'analytics':
                 return <Analytics onBack={() => setView('dashboard')} />;
             case 'calendar':
@@ -437,6 +457,22 @@ const TeacherDashboard: React.FC = () => {
                                         color="text-orange-400"
                                         iconBg="bg-orange-950"
                                         onClick={() => setView('materials')}
+                                    />
+                                    <QuickActionCard 
+                                        title="Generate Progress Card"
+                                        description="Create and send student progress reports."
+                                        icon={ClipboardDocumentCheckIcon}
+                                        color="text-indigo-400"
+                                        iconBg="bg-indigo-950"
+                                        onClick={() => setView('progress-cards')}
+                                    />
+                                    <QuickActionCard 
+                                        title="Create Study Group" // NEW QUICK ACTION
+                                        description="Schedule and host a new live video session."
+                                        icon={UsersIcon}
+                                        color="text-pink-400"
+                                        iconBg="bg-pink-950"
+                                        onClick={() => setView('create-session')}
                                     />
                                     <QuickActionCard 
                                         title="Analytics"

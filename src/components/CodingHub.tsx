@@ -1,13 +1,31 @@
 // src/components/CodingHub.tsx
-import React, { useEffect, useState, useCallback } from "react";
-import { Routes, Route, useNavigate, useParams } from "react-router-dom";
-import codingAcademyData, { ModuleData, Step } from "./codingData";
-import { Award, CheckCircle, ArrowLeft, Zap } from "lucide-react"; 
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import { Routes, Route, useNavigate, useParams, useLocation, useMatch } from "react-router-dom"; 
+import { codingAcademyData, ModuleData, Step } from "./codingData"; 
+import { Award, CheckCircle, ArrowLeft, Zap, X } from "lucide-react"; 
 import { useThemeStore } from '../store/theme'; 
 import { motion } from 'framer-motion'; 
 
 /* -------------------------
-   LocalStorage helpers (Unchanged)
+   CODE CONTEXT IMPLEMENTATION
+   ------------------------- */
+interface CodeContextType {
+  currentCode: string;
+  setCode: React.Dispatch<React.SetStateAction<string>>;
+  setIsChatOpen: React.Dispatch<React.SetStateAction<boolean>>; 
+}
+
+const CodeContext = React.createContext<CodeContextType>({
+  currentCode: "",
+  setCode: () => {},
+  setIsChatOpen: () => {}, 
+});
+
+const useCodeContext = () => React.useContext(CodeContext);
+// -------------------------
+
+/* -------------------------
+   LocalStorage helpers
    ------------------------- */
 const STORAGE_KEY = "codinghub_final_progress_v1";
 
@@ -41,8 +59,29 @@ function saveProgress(store: ProgressStore) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
 }
 
+/**
+ * Helper: Clears ALL chat history related to a module.
+ */
+function clearModuleChats(moduleId: string) {
+    if (!moduleId) return;
+    const p = loadProgress();
+    p.botChats = p.botChats || {};
+    // Find and delete all keys starting with the moduleId
+    const keysToDelete = Object.keys(p.botChats).filter(key => key.startsWith(`${moduleId}::`));
+    
+    keysToDelete.forEach(key => {
+        delete p.botChats![key];
+    });
+    
+    if (keysToDelete.length > 0) {
+        console.log(`Cleared ${keysToDelete.length} chat histories for module ${moduleId}`);
+        saveProgress(p);
+    }
+}
+
+
 /* -------------------------
-   Small UI pieces (UPDATED: Added a glow for a neon look)
+   Small UI pieces (Unchanged)
    ------------------------- */
 const BadgeSmall: React.FC<{ text: string }> = ({ text }) => (
   <div className="inline-flex items-center gap-2 bg-indigo-900/50 border border-indigo-400/50 px-3 py-1 rounded-full text-xs font-semibold text-white/90 shadow-md shadow-indigo-500/30">
@@ -146,14 +185,49 @@ async function runWithJudge0(languageId: string, source: string): Promise<ExecRe
 }
 
 /* =========================
-   CodeBuddy (UPDATED: Glassmorphic and Neon Look)
+   ChatWindow
    ========================= */
 
-const CodeBuddy: React.FC<{ moduleId?: string; topicId?: string; currentCode: string }> = ({ moduleId, topicId, currentCode }) => {
+// Helper function to convert our simple chat history
+const formatChatHistory = (messages: string[]): { role: 'user' | 'model', parts: { text: string }[] }[] => {
+    // Skip the first welcome message and the last "thinking" message if present.
+    const relevantMessages = messages.slice(1).filter(m => !m.endsWith("is thinking..."));
+    
+    let simplifiedHistory = [];
+    for (const msg of relevantMessages) {
+        if (msg.startsWith("You: ")) {
+            simplifiedHistory.push({ role: 'user' as const, parts: [{ text: msg.substring(5).trim() }] });
+        } else if (msg.startsWith("🤖 ")) {
+            simplifiedHistory.push({ role: 'model' as const, parts: [{ text: msg.substring(3).trim() }] });
+        }
+    }
+    
+    // Remove the most recent message, which is the user's current question 
+    return simplifiedHistory.slice(0, simplifiedHistory.length - 1);
+};
+
+
+const ChatWindow: React.FC<{ 
+    moduleId?: string; 
+    topicId?: string; 
+    isOpen: boolean;
+    onClose: () => void;
+}> = ({ moduleId, topicId, isOpen, onClose }) => {
   const key = `${moduleId || "global"}::${topicId || "general"}`;
+  
+  // Ref for click-away detection
+  const chatRef = useRef<HTMLDivElement>(null); 
+
+  // Get currentCode from context
+  const { currentCode } = useCodeContext(); 
+  
   const [messages, setMessages] = useState<string[]>(() => {
     const p = loadProgress();
-    return (p.botChats && p.botChats[key]) ? p.botChats[key] : ["🤖 Hi! I'm Code Buddy. Ask me for a hint on the lesson or if you're stuck on a practice problem. (AI Mode)"];
+    const history = (p.botChats && p.botChats[key]) ? p.botChats[key] : ["🤖 Hi! I'm Code Buddy. Ask me for a hint on the lesson or if you're stuck on a practice problem. (AI Mode)"];
+    if(history.length === 0) {
+        history.push("🤖 Hi! I'm Code Buddy. Ask me for a hint on the lesson or if you're stuck on a practice problem. (AI Mode)");
+    }
+    return history;
   });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -161,56 +235,92 @@ const CodeBuddy: React.FC<{ moduleId?: string; topicId?: string; currentCode: st
   const module = codingAcademyData.find((m) => m.id === moduleId);
   const lesson = module?.topics.find((t) => t.id === topicId) || null;
 
+  // Save history to localStorage whenever messages change
   useEffect(() => {
-    const p = loadProgress();
-    p.botChats = p.botChats || {};
-    p.botChats[key] = messages;
-    saveProgress(p);
+    // Only save if the chat has actual user messages (length > 1)
+    if(messages.length > 1) { 
+        const p = loadProgress();
+        p.botChats = p.botChats || {};
+        p.botChats[key] = messages;
+        saveProgress(p);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages]);
+  }, [messages, key]);
+
+  // Effect for handling clicks outside the chat window
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (isOpen && chatRef.current && !chatRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
 
-  async function getGeminiHint(q: string) {
-    const BACKEND_URL = '/api/gemini-chat'; 
+  // handleClose is simplified to just call parent onClose
+  const handleClose = () => {
+    onClose();
+  }
+
+
+  async function getGeminiHint(q: string, fullMessages: string[]) {
+    const BACKEND_URL = '/api/chat'; 
     
     if (!lesson) {
-        return "Error: Cannot load lesson context for AI chat.";
+        return "Error: Cannot load lesson context for AI chat. Please refresh or navigate to a coding lesson.";
     }
 
     try {
-      const promptContext = `The user is learning ${module?.name} on topic: "${lesson?.title}" (Analogy: ${lesson?.analogy}). The current code they are running is: \`\`\`${currentCode}\`\`\`. They asked: "${q}". Provide a kid-friendly, concise hint or explanation. If the question is about an error, analyze the code and suggest a fix.`;
+      // 1. Define the persistent instruction for Code Buddy (Uses currentCode from context)
+      const systemInstruction = `You are Code Buddy, an expert, encouraging, and kid-friendly programming assistant. Your goal is to help a student learn ${module?.name} on topic: "${lesson?.title}" (Analogy: ${lesson?.analogy}). The student's current code is: \`\`\`${currentCode}\`\`\`. Provide concise hints, error analysis, and educational explanations. Keep the tone light and motivating.`;
 
+      // 2. Format the message history
+      const historyToSend = formatChatHistory(fullMessages);
+      
       const response = await fetch(BACKEND_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          prompt: promptContext, 
+          systemInstruction: systemInstruction, 
+          history: historyToSend,
+          message: q, // The user's current question
         }),
       });
 
       const data = await response.json();
       
-      if (response.ok && data.answer) {
-          return data.answer;
+      // The /api/chat endpoint returns the full SDK response, where the answer is nested
+      if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          return data.candidates[0].content.parts[0].text;
       } else {
           console.error("AI Backend Error:", data);
-          return `🤖 Sorry, I hit an error from the AI server. Response status: ${response.status}. Please check your Node.js backend logs and ensure your VITE_GEMINI_API_KEY is correct.`;
+          return `🤖 Sorry, I hit an error from the AI server. Response status: ${response.status}. Details: ${data.error || 'Unknown Error'}. Check if the backend is running and configured with GEMINI_API_KEY.`;
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Gemini API call failed:", error);
-      return "Error: Could not connect to the Code Buddy AI service. Is your Node.js server running and correctly configured to handle /api/gemini-chat?";
+      return `Error: Could not connect to the Code Buddy AI service. Is your Node.js server running and correctly configured to handle ${BACKEND_URL}? Error detail: ${error.message}`;
     }
   }
 
   async function reply(question: string) {
     if (!question.trim() || isLoading) return;
 
-    setMessages((m) => [...m, `You: ${question}`, `🤖 Code Buddy is thinking...`]); 
+    // Use a temporary state update that includes the new question
+    let tempMessages: string[] = [];
+    setMessages((m) => {
+        tempMessages = [...m, `You: ${question}`, `🤖 Code Buddy is thinking...`];
+        return tempMessages;
+    }); 
     setInput("");
     setIsLoading(true);
 
-    const ans = await getGeminiHint(question);
+    // Pass the question and the temporary message history to the AI function
+    const ans = await getGeminiHint(question, tempMessages);
     
     setMessages((m) => {
         const newMessages = m.slice(0, m.length - 1); 
@@ -220,43 +330,64 @@ const CodeBuddy: React.FC<{ moduleId?: string; topicId?: string; currentCode: st
   }
 
   return (
-    <div className="bg-black/40 backdrop-blur-md rounded-xl p-4 shadow-xl border border-indigo-500/30 h-56 flex flex-col text-white transform transition hover:scale-[1.01] hover:shadow-indigo-500/40">
-      <div className="font-semibold text-cyan-400 mb-2 flex items-center gap-2">🤖 Code Buddy <Zap size={16} className="text-yellow-400" /></div>
-      <div className="flex-1 overflow-y-auto text-sm space-y-2 mb-2 bg-black/50 p-2 rounded-lg border border-gray-700/50">
-        {messages.map((m, i) => (
-          <div key={i} className={m.startsWith("You:") ? "text-right text-gray-100" : "text-left text-cyan-200"}>
-            {m}
-          </div>
-        ))}
-        {isLoading && <div className="text-left text-cyan-200">🤖 ...</div>}
-      </div>
-      <div className="flex gap-2">
-        <input 
-          value={input} 
-          onChange={(e) => setInput(e.target.value)} 
-          onKeyDown={(e) => { 
-            if (e.key === "Enter" && input.trim() && !isLoading) { 
-              reply(input); 
-            } 
-          }} 
-          placeholder="Ask about the concept or errors..." 
-          className="flex-1 rounded-lg px-3 py-1 text-sm bg-gray-900/80 text-white border border-indigo-600/50 placeholder-gray-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400" 
-          disabled={isLoading}
-        />
+    // FULL HEIGHT SLIDING CHAT WINDOW
+    <motion.div
+        ref={chatRef} // Attach ref here
+        initial={false}
+        animate={{ x: isOpen ? 0 : "100%" }} // Slide in/out animation
+        transition={{ duration: 0.3 }}
+        className="fixed right-0 top-0 bottom-0 w-full md:w-96 bg-black/80 backdrop-blur-xl p-4 shadow-2xl border-l border-indigo-500/50 z-[100] flex flex-col text-white"
+    >
         <button 
-          onClick={() => { if (input.trim() && !isLoading) { reply(input); } }} 
-          className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg font-semibold shadow-md shadow-indigo-600/50 transition transform hover:scale-[1.05]"
-          disabled={isLoading}
+            onClick={handleClose} 
+            // Left-aligned close button
+            className="absolute top-4 left-4 text-gray-400 hover:text-white transition p-1 rounded-full bg-black/50 hover:bg-black/70"
+            title="Close Code Buddy"
         >
-          {isLoading ? "Wait..." : "Ask"}
+            <ArrowLeft size={20} />
         </button>
-      </div>
-    </div>
+
+        {/* Added ml-10 for offset from the back button */}
+        <div className="font-semibold text-cyan-400 mb-2 flex items-center gap-2 border-b border-gray-700/50 pb-2 pt-2 ml-10">🤖 Code Buddy <Zap size={16} className="text-yellow-400" /></div> 
+        
+        {/* Chat History Area */}
+        <div className="flex-1 overflow-y-auto text-sm space-y-2 mb-2 bg-black/50 p-2 rounded-lg border border-gray-700/50">
+          {messages.map((m, i) => (
+            <div key={i} className={m.startsWith("You:") ? "text-right text-gray-100" : "text-left text-cyan-200"}>
+              {m}
+            </div>
+          ))}
+          {isLoading && <div className="text-left text-cyan-200">🤖 ...</div>}
+        </div>
+        
+        {/* Input Area */}
+        <div className="flex gap-2">
+          <input 
+            value={input} 
+            onChange={(e) => setInput(e.target.value)} 
+            onKeyDown={(e) => { 
+              if (e.key === "Enter" && input.trim() && !isLoading) { 
+                reply(input); 
+              } 
+            }} 
+            placeholder="Ask about the concept or errors..." 
+            className="flex-1 rounded-lg px-3 py-2 text-sm bg-gray-900/80 text-white border border-indigo-600/50 placeholder-gray-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400" 
+            disabled={isLoading}
+          />
+          <button 
+            onClick={() => { if (input.trim() && !isLoading) { reply(input); } }} 
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold shadow-md shadow-indigo-600/50 transition transform hover:scale-[1.05]"
+            disabled={isLoading}
+          >
+            {isLoading ? "Wait..." : "Ask"}
+          </button>
+        </div>
+    </motion.div>
   );
 };
 
 /* =========================
-   Module Dashboard (UPDATED: Glassmorphic and Neon Look)
+   Module Dashboard (Unchanged)
    ========================= */
 
 const ModuleDashboard: React.FC = () => {
@@ -354,7 +485,7 @@ const ModuleDashboard: React.FC = () => {
 };
 
 /* =========================
-   Topic List (UPDATED: Glassmorphic and Neon Look)
+   Topic List (Unchanged)
    ========================= */
 const TopicList: React.FC = () => {
   const { languageId } = useParams<{ languageId: string }>();
@@ -427,7 +558,7 @@ const TopicList: React.FC = () => {
 };
 
 /* =========================
-   Lesson page (UPDATED: Glassmorphic and Neon Look)
+   Lesson page
    ========================= */
 const LessonPage: React.FC = () => {
   const { languageId, topicId } = useParams<{ languageId: string; topicId: string }>();
@@ -436,8 +567,10 @@ const LessonPage: React.FC = () => {
   const module = codingAcademyData.find((m) => m.id === languageId);
   const lesson = module?.topics.find((t) => t.id === topicId) || null;
 
-  const [code, setCode] = useState<string>(lesson?.starterCode || "");
-  const [tab, setTab] = useState<"Examples" | "Challenge" | "Ask">("Challenge"); // Default to Challenge
+  // Consume the chat setter function from context
+  const { currentCode: code, setCode, setIsChatOpen } = useCodeContext(); 
+  
+  const [tab, setTab] = useState<"Examples" | "Challenge" | "Ask">("Challenge"); 
   const [terminal, setTerminal] = useState<string>("Ready. Press RUN to execute your code.");
   const [goalMet, setGoalMet] = useState<boolean>(false);
   const [progressStore, setProgressStore] = useState<ProgressStore>(loadProgress());
@@ -450,7 +583,7 @@ const LessonPage: React.FC = () => {
     setGoalMet(false);
     setTerminal("Ready. Press RUN to execute your code.");
     setProgressStore(loadProgress());
-  }, [languageId, topicId, lesson]); 
+  }, [languageId, topicId, lesson, setCode]); 
 
   if (!module || !lesson) return <div className="p-10 text-center text-red-400">Loading lesson... or Lesson not found. Please check data files.</div>;
 
@@ -508,12 +641,20 @@ const LessonPage: React.FC = () => {
       navigate(`/codinghub`);
     }
   }
+  
+  // Function to navigate back and close the chat
+  function goBackToLessons() {
+      setIsChatOpen(false); // Close the chat when moving back to the topic list
+      navigate(`/codinghub/${languageId}`);
+  }
+
 
   return (
     <div className="min-h-screen p-6 md:p-10 text-white">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <button onClick={() => navigate(`/codinghub/${languageId}`)} className="bg-indigo-600 hover:bg-indigo-500 text-white py-2 px-4 rounded-lg mr-3 shadow-md shadow-indigo-600/50 transition transform hover:scale-[1.05]">← Back to Lessons</button>
+          {/* Use the new custom function */}
+          <button onClick={goBackToLessons} className="bg-indigo-600 hover:bg-indigo-500 text-white py-2 px-4 rounded-lg mr-3 shadow-md shadow-indigo-600/50 transition transform hover:scale-[1.05]">← Back to Lessons</button>
           <span className="text-xl font-bold text-cyan-300">{module.name} • </span>
           <span className="text-lg text-white ml-2">{lesson.title}</span>
         </div>
@@ -549,7 +690,6 @@ const LessonPage: React.FC = () => {
             ))}
           </div>
           
-          <CodeBuddy moduleId={module.id} topicId={lesson.id} currentCode={code} />
         </div>
 
         {/* Right column: IDE and terminal */}
@@ -632,14 +772,15 @@ const LessonPage: React.FC = () => {
 };
 
 /* =========================
-   Main CodingHub routes (No change needed here, styles are applied via child components)
+   Main CodingHub routes (Finalized Logic - Static Pop-up)
    ========================= */
 const CodingHub: React.FC = () => {
-  // --- START: Theme Background Logic ---
+  const navigate = useNavigate();
+  const location = useLocation(); // Get current location
+  // --- START: Theme Background Logic (Unchanged) ---
   const theme = useThemeStore((state) => state.getThemeStyles());
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0);
 
-  // 🔥 PRELOAD ALL BACKGROUND IMAGES — FIXES THE FLICKER (Copied from ExploreMenu)
   useEffect(() => {
     if (theme.backgrounds) {
       theme.backgrounds.forEach((src) => {
@@ -649,7 +790,6 @@ const CodingHub: React.FC = () => {
     }
   }, [theme.backgrounds]);
 
-  // 🎯 CAROUSEL INTERVAL - 20 SECONDS (Matching ExploreMenu)
   useEffect(() => {
     const backgrounds = theme.backgrounds;
     if (backgrounds && backgrounds.length > 1) {
@@ -663,37 +803,172 @@ const CodingHub: React.FC = () => {
   const currentBackground = theme.backgrounds?.[currentBackgroundIndex] || '';
   // --- END: Theme Background Logic ---
 
+  // --- START: CHATBOT LOGIC ---
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  // State for showing the pop-up notification
+  const [showChatPrompt, setShowChatPrompt] = useState(false); 
+
+  const lessonMatch = useMatch("/codinghub/:languageId/:topicId");
+  const moduleMatch = useMatch("/codinghub/:languageId");
+  
+  // Use state to track the previous full path and module ID
+  const [previousPath, setPreviousPath] = useState(location.pathname);
+  const [previousModuleId, setPreviousModuleId] = useState(moduleMatch?.params.languageId);
+
+  const { languageId, topicId } = lessonMatch?.params || {};
+
+  // FINAL useEffect to handle navigation-based history clearing (when leaving module/topic list)
+  useEffect(() => {
+      // Logic for determining navigation context
+      const currentPath = location.pathname;
+      const currentModuleId = moduleMatch?.params.languageId;
+      
+      const navigatedToDashboard = currentPath === '/codinghub' && previousModuleId;
+      const switchedModules = previousModuleId && currentModuleId && previousModuleId !== currentModuleId;
+      
+      if (navigatedToDashboard || switchedModules) {
+          clearModuleChats(previousModuleId!);
+      }
+      
+      setPreviousPath(currentPath);
+      setPreviousModuleId(currentModuleId);
+  }, [location.pathname, moduleMatch?.params.languageId]); // Reruns on path change
+
+  // UPDATED useEffect to manage the STATIC pop-up visibility (appears after 3s, stays fixed)
+  useEffect(() => {
+      let timer: number | undefined;
+
+      // Only show the pop-up if we are on a lesson page and the chat is closed
+      if (lessonMatch && !isChatOpen) {
+          // Show the prompt after 3 seconds, then let it STAY visible
+          timer = setTimeout(() => {
+              setShowChatPrompt(true);
+          }, 3000); 
+      } else {
+          // Clear state if we navigate away or open the chat
+          setShowChatPrompt(false); 
+      }
+
+      return () => {
+          clearTimeout(timer);
+      };
+  }, [lessonMatch, isChatOpen]);
+
+
+  // Simple, fixed component for the toggle button
+  const FloatingChatToggle: React.FC = () => {
+      // Only show the toggle button if the user is on a LessonPage AND the chat is closed
+      if (!languageId || !topicId || isChatOpen) return null; 
+
+      return (
+          <React.Fragment> 
+              {/* NEW: Pop-up Notification - FIXED positioning, STYLED for premium dark look */}
+              {showChatPrompt && (
+                  <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      // Styling: Dark semi-transparent background, subtle glow, smaller text
+                      className="fixed bottom-24 right-24 bg-gray-800/95 text-cyan-300 text-sm font-medium px-3 py-1.5 rounded-lg shadow-xl shadow-cyan-600/30 whitespace-nowrap z-[102] border border-cyan-500/50 flex items-center gap-2"
+                      style={{ 
+                          // Custom style for a sleek, compact look
+                          transform: 'translateX(-100%)', // Positions the pop-up correctly
+                          minWidth: '180px',
+                          textShadow: '0 0 2px rgba(0, 255, 255, 0.5)',
+                      }} 
+                  >
+                      <span className="flex items-center gap-1">
+                          <Zap size={14} className="text-yellow-400" />
+                          How can we help you today?
+                      </span>
+                      {/* Close Button (X mark) */}
+                      <button
+                          onClick={(e) => {
+                              e.stopPropagation(); // Prevent the click from opening the chat immediately
+                              setShowChatPrompt(false); 
+                          }}
+                          className="text-gray-400 hover:text-white transition p-0.5 rounded-full hover:bg-gray-700/80"
+                          title="Dismiss notification"
+                      >
+                          <X size={14} />
+                      </button>
+                  </motion.div>
+              )}
+              {/* Floating Button (Remains FIXED) */}
+              <div 
+                  className={`fixed bottom-8 right-8 z-[101] w-16 h-16 rounded-full bg-indigo-700 hover:bg-indigo-600 shadow-xl shadow-indigo-600/60 flex items-center justify-center cursor-pointer transition transform ${isChatOpen ? 'scale-0' : 'scale-100'} hover:scale-[1.1]`}
+                  onClick={() => {
+                      setIsChatOpen(true);
+                      setShowChatPrompt(false); // Hide prompt immediately on click
+                  }}
+                  title="Open Code Buddy Chat"
+              >
+                  <Zap size={28} className="text-yellow-300" /> 
+              </div>
+          </React.Fragment>
+      );
+  };
+  // --- END: CHATBOT LOGIC ---
+
+  // Provider component wrapper
+  const CodeContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [currentCode, setCode] = useState("");
+    // Pass the main setIsChatOpen setter function into the context
+    const value = React.useMemo(() => ({ currentCode, setCode, setIsChatOpen }), [currentCode, setIsChatOpen]); 
+    
+    return (
+      <CodeContext.Provider value={value}>
+        {children}
+      </CodeContext.Provider>
+    );
+  };
+
+
   return (
     <div className="min-h-screen relative overflow-hidden">
+      <CodeContextProvider> 
       
-      {/* 🔥 SEAMLESS CROSSFADE - NO BLACK SCREEN (Copied logic from ExploreMenu) */}
-      <div className="absolute inset-0 overflow-hidden">
-        {theme.backgrounds?.map((bg, index) => (
-          <div
-            key={bg}
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ 
-              backgroundImage: `url(${bg})`,
-              zIndex: index === currentBackgroundIndex ? 10 : 0, 
-              opacity: index === currentBackgroundIndex ? 1 : 0, 
-              transition: 'opacity 1.2s ease-in-out', 
-              backgroundAttachment: 'fixed', 
-            }}
-          />
-        ))}
-      </div>
-      
-      {/* Black overlay - z-20 to stay above backgrounds (UPDATED: Deeper, cosmic gradient overlay) */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-sm z-20"></div>
-      
-      <div className="relative z-30 min-h-screen">
-        <Routes>
-          <Route path="/" element={<ModuleDashboard />} /> 
-          <Route path=":languageId" element={<TopicList />} />
-          <Route path=":languageId/:topicId" element={<LessonPage />} />
-          <Route path="*" element={<div className="p-6 text-center text-2xl text-red-600">404: Hub Content Not Found</div>} />
-        </Routes>
-      </div>
+        {/* 🔥 SEAMLESS CROSSFADE - NO BLACK SCREEN (Backgrounds) */}
+        <div className="absolute inset-0 overflow-hidden">
+          {theme.backgrounds?.map((bg, index) => (
+            <div
+              key={bg}
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ 
+                backgroundImage: `url(${bg})`,
+                zIndex: index === currentBackgroundIndex ? 10 : 0, 
+                opacity: index === currentBackgroundIndex ? 1 : 0, 
+                transition: 'opacity 1.2s ease-in-out', 
+                backgroundAttachment: 'fixed', 
+              }}
+            />
+          ))}
+        </div>
+        
+        {/* Black overlay - z-20 to stay above backgrounds */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-sm z-20"></div>
+        
+        <div className="relative z-30 min-h-screen">
+          <Routes>
+            <Route path="/" element={<ModuleDashboard />} /> 
+            <Route path=":languageId" element={<TopicList />} />
+            <Route path=":languageId/:topicId" element={<LessonPage />} />
+            <Route path="*" element={<div className="p-6 text-center text-2xl text-red-600">404: Hub Content Not Found</div>} />
+          </Routes>
+        </div>
+        
+        {/* --- FLOATING CHAT COMPONENTS --- */}
+        <FloatingChatToggle />
+        
+        <ChatWindow 
+            isOpen={isChatOpen} 
+            onClose={() => setIsChatOpen(false)}
+            moduleId={languageId} 
+            topicId={topicId} 
+        />
+        {/* ---------------------------------- */}
+      </CodeContextProvider> 
     </div>
   );
 };

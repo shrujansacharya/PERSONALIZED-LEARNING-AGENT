@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Star, 
-  Users, 
+  Users, // Used for Study Groups
   Trophy, 
   Award, 
   PenTool, 
@@ -89,6 +89,7 @@ export const ExploreMenu = () => {
 
   const handleProfileUpdate = () => fetchUserProfile();
 
+  // >>> START MENU ITEMS UPDATE <<<
   const menuItems = [
     { title: 'Subjects', description: 'Explore various subjects and expand your knowledge', icon: Brain, path: '/subjects', color: 'from-indigo-400 to-indigo-600' },
     { title: 'English Skill Build', description: 'Ask curious questions and explore amazing possibilities', icon: Star, path: '/what-if', color: 'from-green-400 to-green-600' },
@@ -97,6 +98,7 @@ export const ExploreMenu = () => {
     { title: 'Coding Hub', description: 'Discover exciting future careers and opportunities', icon: Award, path: '/codinghub', color: 'from-red-400 to-red-600' },
     { title: 'Project Builder', description: 'Create your own amazing learning projects', icon: PenTool, path: '/create', color: 'from-orange-400 to-orange-600' }
   ];
+  // >>> END MENU ITEMS UPDATE <<<
 
   const handleChangeTheme = useCallback(async (newTheme) => {
     setIsThemeSelectorOpen(false);

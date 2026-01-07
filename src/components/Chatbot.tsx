@@ -1,30 +1,37 @@
-// Chatbot.tsx - UPDATED (Welcome message hides on send)
+// Chatbot.tsx - UPDATED (Welcome message hides on send + material session flag)
 import React, { useState, useRef, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useThemeStore } from '../store/theme';
+import { useThemeStore } from "../store/theme";
 import Sidebar from "./SidebarChatbot";
 import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
 import { useChatLogic } from "../hooks/useChatLogic";
 import { findInitialSubject, loadSessions, generatePDF } from "../utils/chatUtils";
-import type { Subject, UserData, SessionsBySubject, ChatSession } from "../types";
-import { Menu, ArrowLeft } from "lucide-react"; 
+import type { Subject, UserData, SessionsBySubject } from "../types";
+import { Menu, ArrowLeft } from "lucide-react";
 
 const ChatInterface: React.FC = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // These are set ONLY when you come from "Analyze with Chatbot" on SubjectsPage
   const initialContext = location.state?.context as string | undefined;
   const materialComment = location.state?.comment as string | undefined;
 
+  // 🔥 NEW: True only when this chat was started from material analysis flow
+  const isMaterialSession = Boolean(initialContext);
+
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(findInitialSubject(subjectId));
-  const [newMessage, setNewMessage] = useState<string>('');
-  const [sessionsBySubject, setSessionsBySubject] = useState<SessionsBySubject>(loadSessions());
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(
+    findInitialSubject(subjectId)
+  );
+  const [newMessage, setNewMessage] = useState<string>("");
+  const [sessionsBySubject, setSessionsBySubject] =
+    useState<SessionsBySubject>(loadSessions());
   const [userInterests, setUserInterests] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
-  
   const [showWelcome, setShowWelcome] = useState(true);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +78,7 @@ const ChatInterface: React.FC = () => {
 
   useEffect(() => {
     if (userData?.interests) {
-      const interestsArray = userData.interests.split(',').map(i => i.trim());
+      const interestsArray = userData.interests.split(",").map((i) => i.trim());
       setUserInterests(interestsArray);
       if (interestsArray.length > 0) {
         setCurrentTheme(interestsArray[0]);
@@ -79,7 +86,7 @@ const ChatInterface: React.FC = () => {
     }
   }, [userData, setCurrentTheme]);
 
-  // MODIFICATION: The 10-second timer useEffect has been REMOVED.
+  // 10-second timer useEffect was removed
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -87,21 +94,20 @@ const ChatInterface: React.FC = () => {
   };
 
   const handleAttachmentClick = () => fileInputRef.current?.click();
-  const handleBackToSubjectSelect = () => navigate('/subjects');
+  const handleBackToSubjectSelect = () => navigate("/subjects");
   const theme = useThemeStore();
 
-  const topNavButtonClass = "p-2 bg-black/50 rounded-lg text-white backdrop-blur-md hover:bg-white/20 transition-colors";
+  const topNavButtonClass =
+    "p-2 bg-black/50 rounded-lg text-white backdrop-blur-md hover:bg-white/20 transition-colors";
 
-  // MODIFICATION: Created a new function to wrap handleSend
+  // Wrap handleSend so we can hide the welcome banner on first send
   const handleSubmitMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Hide the welcome message if it's currently shown
+
     if (showWelcome) {
       setShowWelcome(false);
     }
-    
-    // Call the original send function from the hook
+
     handleSend(e);
   };
 
@@ -109,15 +115,18 @@ const ChatInterface: React.FC = () => {
     <div
       className="min-h-screen flex flex-col relative overflow-hidden"
       style={{
-        backgroundImage: theme.backgrounds?.[currentBackgroundIndex] ? `url(${theme.backgrounds[currentBackgroundIndex]})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        transition: 'background-image 1s ease-in-out',
+        backgroundImage: theme.backgrounds?.[currentBackgroundIndex]
+          ? `url(${theme.backgrounds[currentBackgroundIndex]})`
+          : "none",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+        transition: "background-image 1s ease-in-out",
       }}
     >
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-0"></div>
 
+      {/* Sidebar Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div
@@ -130,7 +139,8 @@ const ChatInterface: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <div className="fixed top-4 left-4 z-50 flex flex-col gap-2">
+      {/* Top Navigation */}
+      <div className="fixed top-4 left-4 z-50 flex gap-2">
         <button
           onClick={handleBackToSubjectSelect}
           className={topNavButtonClass}
@@ -139,7 +149,7 @@ const ChatInterface: React.FC = () => {
         >
           <ArrowLeft size={24} />
         </button>
-        
+
         <button
           onClick={() => setIsSidebarOpen(true)}
           className={topNavButtonClass}
@@ -150,6 +160,7 @@ const ChatInterface: React.FC = () => {
         </button>
       </div>
 
+      {/* Sidebar */}
       <Sidebar
         selectedSubject={selectedSubject}
         sessionsBySubject={sessionsBySubject}
@@ -165,16 +176,15 @@ const ChatInterface: React.FC = () => {
         }}
       />
 
+      {/* Main Chat Area */}
       <div className="flex flex-1 overflow-hidden relative z-10 h-screen">
-        
-        <div className={`relative flex flex-col flex-1 transition-all duration-300 pt-20`}>
-          
+        <div className="relative flex flex-col flex-1 transition-all duration-300 pt-20">
           <ChatMessages
             messages={messages}
             loading={loading}
             recommendedMessages={recommendedMessages}
             onRecommendationClick={handleRecommendationClick}
-            selectedSubject={selectedSubject}
+            selectedSubject={selectedSubject ?? undefined}
             isSidebarCollapsed={!isSidebarOpen}
             theme={theme}
             currentBackgroundIndex={currentBackgroundIndex}
@@ -183,7 +193,11 @@ const ChatInterface: React.FC = () => {
             hasReceivedInitialExplanation={hasReceivedInitialExplanation}
             renderPhET={renderPhET}
             currentTheme={currentTheme}
+            // 🔥 NEW PROP: tells ChatMessages that we came from material analysis
+            isMaterialSession={isMaterialSession}
           />
+
+          {/* Input + Suggested Prompts */}
           <AnimatePresence>
             <motion.div
               key="input-form"
@@ -191,27 +205,29 @@ const ChatInterface: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 50 }}
               transition={{ duration: 0.3 }}
-              className={`absolute bottom-0 z-20 flex flex-col items-center left-0 right-0 px-4 pb-4 md:px-6 md:pb-6 bg-transparent`}
+              className="absolute bottom-0 z-20 flex flex-col items-center left-0 right-0 px-4 pb-4 md:px-6 md:pb-6 bg-transparent"
             >
               <div className="w-full max-w-6xl mx-auto mb-4">
                 <div className="flex gap-2 overflow-x-auto">
                   <AnimatePresence>
-                    {!loading && recommendedMessages.map((rec, index) => (
-                      <motion.button
-                        key={rec}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2, delay: index * 0.05 }}
-                        onClick={() => handleRecommendationClick(rec)}
-                        className="flex-shrink-0 bg-white/20 backdrop-blur-md text-white text-sm px-4 py-2 rounded-full font-medium hover:bg-white/30 transition-colors"
-                      >
-                        {rec}
-                      </motion.button>
-                    ))}
+                    {!loading &&
+                      recommendedMessages.map((rec, index) => (
+                        <motion.button
+                          key={rec}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2, delay: index * 0.05 }}
+                          onClick={() => handleRecommendationClick(rec)}
+                          className="flex-shrink-0 bg-white/20 backdrop-blur-md text-white text-sm px-4 py-2 rounded-full font-medium hover:bg-white/30 transition-colors"
+                        >
+                          {rec}
+                        </motion.button>
+                      ))}
                   </AnimatePresence>
                 </div>
               </div>
+
               <ChatInput
                 newMessage={newMessage}
                 setNewMessage={setNewMessage}
@@ -223,7 +239,6 @@ const ChatInterface: React.FC = () => {
                 isRecording={isRecording}
                 activeTool={activeTool}
                 setActiveTool={setActiveTool}
-                // MODIFICATION: Pass the new wrapper function to onSubmit
                 onSubmit={handleSubmitMessage}
                 inputRef={inputRef}
                 fileInputRef={fileInputRef}
@@ -238,16 +253,22 @@ const ChatInterface: React.FC = () => {
           </AnimatePresence>
         </div>
       </div>
-      
+
+      {/* Offline indicator */}
       {isOffline && (
         <div className="fixed top-20 left-4 bg-red-600 text-white p-2 rounded z-30">
           Offline Mode
         </div>
       )}
+
+      {/* PDF Download button */}
       {messages.length > 1 && (
         <button
           onClick={() => {
-            const lastBotMessage = messages.slice().reverse().find(m => m.isBot);
+            const lastBotMessage = messages
+              .slice()
+              .reverse()
+              .find((m) => m.isBot);
             if (lastBotMessage) {
               generatePDF(lastBotMessage.text, lastBotMessage.extractedMath);
             }
@@ -258,6 +279,8 @@ const ChatInterface: React.FC = () => {
           📄 PDF
         </button>
       )}
+
+      {/* Welcome banner */}
       <AnimatePresence>
         {showWelcome && messages.length <= 1 && selectedSubject && (
           <motion.div
@@ -265,7 +288,7 @@ const ChatInterface: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
             transition={{ duration: 0.5 }}
-            className={`fixed top-0 left-0 right-0 z-20 flex justify-center transition-all duration-300 pt-16 px-4`}
+            className="fixed top-0 left-0 right-0 z-20 flex justify-center transition-all duration-300 pt-16 px-4"
           >
             <div className="text-center">
               <h2 className="text-2xl md:text-3xl font-bold mb-1 welcome-gradient-text welcome-text-glow">

@@ -11,6 +11,18 @@ export default defineConfig({
     'process.env': {},
   },
 
+  // 👇 ADDED: Proxy configuration to fix the 404 (Not Found) error
+  server: {
+    proxy: {
+      // Proxy requests starting with '/api' to your Node.js backend on port 5001
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false, // Set to true if your backend uses HTTPS
+      },
+    },
+  },
+
   // ✅ optimizeDeps is separate
   optimizeDeps: {
     exclude: ['lucide-react'],

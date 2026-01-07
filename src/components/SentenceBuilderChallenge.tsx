@@ -217,14 +217,14 @@ export const SentenceBuilderChallenge = () => {
         >
           <div className="flex items-center justify-between mb-6">
             <motion.button
-              onClick={() => navigate('/what-if')}
+              onClick={() => navigate(-1)} {/* --- UPDATED TO navigate(-1) --- */}
               // UPDATED: Glassmorphic button
               className="flex items-center gap-2 bg-black/40 text-white px-4 py-2 rounded-lg hover:bg-white/10 transition border border-white/20"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               <ArrowLeft size={20} />
-              Back to Challenges
+              Previous Page
             </motion.button>
             <div className="flex items-center gap-4">
               <label className="text-white font-medium">Grade Level:</label>
@@ -345,7 +345,7 @@ export const SentenceBuilderChallenge = () => {
 
               <div className="bg-white/10 p-6 rounded-2xl mb-6 border border-white/10">
                 <div className="text-white/70 text-sm mb-2">Today's Attempts</div>
-                <div className="text-2xl font-bold text-orange-300">{attempts}/2</div>
+                <div className="text-2xl font-bold text-orange-300">{attempts}/2}</div>
               </div>
 
               <div className="flex gap-4 justify-center">
@@ -361,12 +361,12 @@ export const SentenceBuilderChallenge = () => {
                 )}
 
                 <motion.button
-                  onClick={() => navigate('/what-if')}
+                  onClick={() => navigate(-1)} {/* --- UPDATED TO navigate(-1) --- */}
                   className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg font-medium shadow-lg shadow-green-500/40 hover:from-green-600 hover:to-emerald-600 transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   >
-                    Back to Challenges
+                    Previous Page
                   </motion.button>
                 </div>
 

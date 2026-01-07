@@ -14,7 +14,6 @@ import ProjectsPage from './components/ProjectBuilderComponents/ProjectsPage';
 import ProjectDetailPage from './components/ProjectBuilderComponents/ProjectDetailPage';
 
 import CodingHub from "./components/CodingHub";
-import codingData from "./components/CodingData"; 
 
 // All other existing component imports
 import QuizPage from './components/QuizPage';
@@ -25,7 +24,6 @@ import TeacherDashboard from './components/TeacherDashboard';
 import { ParentDashboard } from './components/ParentDashboard';
 import { ExplorationMode } from './components/ExplorationMode';
 import { WhatIfPage } from './components/WhatIfPage';
-import StudyGroups from './components/StudyGroups';
 import AIStudyPlanner from './components/AIStudyPlanner'; // <-- IMPORT ADDED
 import { ProgressMap } from './components/ProgressMap';
 import { ExploreMenu } from './components/ExploreMenu';
@@ -93,7 +91,6 @@ const App: React.FC = () => {
           <Route path="/explore-menu" element={<ExploreMenu />} />
           <Route path="/explore" element={<ExplorationMode />} />
           <Route path="/what-if" element={<WhatIfPage />} />
-          <Route path="/study-groups" element={<StudyGroups />} />
           <Route path="/ai-study-planner" element={<AIStudyPlanner />} /> {/* <-- ROUTE ADDED */}
           <Route path="/progress" element={<ProgressMap />} />
           <Route path="/subjects" element={<SubjectsPage />} />

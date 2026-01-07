@@ -8,6 +8,7 @@ import confetti from 'canvas-confetti';
 import { auth, db } from '../lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
+
 // Initialize Gemini Service
 const geminiService = GeminiService;
 
@@ -504,14 +505,17 @@ export const GrammarChallenge = () => {
           transition={{ duration: 0.8 }}
         >
           <div className="flex items-center justify-between mb-6">
-            <button
-              // UPDATED: Glassmorphic button
+            {/* --- NEW BACK BUTTON CODE --- */}
+            <motion.button
               onClick={() => navigate(-1)}
               className="flex items-center gap-2 bg-black/40 text-white px-4 py-2 rounded-lg hover:bg-white/10 transition border border-white/20"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <ArrowLeft size={20} />
               Previous Page
-            </button>
+            </motion.button>
+            {/* --- END NEW BACK BUTTON CODE --- */}
             <div className="flex items-center gap-4">
               <label className="text-white font-medium">Grade Level:</label>
               <select

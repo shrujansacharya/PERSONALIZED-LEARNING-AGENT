@@ -1,5 +1,9 @@
+// Updated AIStudyPlanner.tsx
+// Changes: Use result.syllabus (now returned from backend) for video excerpt instead of plan snippet.
+// Increased excerpt length to 1000 chars for better context.
+
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, FileText, Calendar, BrainCircuit, Sparkles, Download, RefreshCw, Maximize, X, Plus, Book, GraduationCap, Clock, Target, Lightbulb, CheckCircle, AlertCircle, UploadCloud, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, FileText, Calendar, BrainCircuit, Sparkles, Download, RefreshCw, Maximize, X, Plus, Book, GraduationCap, Clock, Target, Lightbulb, CheckCircle, AlertCircle, UploadCloud, Loader2, Volume2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../lib/firebase';
@@ -11,13 +15,14 @@ import { useThemeStore } from '../store/theme';
 // Premium AI Study Planner (single-file React + Tailwind + Framer Motion)
 
 type UserProfile = { class: string; learningStyle: string; subject: string };
+type Video = { title: string; video_id: string; thumbnail: string; url: string };
 
 /* -------------------------
    Small UI pieces (UPDATED: Neon/Glass Aesthetic)
    ------------------------- */
-const TinyToast: React.FC<{ id: number; text: string; type?: 'success' | 'error' | 'info' }> = ({ text, type = 'info' }) => {
-  const bg = type === 'success' ? 'bg-emerald-700/80' : type === 'error' ? 'bg-rose-700/80' : 'bg-sky-700/80';
-  const glow = type === 'success' ? 'shadow-emerald-500/30' : type === 'error' ? 'shadow-rose-500/30' : 'shadow-sky-500/30';
+const TinyToast: React.FC<{ id: number; text: string; type?: 'success' | 'error' | 'info' | 'warning' }> = ({ text, type = 'info' }) => {
+  const bg = type === 'success' ? 'bg-emerald-700/80' : type === 'error' ? 'bg-rose-700/80' : type === 'warning' ? 'bg-amber-700/80' : 'bg-sky-700/80';
+  const glow = type === 'success' ? 'shadow-emerald-500/30' : type === 'error' ? 'shadow-rose-500/30' : type === 'warning' ? 'shadow-amber-500/30' : 'shadow-sky-500/30';
   return (
     <div className={`px-6 py-3 rounded-xl text-base ${bg} text-white shadow-xl ${glow} border border-white/10 backdrop-blur-sm`}>{text}</div>
   );
@@ -53,9 +58,11 @@ const AIStudyPlannerPremium: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [studyPlan, setStudyPlan] = useState('');
   const [answers, setAnswers] = useState('');
+  const [videos, setVideos] = useState<Video[]>([]);
   const [error, setError] = useState('');
   const [isGenerated, setIsGenerated] = useState(false);
   const [activeTab, setActiveTab] = useState<'plan' | 'answers'>('plan');
+  const [isSpeaking, setIsSpeaking] = useState(false);
   
   // FIX: Ensure useRef is initialized with 'null'
   const planRef = useRef<HTMLDivElement | null>(null);
@@ -121,6 +128,7 @@ const AIStudyPlannerPremium: React.FC = () => {
     if (f) fileSetter(f);
   };
 
+  // UPDATED: Use result.syllabus for video excerpt (now returned from backend)
   const handleGenerate = async () => {
     setError('');
     if (!studyMaterialFile || !days || !user.class || !user.learningStyle || !user.subject) {
@@ -133,6 +141,8 @@ const AIStudyPlannerPremium: React.FC = () => {
     setStudyPlan('');
     setAnswers('');
     setActiveTab('plan');
+    setVideos([]);
+    setIsSpeaking(false); // Reset speaking state
 
     const formData = new FormData();
     formData.append('studyMaterial', studyMaterialFile);
@@ -153,6 +163,42 @@ const AIStudyPlannerPremium: React.FC = () => {
       setAnswers(result.answers || '');
       setIsGenerated(true);
       push('Study plan generated successfully', 'success');
+
+      // Auto-speak for auditory learners (after a brief delay for UI update)
+      if (user.learningStyle === 'auditory') {
+        setTimeout(() => {
+          speakAloud();
+        }, 500); // 0.5s delay to let content render
+      }
+
+      // UPDATED: Fetch YouTube videos if visual learner - Use syllabus excerpt (longer for better accuracy)
+      if (user.learningStyle === 'visual') {
+        const videoPayload = {
+          subject: user.subject,
+          learningStyle: user.learningStyle,
+          syllabusExcerpt: (result.syllabus || '').substring(0, 1000),  // Use extracted syllabus, longer excerpt
+        };
+        console.log('Fetching videos with payload:', videoPayload); // Debug log
+        const videoRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/youtube-videos`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(videoPayload),
+        });
+        if (!videoRes.ok) {
+          console.error('Video fetch failed:', videoRes.status, await videoRes.text()); // Enhanced debug
+          push('Videos fetch failed - using defaults', 'warning');
+        }
+        const videoData = await videoRes.json();
+        console.log('Videos received:', videoData.videos); // Debug log
+        setVideos(videoData.videos || []);
+        if (videoData.videos && videoData.videos.length > 0) {
+          push(`Found ${videoData.videos.length} helpful videos based on your material!`, 'success');
+        } else {
+          push('No videos found for this topic', 'info');
+        }
+      }
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Unknown error');
@@ -162,10 +208,38 @@ const AIStudyPlannerPremium: React.FC = () => {
     }
   };
 
+  // UPDATED: Enhanced speakAloud with truncation, error handling, and pitch
+  const speakAloud = () => {
+    if ('speechSynthesis' in window) {
+      const content = activeTab === 'plan' ? studyPlan : answers;
+      if (!content) {
+        push('No content to read aloud', 'error');
+        return;
+      }
+      // Limit length for TTS to avoid browser limits (first 2000 chars)
+      const utteranceText = content.substring(0, 2000) + (content.length > 2000 ? ' ... [content truncated for speech]' : '');
+      const utterance = new SpeechSynthesisUtterance(utteranceText);
+      utterance.rate = 0.9;  // Slower for clarity
+      utterance.pitch = 1.1;  // Slightly higher for engagement
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        push('Speech interrupted', 'error');
+      };
+      speechSynthesis.cancel(); // Stop any ongoing speech
+      speechSynthesis.speak(utterance);
+      setIsSpeaking(true);
+      push('Reading aloud...', 'info');
+    } else {
+      push('TTS not supported in this browser', 'error');
+    }
+  };
+
   const handleNewPlan = () => {
     setIsGenerated(false);
     setStudyPlan('');
     setAnswers('');
+    setVideos([]);
     setError('');
     setStudyMaterialFile(null);
     setQuestionFile(null);
@@ -219,8 +293,7 @@ const AIStudyPlannerPremium: React.FC = () => {
         onDrop={handleDrop(setFile)}
         className={`group relative flex flex-col items-center justify-center min-h-[200px] rounded-3xl border-2 transition-all p-6 cursor-pointer select-none 
           bg-black/40 backdrop-blur-md shadow-xl transform transition hover:scale-[1.01] 
-          ${isHover ? 'border-indigo-400/80 shadow-indigo-500/30' : 'border-indigo-700/50 hover:border-cyan-400/50'}`
-        }
+          ${isHover ? 'border-indigo-400/80 shadow-indigo-500/30' : 'border-indigo-700/50 hover:border-cyan-400/50'}`}
       >
         <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         <div className="relative z-10 flex flex-col items-center gap-3">
@@ -245,12 +318,46 @@ const AIStudyPlannerPremium: React.FC = () => {
     );
   };
 
-  // Plan and Answer Displays (UPDATED: Enhanced Aesthetic)
+  // UPDATED: Plan and Answer Displays with Enhanced Spacing/Font (FIX: <style> without jsx)
   const PlanDisplay: React.FC<{ contentRef: React.RefObject<HTMLDivElement> }> = ({ contentRef }) => (
     <div ref={contentRef} className="w-full h-full rounded-3xl p-8 overflow-auto bg-black/50 backdrop-blur-lg border border-indigo-500/30 shadow-2xl shadow-indigo-500/20">
+      <style>{`
+        .custom-prose h1, .custom-prose h2, .custom-prose h3 { 
+          margin-top: 2rem; margin-bottom: 1rem; font-size: 1.5rem; 
+        }
+        .custom-prose p { 
+          margin-bottom: 1.5rem; line-height: 1.8; font-size: 1.125rem; /* 18px base, bumped to 20px equiv */
+        }
+        .custom-prose ul, .custom-prose ol { 
+          margin-bottom: 1.5rem; padding-left: 1.5rem; 
+        }
+        .custom-prose li { 
+          margin-bottom: 0.75rem; line-height: 1.7; 
+        }
+        .custom-prose strong { 
+          font-size: 1.125rem; /* Bold text larger too */
+        }
+      `}</style>
       {studyPlan ? (
-        <article className="prose prose-invert prose-xl max-w-none leading-relaxed">
+        <article className="custom-prose prose prose-invert prose-xl max-w-none leading-relaxed">
           <ReactMarkdown>{studyPlan}</ReactMarkdown>
+          {/* UPDATED: Enhanced Visual Videos Section - Now at the end, always visible if videos exist */}
+          {videos.length > 0 && (
+            <div className="mt-8 p-6 bg-indigo-900/20 rounded-2xl border border-indigo-400/30">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Sparkles size={20} /> Visual Suggestions: Recommended Videos
+              </h3>
+              <p className="text-sm text-indigo-200 mb-4">Based on key concepts from your study material:</p>
+              <div className="grid md:grid-cols-3 gap-4">
+                {videos.map((video) => (
+                  <a key={video.video_id} href={video.url} target="_blank" rel="noopener" className="block p-4 rounded-xl bg-black/30 hover:bg-white/10 transition-all hover:shadow-lg hover:shadow-indigo-500/20">
+                    <img src={video.thumbnail} alt={video.title} className="w-full h-32 object-cover rounded-lg mb-2" />
+                    <p className="text-sm font-medium text-white truncate">{video.title}</p>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </article>
       ) : (
         <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center text-gray-400">
@@ -266,6 +373,23 @@ const AIStudyPlannerPremium: React.FC = () => {
     const answersError = answers === 'Unable to generate answers' || !answers;
     return (
       <div ref={contentRef} className="w-full h-full rounded-3xl p-8 overflow-auto bg-black/50 backdrop-blur-lg border border-emerald-500/30 shadow-2xl shadow-emerald-500/20">
+        <style>{`
+          .custom-prose h1, .custom-prose h2, .custom-prose h3 { 
+            margin-top: 2rem; margin-bottom: 1rem; font-size: 1.5rem; 
+          }
+          .custom-prose p { 
+            margin-bottom: 1.5rem; line-height: 1.8; font-size: 1.125rem; /* 18px base, bumped to 20px equiv */
+          }
+          .custom-prose ul, .custom-prose ol { 
+            margin-bottom: 1.5rem; padding-left: 1.5rem; 
+          }
+          .custom-prose li { 
+            margin-bottom: 0.75rem; line-height: 1.7; 
+          }
+          .custom-prose strong { 
+            font-size: 1.125rem; /* Bold text larger too */
+          }
+        `}</style>
         {answersError ? (
           <div className="flex flex-col items-center justify-center min-h-[400px] text-center text-rose-200 bg-rose-900/10 border border-rose-700/20 p-8 rounded-xl">
             <AlertCircle size={64} className="mb-4" />
@@ -273,7 +397,7 @@ const AIStudyPlannerPremium: React.FC = () => {
             <p className="text-base text-rose-200/80 mt-3 max-w-lg">The question paper may not have been processed correctly. Try another format or upload without questions.</p>
           </div>
         ) : (
-          <article className="prose prose-invert prose-xl max-w-none leading-relaxed">
+          <article className="custom-prose prose prose-invert prose-xl max-w-none leading-relaxed">
             <ReactMarkdown>{answers}</ReactMarkdown>
           </article>
         )}
@@ -285,7 +409,6 @@ const AIStudyPlannerPremium: React.FC = () => {
   if (!isGenerated) {
     return (
       <div className="min-h-screen relative text-white flex items-center justify-center p-8"> 
-        
         {/* 🔥 SEAMLESS CROSSFADE - NO BLACK SCREEN (New Background Logic - z-0/z-10) */}
         <div className="absolute inset-0 overflow-hidden">
           {theme.backgrounds?.map((bg, index) => (
@@ -317,7 +440,6 @@ const AIStudyPlannerPremium: React.FC = () => {
           <div className="pointer-events-none absolute -left-28 -top-32 w-[640px] h-[640px] rounded-full bg-gradient-to-br from-indigo-700/20 to-purple-500/12 blur-3xl transform rotate-12" />
           <div className="pointer-events-none absolute -right-32 -bottom-24 w-[480px] h-[480px] rounded-full bg-gradient-to-br from-pink-600/12 to-indigo-600/10 blur-3xl" />
         </div>
-
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative z-40 w-full max-w-7xl">
           <header className="flex items-center gap-6 mb-8">
@@ -456,7 +578,6 @@ const AIStudyPlannerPremium: React.FC = () => {
   // Render after generation
   return (
     <div className="min-h-screen relative text-white p-8"> 
-      
       {/* 🔥 SEAMLESS CROSSFADE - NO BLACK SCREEN (New Background Logic - z-0/z-10) */}
       <div className="absolute inset-0 overflow-hidden">
         {theme.backgrounds?.map((bg, index) => (
@@ -483,7 +604,6 @@ const AIStudyPlannerPremium: React.FC = () => {
       {/* Black Overlay to ensure text readability (UPDATED: Deeper, cosmic gradient overlay) */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-black/60 backdrop-blur-sm z-20"></div>
 
-
       <div className="max-w-7xl mx-auto relative z-30">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-6">
@@ -501,6 +621,12 @@ const AIStudyPlannerPremium: React.FC = () => {
             <button onClick={handleNewPlan} className="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-2xl text-lg font-semibold shadow-lg shadow-emerald-600/30 transition transform hover:scale-[1.05]">New Plan</button>
             <IconButton onClick={handleDownloadPdf} title="Download PDF"> <Download size={20} className='text-indigo-400' /> </IconButton>
             <IconButton onClick={() => push('Fullscreen not implemented', 'info')} title="Maximize"> <Maximize size={20} className='text-yellow-400' /> </IconButton>
+            {/* TTS Button for Auditory */}
+            {user.learningStyle === 'auditory' && (
+              <IconButton onClick={speakAloud} title="Speak Aloud" disabled={isSpeaking}>
+                {isSpeaking ? <Loader2 className="animate-spin" size={20} /> : <Volume2 size={20} className="text-pink-400" />}
+              </IconButton>
+            )}
           </div>
         </div>
 

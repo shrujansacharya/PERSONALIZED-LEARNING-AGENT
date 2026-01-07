@@ -199,7 +199,7 @@ export const WhatIfPage = () => {
             whileTap={{ scale: 0.95 }}
           >
             <ArrowLeft size={24} />
-            <span className="text-sm font-medium hidden md:inline">Explore</span>
+            <span className="text-sm font-medium hidden md:inline">Back</span>
           </motion.button>
 
           <div className="flex items-center gap-6">
@@ -434,7 +434,7 @@ export const WhatIfPage = () => {
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { 
-                  title: 'Guided Odyssey', 
+                  title: 'Learn with Me', 
                   description: 'Navigate structured dialogues with real-time feedback.', 
                   icon: Headphones, 
                   route: '/guided-practice', 
@@ -443,7 +443,7 @@ export const WhatIfPage = () => {
                   key: 'guided'
                 },
                 { 
-                  title: 'Echo Mastery', 
+                  title: 'Sentence Practice Drills', 
                   description: 'Hone pronunciation through adaptive repetition drills.', 
                   icon: Mic2, 
                   route: '/sentence-practice', 
@@ -452,7 +452,7 @@ export const WhatIfPage = () => {
                   key: 'sentence'
                 },
                 { 
-                  title: 'Infinite Dialogue', 
+                  title: 'Casual Conversations', 
                   description: 'Engage in boundless, context-aware conversations.', 
                   icon: Coffee, 
                   route: '/casual', 
@@ -541,11 +541,12 @@ export const WhatIfPage = () => {
                 <motion.div
                   key={challenge.id}
                   // UPDATED: Glassmorphic card base, explicit neon shadow
-                  className={`group relative overflow-hidden bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/10 transition-all duration-700 shadow-2xl h-full ${isLocked ? 'opacity-50' : ''}`}
+                  className={`group relative overflow-hidden bg-black/40 backdrop-blur-xl rounded-3xl p-8 border border-white/10 transition-all duration-700 shadow-2xl h-full ${isLocked ? 'opacity-50' : 'cursor-pointer'}`}
                   initial={{ opacity: 0, scale: 0.9, rotateY: 90 }}
                   animate={{ opacity: 1, scale: 1, rotateY: 0 }}
                   transition={{ duration: 0.8, delay: index * 0.15 }}
                   whileHover={!isLocked ? { scale: 1.05, y: -10, rotateY: 5, boxShadow: `0 25px 50px -12px ${challenge.color.split(' ')[1] || '#8b5cf6'}30` } : {}}
+                  onClick={() => !isLocked && handleNavigate(challenge.route, { grade: selectedGrade, level: getLevelName(selectedGrade) })}
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${challenge.color} opacity-0 group-hover:opacity-20 -z-10 transition-opacity`}></div>
                   <div className="relative z-10 space-y-6">
