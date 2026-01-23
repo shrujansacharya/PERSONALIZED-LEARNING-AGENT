@@ -11,7 +11,7 @@ const fs = require('fs'); // Keep for file existence checks if any, but removing
 const http = require('http');
 const { Server } = require("socket.io");
 const { ExpressPeerServer } = require('peer');
-const { PythonShell } = require('python-shell');
+// const { PythonShell } = require('python-shell');
 const fetch = require('node-fetch');
 const axios = require('axios');
 const pdf = require('pdf-parse');
@@ -108,7 +108,7 @@ const authenticate = async (req, res, next) => {
 
 // --- UPDATE 1: Configure Multer for in-memory storage for ALL uploads ---
 const memoryStorage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
   storage: memoryStorage,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
@@ -281,7 +281,7 @@ app.put('/api/user/:firebaseUid/upload-image', authenticate, upload.single('prof
 
     // Optional: Check size to prevent 16MB BSON error
     if (profileImageBase64.length > 10 * 1024 * 1024) { // 10MB limit
-       return res.status(400).json({ error: 'Image file is too large (Max 10MB).' });
+      return res.status(400).json({ error: 'Image file is too large (Max 10MB).' });
     }
 
     const updatedUser = await User.findOneAndUpdate(
@@ -293,7 +293,7 @@ app.put('/api/user/:firebaseUid/upload-image', authenticate, upload.single('prof
     if (!updatedUser) {
       return res.status(404).send('User not found.');
     }
-    
+
     // Send back the new Base64 string so the frontend can update immediately
     res.status(200).json({ profileImage: updatedUser.profileImage });
 
@@ -405,10 +405,10 @@ app.delete('/api/teachers/students/:id', async (req, res) => {
     const deletedUser = await User.findByIdAndDelete(id);
 
     if (deletedUser) {
-        console.log('Successfully deleted user from MongoDB:', id);
-        res.status(200).send('Student record deleted successfully.');
+      console.log('Successfully deleted user from MongoDB:', id);
+      res.status(200).send('Student record deleted successfully.');
     } else {
-        res.status(404).send('Student record not found in MongoDB.');
+      res.status(404).send('Student record not found in MongoDB.');
     }
   } catch (error) {
     console.error('Server error during student deletion:', error);
@@ -422,8 +422,8 @@ app.post('/api/teachers/upload-material', authenticate, upload.single('material'
     if (!req.file) {
       return res.status(400).send('No file uploaded.');
     }
-    const { subject, comment, targetStudents } = req.body; 
-    
+    const { subject, comment, targetStudents } = req.body;
+
     if (!subject) {
       return res.status(400).send('Subject not specified.');
     }
@@ -448,9 +448,9 @@ app.post('/api/teachers/upload-material', authenticate, upload.single('material'
     });
 
     await newMaterial.save();
-    
+
     io.emit('session-notification', newMaterial);
-    
+
     res.status(200).json({ message: 'Material uploaded and assigned successfully.', material: newMaterial });
 
   } catch (error) {
@@ -466,11 +466,11 @@ app.get('/api/materials', authenticate, async (req, res) => {
 
     if (user.role === 'student') {
       filter = { targetStudents: user._id };
-    } 
-    
+    }
+
     // Populate student names for the teacher's list
     const materials = await Material.find(filter).populate('targetStudents', 'name class');
-    
+
     res.json(materials);
   } catch (error) {
     console.error('Error fetching materials:', error);
@@ -627,7 +627,7 @@ app.post('/api/generate-theme-images', async (req, res) => {
   }
 
   const prompt = THEME_PROMPTS[theme];
-  const PYTHON_API_URL = 'http://localhost:5002/generate';
+  const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://localhost:5002/generate';
   const numberOfImages = 5;
   const imageIds = [];
 
@@ -701,7 +701,7 @@ app.post('/api/generate-topic-image', async (req, res) => {
     const generatedPrompt = promptResponse.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || topic;
 
     // Call Python API
-    const pythonResponse = await fetch('http://localhost:5002/generate', {
+    const pythonResponse = await fetch(process.env.PYTHON_API_URL || 'http://localhost:5002/generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -714,8 +714,17 @@ app.post('/api/generate-topic-image', async (req, res) => {
     }
 
     const result = await pythonResponse.json();
-    const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
-    res.status(200).json({ imageUrl: `${BACKEND_URL}${result.path}` });
+
+    if (result.image_base64) {
+      const dataUrl = `data:image/png;base64,${result.image_base64}`;
+      res.status(200).json({ imageUrl: dataUrl });
+    } else if (result.path) {
+      // Fallback for path-based (legacy)
+      const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5001}`;
+      res.status(200).json({ imageUrl: `${BACKEND_URL}${result.path}` });
+    } else {
+      throw new Error('No image data returned from AI service');
+    }
   } catch (error) {
     console.error('Error generating topic image:', error);
     res.status(500).json({ error: 'Failed to generate image.' });
@@ -999,7 +1008,7 @@ Material: ${syllabusExcerpt.substring(0, 4000)}
       const topicText = topicResponse.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
       try {
         const cleanedText = topicText.replace(/```json|```/g, '').trim();
-        topTopics = JSON.parse(cleanedText).filter(topic => 
+        topTopics = JSON.parse(cleanedText).filter(topic =>
           topic.length > 10 && // Min length for validity
           !/\d{4}/.test(topic) && // No years/dates
           !/[A-Z][a-z]+ [A-Z]\./.test(topic) && // No initials like "A. V."
@@ -1013,11 +1022,11 @@ Material: ${syllabusExcerpt.substring(0, 4000)}
 
     // Fallback: Extract 1 clean topic from first meaningful sentence
     if (topTopics.length === 0) {
-      const sentences = syllabusExcerpt.split(/[.!?]+/).filter(s => 
-        s.trim().length > 30 && 
-        !/\d{4}/.test(s) && 
-        !/^[A-Z]\)\s/.test(s) 
-      ).slice(0, 1); 
+      const sentences = syllabusExcerpt.split(/[.!?]+/).filter(s =>
+        s.trim().length > 30 &&
+        !/\d{4}/.test(s) &&
+        !/^[A-Z]\)\s/.test(s)
+      ).slice(0, 1);
       if (sentences.length > 0) {
         const words = sentences[0].trim().split(/\s+/).slice(0, 6).join(' '); // First 6 words as topic
         topTopics = [words.substring(0, 60)]; // Clean and cap
@@ -1029,7 +1038,7 @@ Material: ${syllabusExcerpt.substring(0, 4000)}
 
     // Fetch 3 videos from DIFFERENT channels for this main topic
     const videos = await fetchVideosFromDifferentChannels(`"${mainTopic}" tutorial explained`, res, 3);
-    
+
     if (videos.length === 0) {
       // Ultimate fallback: Use snippet
       const snippet = syllabusExcerpt.substring(0, 150).replace(/\s+/g, ' ');
@@ -1192,12 +1201,12 @@ app.post('/api/chat', async (req, res) => {
     contents.push({ role: 'user', parts: [{ text: systemInstruction }] });
     // Add a model response to set the context
     contents.push({ role: 'model', parts: [{ text: "Okay, I understand. I will act as instructed." }] });
-    
+
     // Add history 
     if (Array.isArray(history)) {
-        contents.push(...history);
+      contents.push(...history);
     }
-    
+
     // Add the current user message
     contents.push({ role: 'user', parts: [{ text: message }] });
 
